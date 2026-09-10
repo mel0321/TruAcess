@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from '../../database/connection.js';
-import { AppError } from '../middlewares/error.middleware.js';
+import { AppError } from '../../../src/middlewares/error.middleware.js';
 import { sendVerificationCodeEmail } from '../services/email.service.js';
 
 /**

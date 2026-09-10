@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getProfile, updateProfile, uploadAvatar } from '../controllers/user.controller.js';
-import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { authenticateToken } from '../../../src/middlewares/auth.middleware.js';
 import { avatarUpload } from '../config/upload.js';
 
 const router = Router();

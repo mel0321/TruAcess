@@ -1,5 +1,5 @@
 import db from '../../database/connection.js';
-import { AppError } from '../middlewares/error.middleware.js';
+import { AppError } from '../../../src/middlewares/error.middleware.js';
 
 const VALID_CATEGORIES = ['ACCOMMODATION', 'GASTRONOMY', 'TOURIST_ATTRACTION', 'OTHERS'];
 

@@ -1,5 +1,5 @@
 import db from '../../database/connection.js';
-import { AppError } from '../middlewares/error.middleware.js';
+import { AppError } from '../../../src/middlewares/error.middleware.js';
 
 /**
  * Obter perfil do usuário logado
