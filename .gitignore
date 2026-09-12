@@ -1,0 +1,20 @@
+# Dependências (Backend e Mobile)
+node_modules/
+
+# Variáveis de ambiente
+.env
+
+# Backend (Node.js)
+backend/uploads/*
+!backend/uploads/.gitkeep
+*.sqlite
+*.sqlite3
+*.db
+
+# Mobile (Expo)
+.expo/
+dist/
+web-build/
+
+# Geral
+.DS_Store
