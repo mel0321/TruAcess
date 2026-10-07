@@ -1,5 +1,5 @@
 {
-  "name": "truAcess",
+  "name": "backend-travel-reviews",
   "version": "1.0.0",
   "description": "Backend para plataforma de turismo acessível AccessTrip (Node 24+, Express, Knex, SQLite3, JWT, Multer, Nodemailer)",
   "main": "src/server.js",
