@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
-import { Header } from '../components/Cabecalho';
+import { Header } from '../components/Header';
 import type { Place, Review } from '../types';
 
 export function PlaceDetailsPage() {

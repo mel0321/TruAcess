@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
-import { Header } from '../components/Cabecalho';
+import { Header } from '../components/Header';
 interface Stats {
   total_places: number;
   total_reviews: number;
