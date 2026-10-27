@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import api from '../services/api';
 import type { User } from '../types';
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -15,7 +15,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('@TruAcess:token'));
 
-  // Ao carregar a página, se tiver token, busca os dados do usuário
   useEffect(() => {
     if (token) {
       api.get('/auth/me')
@@ -23,7 +22,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .catch(() => {
           localStorage.removeItem('@TruAcess:token');
           setToken(null);
-          setUser(null);
         });
     }
   }, [token]);
