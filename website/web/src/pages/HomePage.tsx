@@ -1,111 +1,192 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import { Header } from '../components/Header';
+import { IconShield, IconStar, IconMapPin, IconUsers, IconRamp, IconBrain, IconCulture, IconBeach, IconMuseum, IconRestaurant, IconTrail, IconHotel } from '../components/Icons';
 import type { Place } from '../types';
 
 export function HomePage() {
   const [places, setPlaces] = useState<Place[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('todos');
 
   useEffect(() => {
     api.get('/places')
-      .then((res) => {
-        const dados = res.data.places || res.data || [];
-        setPlaces(Array.isArray(dados) ? dados : []);
-      })
-      .catch((err) => console.error("Erro ao carregar locais:", err))
-      .finally(() => setLoading(false));
+      .then(res => setPlaces(res.data.places || res.data || []))
+      .catch(err => console.error(err));
   }, []);
 
-  const filteredPlaces = places.filter((place) =>
-    place.establishment_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    place.city.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const uniqueCategories = Array.from(new Set(places.map(p => p.category))).filter(Boolean);
+
+  const getCategoryIcon = (category: string) => {
+    const cat = category?.toLowerCase();
+    if (cat?.includes('hotel')) return <IconHotel width={20} height={20} />;
+    if (cat?.includes('praia')) return <IconBeach width={20} height={20} />;
+    if (cat?.includes('museu')) return <IconMuseum width={20} height={20} />;
+    if (cat?.includes('restaurante')) return <IconRestaurant width={20} height={20} />;
+    if (cat?.includes('trilha')) return <IconTrail width={20} height={20} />;
+    return <IconCulture width={20} height={20} />;
+  };
+
+  const filteredPlaces = places.filter(place => selectedCategory === 'todos' || place.category === selectedCategory);
 
   return (
-    <div className="bg-gelo" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      
-      {/* CABEÇALHO */}
-      <header className="header">
-        <Link to="/" style={{ color: 'white', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '24px' }}>♾️</span>
-          <h1 style={{ margin: 0, fontSize: '22px', color: 'white' }}>TruAcess</h1>
-        </Link>
-        <nav style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-          <Link to="/" className="btn btn-ghost" style={{ color: 'white' }}>Início</Link>
-          <Link to="/login" className="btn btn-primary">Entrar</Link>
-        </nav>
-      </header>
+    <div>
+      <Header />
 
-      <main style={{ flex: 1 }}>
-        {/* ÁREA DE DESTAQUE */}
-        <section className="bg-profundo" style={{ color: 'white', padding: '60px 20px', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '32px', marginBottom: '10px', color: 'white' }}>Descubra destinos acessíveis pelo Brasil</h2>
-          <p style={{ fontSize: '18px', marginBottom: '30px', color: '#C1E8FF' }}>Turismo com autonomia, segurança e suporte sensorial.</p>
-          
-          <div style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', gap: '10px' }}>
-            <input
-              type="text"
-              placeholder="Buscar por local ou cidade..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field"
-              style={{ marginBottom: 0, border: 'none' }}
-            />
-            <button className="btn btn-primary" style={{ backgroundColor: '#2AC2D2', color: '#021024' }}>
-              Buscar
-            </button>
+      <section className="hero">
+        <div className="hero-content">
+          <h1>Explore o Mundo <span>Sem Limites</span></h1>
+          <p>Aventuras acessíveis para todos. Sua próxima jornada começa aqui.</p>
+          <div className="hero-buttons">
+            <Link to="/destinos" className="btn-explore">Explorar Destinos</Link>
+            <Link to="/sobre" className="btn-story">Nossa História</Link>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* LISTA DE LOCAIS */}
-        <section className="container">
-          <h2 className="text-profundo" style={{ marginBottom: '20px' }}>
-            {loading ? 'Carregando destinos...' : `${filteredPlaces.length} Destinos Encontrados`}
-          </h2>
+      <section className="features-bar">
+        <div className="container">
+          <div className="features-grid">
+            <div className="feature-item"><div className="feature-icon"><IconShield width={24} height={24} /></div><div className="feature-text">Segurança</div></div>
+            <div className="feature-item"><div className="feature-icon"><IconRamp width={24} height={24} /></div><div className="feature-text">Suporte</div></div>
+            <div className="feature-item"><div className="feature-icon"><IconStar width={24} height={24} /></div><div className="feature-text">Qualidade</div></div>
+            <div className="feature-item"><div className="feature-icon"><IconMapPin width={24} height={24} /></div><div className="feature-text">Localização</div></div>
+            <div className="feature-item"><div className="feature-icon"><IconUsers width={24} height={24} /></div><div className="feature-text">Inclusão</div></div>
+          </div>
+        </div>
+      </section>
 
-          {loading ? (
-            <p>Buscando informações no banco de dados...</p>
-          ) : (
-            <div className="grid grid-3">
-              {filteredPlaces.map((place) => (
-                <article key={place.id} className="card">
-                  <img 
-                  src={place.main_image || undefined}          
-                  alt={`Foto do local ${place.establishment_name}`} 
-                  style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '8px 8px 0 0', marginBottom: '15px' }} 
-                  />
-                  <div style={{ padding: '0 5px' }}>
-                    <h3 className="text-profundo">{place.establishment_name}</h3>
-                    <p className="text-medio" style={{ fontSize: '14px', marginBottom: '10px' }}> {place.city} - {place.state}</p>
-                    
-                    {/* Etiqueta de Preço */}
-                    <span className={`badge ${(!place.price || place.price === 0) ? 'badge-light' : 'badge-outline'}`} style={{ marginBottom: '15px', display: 'inline-block' }}>
-                      {(!place.price || place.price === 0) ? "🆓 Gratuito" : `R$ ${place.price.toFixed(2)}`}
-                    </span>
+      <section style={{ padding: '24px 0', background: 'white', borderBottom: '1px solid #E2E8F0' }}>
+        <div className="container">
+          <div style={{ display: 'flex', gap: '12px', overflowX: 'auto' }}>
+            <button onClick={() => setSelectedCategory('todos')} style={{ padding: '8px 20px', borderRadius: '100px', border: 'none', cursor: 'pointer', background: selectedCategory === 'todos' ? '#052659' : '#F1F5F9', color: selectedCategory === 'todos' ? 'white' : '#64748B', fontWeight: 600, fontSize: '14px' }}>Todos</button>
+            {uniqueCategories.map((cat, index) => (
+              <button key={index} onClick={() => setSelectedCategory(cat)} style={{ padding: '8px 20px', borderRadius: '100px', border: 'none', cursor: 'pointer', background: selectedCategory === cat ? '#052659' : '#F1F5F9', color: selectedCategory === cat ? 'white' : '#64748B', fontWeight: 600, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {getCategoryIcon(cat)} {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
-                    {/* Ícones de Acessibilidade */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
-                      {place.has_access_ramp && <span className="badge badge-outline">♿ Rampa</span>}
-                      {place.has_asd_friendly_space && <span className="badge badge-outline">🧠 TEA</span>}
-                      {place.has_sign_language_interpreter && <span className="badge badge-outline">🤟 Libras</span>}
-                    </div>
-
-                    <Link to={`/local/${place.id}`} className="btn btn-primary" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
-                      Ver Detalhes
-                    </Link>
+      <section className="destinations-section">
+        <div className="container">
+          <div className="section-header"><h2>Principais Destinos</h2></div>
+          <div className="destinations-grid">
+            {filteredPlaces.slice(0, 5).map((place) => (
+              <Link to={`/local/${place.id}`} key={place.id} className="destination-card">
+                <div className="destination-img">
+                  <img src={place.main_image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80'} alt={place.establishment_name} />
+                  <div className="destination-pin"></div>
+                </div>
+                <div className="destination-content">
+                  <div className="destination-badges">
+                    {place.has_access_ramp && <div className="badge-access"><IconRamp width={16} height={16} /> Acesso Físico</div>}
+                    {place.has_asd_friendly_space && <div className="badge-access"><IconBrain width={16} height={16} /> TEA</div>}
                   </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-      </main>
+                  {(place.has_sign_language_interpreter || place.has_braille_signage) && <div className="stars">★★★★★</div>}
+                  <div className="destination-title">{place.establishment_name}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      {/* RODAPÉ */}
-      <footer className="header" style={{ justifyContent: 'center', marginTop: 'auto' }}>
-        <p style={{ margin: 0, color: '#C1E8FF' }}>TruAcess © 2026 - Turismo Acessível e Inclusivo</p>
+      <section className="about-section">
+        <div className="about-content">
+          <h2>Mais Que Uma Viagem,<br />Uma Experiência de Vida</h2>
+          <p className="about-description">
+            Conectamos pessoas a destinos incríveis com autonomia, segurança e suporte sensorial completo. 
+            Nossa missão é tornar o turismo acessível para todos, independentemente de suas necessidades.
+          </p>
+          
+          <div className="about-stats">
+            <div className="stat-item">
+              <div className="stat-number">+500</div>
+              <div className="stat-label">Locais Verificados</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-number">+10k</div>
+              <div className="stat-label">Viajantes Ativos</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-number">98%</div>
+              <div className="stat-label">Satisfação</div>
+            </div>
+          </div>
+
+          <div className="about-icons">
+            <div className="about-icon-item">
+              <div className="about-icon-circle"><IconUsers width={28} height={28} /></div>
+              <div className="about-icon-label">Comunidade</div>
+            </div>
+            <div className="about-icon-item">
+              <div className="about-icon-circle"><IconShield width={28} height={28} /></div>
+              <div className="about-icon-label">Confiança</div>
+            </div>
+            <div className="about-icon-item">
+              <div className="about-icon-circle"><IconStar width={28} height={28} /></div>
+              <div className="about-icon-label">Empoderamento</div>
+            </div>
+            <div className="about-icon-item">
+              <div className="about-icon-circle"><IconMapPin width={28} height={28} /></div>
+              <div className="about-icon-label">Jornada</div>
+            </div>
+          </div>
+
+          <div className="about-cta">
+            <Link to="/register" className="btn-about">Começar Agora</Link>
+            <Link to="/sobre" className="btn-about-outline">Saiba Mais</Link>
+          </div>
+        </div>
+      </section>
+
+      <footer className="footer">
+        <div className="container">
+          <div className="footer-grid">
+            <div className="footer-brand">
+              <Link to="/" className="logo">
+                <span className="tru">Tru</span><span className="access">Acess</span>
+              </Link>
+              <p className="footer-tagline">Viagens Acessíveis, Redefinidas. Conectando você ao mundo sem barreiras.</p>
+              <div className="footer-social">
+                <a href="#" aria-label="Facebook">f</a>
+                <a href="#" aria-label="Instagram">📷</a>
+                <a href="#" aria-label="LinkedIn">in</a>
+                <a href="#" aria-label="YouTube">▶</a>
+              </div>
+            </div>
+            <div>
+              <h4>Links Rápidos</h4>
+              <ul>
+                <li><Link to="/">Início</Link></li>
+                <li><Link to="/destinos">Destinos</Link></li>
+                <li><Link to="/sobre">Sobre Nós</Link></li>
+                <li><Link to="/acessibilidade">Acessibilidade</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4>Recursos</h4>
+              <ul>
+                <li><Link to="/blog">Blog</Link></li>
+                <li><Link to="/faq">FAQ</Link></li>
+                <li><Link to="/guia">Guia de Acessibilidade</Link></li>
+                <li><Link to="/dicas">Dicas de Viagem</Link></li>
+              </ul>
+            </div>
+            <div className="footer-contact">
+              <h4>Contato</h4>
+              <p>📧 contato@truaccess.com.br</p>
+              <p>📱 (11) 99999-9999</p>
+              <p>📍 São Paulo, SP - Brasil</p>
+              <p>🕐 Seg-Sex: 9h às 18h</p>
+            </div>
+          </div>
+          <div className="footer-bottom">
+            <p>© 2026 TruAcess. Todos os direitos reservados. Feito com ❤️ para tornar o mundo mais acessível.</p>
+          </div>
+        </div>
       </footer>
     </div>
   );
