@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -181,4 +182,92 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
   .about-icon-circle { width: 56px; height: 56px; }
   .about-cta { flex-direction: column; align-items: center; }
   .footer-grid { grid-template-columns: 1fr; }
+=======
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f0f0f0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.hero {
+  background: linear-gradient(135deg, #052659, #0a3d7a);
+  color: white;
+  padding: 100px 20px;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.features-bar {
+  background: #052659;
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-around;
+}
+
+.destinations-section {
+  padding: 60px 20px;
+  background: white;
+}
+
+.destinations-section h2 {
+  text-align: center;
+  font-size: 36px;
+  color: #052659;
+  margin-bottom: 40px;
+}
+
+.destinations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+}
+
+.destination-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+}
+
+.destination-card:hover {
+  transform: translateY(-10px);
+}
+
+.destination-img {
+  height: 200px;
+  overflow: hidden;
+}
+
+.destination-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.destination-content {
+  padding: 16px;
+}
+
+.destination-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #052659;
+>>>>>>> abd1490a35c17f0bf28178a15f376f6731ef4f5e
 }
