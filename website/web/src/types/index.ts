@@ -1,4 +1,23 @@
 export type UserType = 'TRAVELER' | 'BUSINESS';
+export type Gender = 'FEMALE' | 'MALE' | 'OTHER' | 'PREFER_NOT_SAY';
+export type AgeRange = '18-24' | '25-34' | '35-44' | '45-54' | '55+';
+export type TravelFrequency = 'RARELY' | 'SOMETIMES' | 'OFTEN' | 'ALWAYS';
+export type DisabilityType = 'PHYSICAL' | 'VISUAL' | 'HEARING' | 'COGNITIVE' | 'NEURODIVERGENT' | 'NONE' | 'OTHER';
+
+export interface UserProfile {
+  gender?: Gender;
+  ageRange?: AgeRange;
+  travelFrequency?: TravelFrequency;
+  disabilities?: DisabilityType[];
+  interests?: string[];
+  companionType?: 'ALONE' | 'COUPLE' | 'FAMILY' | 'FRIENDS' | 'GROUP';
+  hasMobilityAid?: boolean;
+  needsQuietSpace?: boolean;
+  needsVisualAids?: boolean;
+  needsHearingAids?: boolean;
+  profileCompleted?: boolean;
+  onboardingStep?: number;
+}
 
 export interface User {
   id: number;
@@ -6,6 +25,9 @@ export interface User {
   email: string;
   user_type: UserType;
   profile_picture?: string | null;
+  phone?: string;
+  birth_date?: string;
+  profile?: UserProfile;
 }
 
 export interface Place {
