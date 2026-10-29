@@ -9,7 +9,8 @@ export function Header() {
     <header className="header">
       <div className="container header-inner">
         <Link to="/" className="logo">
-          <span className="tru">Tru</span><span className="access">Acess</span>
+          <span className="tru">Tru</span>
+          <span className="access">Acess</span>
         </Link>
         <nav className="nav">
           <Link to="/">Início</Link>
@@ -19,13 +20,18 @@ export function Header() {
         <div>
           {user ? (
             <>
-              <Link to="/perfil" style={{marginRight: '16px', textDecoration: 'none', color: 'var(--dark)', fontWeight: 500, fontSize: '14px'}}>
+              <Link to="/perfil" style={{marginRight: '16px', textDecoration: 'none', color: '#0f172a', fontWeight: 500, fontSize: '14px'}}>
                 Olá, {user.full_name?.split(' ')[0]}
               </Link>
               {user.user_type === 'BUSINESS' && (
-                <Link to="/dashboard" style={{marginRight: '16px', textDecoration: 'none', color: 'var(--dark)', fontWeight: 500, fontSize: '14px'}}>Painel</Link>
+                <Link to="/dashboard" style={{marginRight: '16px', textDecoration: 'none', color: '#0f172a', fontWeight: 500, fontSize: '14px'}}>Painel</Link>
               )}
-              <button onClick={() => { logout(); navigate('/'); }} style={{background: 'transparent', border: '1px solid var(--primary)', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '13px'}}>Sair</button>
+              <button 
+                onClick={() => { logout(); navigate('/'); }} 
+                style={{background: 'transparent', border: '1px solid #052659', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '13px'}}
+              >
+                Sair
+              </button>
             </>
           ) : (
             <Link to="/login" className="btn-plan">Entrar</Link>
