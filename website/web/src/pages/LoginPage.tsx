@@ -8,9 +8,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [verificationRequired, setVerificationRequired] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const { login, verifyEmail, resendVerificationCode } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -22,34 +20,10 @@ export function LoginPage() {
     
     if (result.success) {
       navigate('/');
-    } else if (result.requiresVerification && result.email) {
-      setEmail(result.email);
-      setVerificationRequired(true);
-      setError(result.message);
     } else {
       setError(result.message);
     }
     
-    setLoading(false);
-  };
-
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    const result = await verifyEmail(email, verificationCode);
-    if (result.success) {
-      navigate('/');
-      return;
-    }
-    setError(result.message);
-    setLoading(false);
-  };
-
-  const handleResendCode = async () => {
-    setLoading(true);
-    const result = await resendVerificationCode(email);
-    setError(result.message);
     setLoading(false);
   };
 
@@ -69,30 +43,6 @@ export function LoginPage() {
           </div>
         )}
 
-        {verificationRequired ? (
-          <form onSubmit={handleVerify}>
-            <label htmlFor="verification-code" style={{ display: 'block', fontWeight: 600, marginBottom: 8, fontSize: 14 }}>
-              Código de verificação enviado para {email}
-            </label>
-            <input
-              id="verification-code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={4}
-              pattern="[0-9]{4}"
-              value={verificationCode}
-              onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, ''))}
-              required
-              style={{ width: '100%', padding: 14, border: '2px solid #E2E8F0', borderRadius: 10, fontSize: 20, letterSpacing: 8, textAlign: 'center', marginBottom: 20 }}
-            />
-            <button type="submit" disabled={loading} style={{ width: '100%', padding: 16, background: '#052659', color: 'white', border: 0, borderRadius: 10, fontWeight: 700, fontSize: 16, cursor: 'pointer' }}>
-              {loading ? 'Verificando...' : 'Confirmar e entrar'}
-            </button>
-            <button type="button" onClick={() => void handleResendCode()} disabled={loading} style={{ width: '100%', padding: 14, marginTop: 12, background: 'transparent', color: '#052659', border: 0, fontWeight: 600, cursor: 'pointer' }}>
-              Reenviar código
-            </button>
-          </form>
-        ) : (
         <form onSubmit={handleLogin}>
           <div style={{marginBottom: '16px'}}>
             <label style={{display: 'block', fontWeight: '600', marginBottom: '8px', fontSize: '14px', color: '#0F172A'}}>E-mail</label>
@@ -132,7 +82,6 @@ export function LoginPage() {
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
-        )}
 
         <div style={{textAlign: 'center', marginTop: '24px', fontSize: '14px', display: 'flex', flexDirection: 'column', gap: '12px'}}>
           <Link to="/recover-password" style={{color: '#052659', textDecoration: 'none', fontWeight: '600'}}>Esqueci minha senha</Link>

@@ -53,7 +53,10 @@ export function Header() {
               <button onClick={() => { logout(); navigate('/login'); }} style={{background: 'transparent', border: '1px solid #052659', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '13px'}}>Sair</button>
             </>
           ) : (
-            <Link to="/login" className="btn-plan">Entrar</Link>
+            <div className="header-auth-actions">
+              <Link to="/login" className="btn-plan">Entrar</Link>
+              <Link to="/register" className="btn-register">Cadastrar</Link>
+            </div>
           )}
         </div>
       </div>

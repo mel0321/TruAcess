@@ -6,15 +6,11 @@ import type { User, UserProfile, AuthResponse, LoginRequest, RegisterRequest, Up
 interface AuthResult {
   success: boolean;
   message: string;
-  requiresVerification?: boolean;
-  email?: string;
   emailPreview?: string | null;
 }
 
 interface ApiErrorResponse {
   message?: string;
-  requiresVerification?: boolean;
-  email?: string;
 }
 
 interface AuthContextType {
@@ -22,8 +18,6 @@ interface AuthContextType {
   loading: boolean;
   login: (data: LoginRequest) => Promise<AuthResult>;
   register: (data: RegisterRequest) => Promise<AuthResult>;
-  verifyEmail: (email: string, code: string) => Promise<AuthResult>;
-  resendVerificationCode: (email: string) => Promise<AuthResult>;
   requestPasswordReset: (email: string) => Promise<AuthResult>;
   resetPassword: (email: string, code: string, password: string) => Promise<AuthResult>;
   logout: () => void;
@@ -88,56 +82,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return {
         success: false,
         message: apiError?.message || 'Erro ao fazer login. Verifique suas credenciais.',
-        requiresVerification: apiError?.requiresVerification,
-        email: apiError?.email,
       };
     }
   };
 
   const register = async (data: RegisterRequest) => {
     try {
-      const response = await api.post<{ message: string; email: string; emailPreview: string | null }>('/auth/register', data);
+      const response = await api.post<AuthResponse & { message: string }>('/auth/register', data);
+      const { token, user } = response.data;
+      const userData = { ...user };
+
+      localStorage.setItem('@TruAcess:token', token);
+      localStorage.setItem('@TruAcess:user', JSON.stringify(userData));
+      setUser(userData);
+
       return {
         success: true,
         message: response.data.message,
-        requiresVerification: true,
-        email: response.data.email,
-        emailPreview: response.data.emailPreview,
       };
     } catch (error: unknown) {
       const message = axios.isAxiosError<ApiErrorResponse>(error)
         ? error.response?.data?.message
         : undefined;
       return { success: false, message: message || 'Erro ao criar conta. Tente novamente.' };
-    }
-  };
-
-  const verifyEmail = async (email: string, code: string): Promise<AuthResult> => {
-    try {
-      const response = await api.post<AuthResponse & { message: string }>('/auth/verify-email', { email, code });
-      const { token, user } = response.data;
-      const userData = { ...user, profile: user.profile };
-      localStorage.setItem('@TruAcess:token', token);
-      localStorage.setItem('@TruAcess:user', JSON.stringify(userData));
-      setUser(userData);
-      return { success: true, message: response.data.message };
-    } catch (error: unknown) {
-      const message = axios.isAxiosError<ApiErrorResponse>(error)
-        ? error.response?.data?.message
-        : undefined;
-      return { success: false, message: message || 'Não foi possível verificar o e-mail.' };
-    }
-  };
-
-  const resendVerificationCode = async (email: string): Promise<AuthResult> => {
-    try {
-      const response = await api.post<{ message: string; emailPreview: string | null }>('/auth/resend-code', { email });
-      return { success: true, message: response.data.message, emailPreview: response.data.emailPreview };
-    } catch (error: unknown) {
-      const message = axios.isAxiosError<ApiErrorResponse>(error)
-        ? error.response?.data?.message
-        : undefined;
-      return { success: false, message: message || 'Não foi possível reenviar o código.' };
     }
   };
 
@@ -221,8 +188,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       login,
       register,
-      verifyEmail,
-      resendVerificationCode,
       requestPasswordReset,
       resetPassword,
       logout,

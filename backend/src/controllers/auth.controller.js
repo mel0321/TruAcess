@@ -56,41 +56,29 @@ export async function register(req, res, next) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const verificationCode = generate4DigitCode();
-
-    console.log('\n======================================================');
-    console.log(`🔑 [AUTH DEV] Código de verificação para ${email} (${normalizedUserType}): [ ${verificationCode} ]`);
-    console.log('======================================================\n');
-
     const [userId] = await db('users').insert({
       email: email.toLowerCase().trim(),
       password: hashedPassword,
       full_name: full_name?.trim() || null,
       user_type: normalizedUserType,
-      email_verified: 0,
-      email_code: verificationCode,
+      email_verified: 1,
+      email_code: null,
       profile_picture: null
     });
 
-    // Enviar código por e-mail (24h de validade)
-    let emailInfo = null;
-    try {
-      emailInfo = await sendVerificationCodeEmail(
-        email.toLowerCase().trim(),
-        verificationCode,
-        full_name
-      );
-    } catch (emailErr) {
-      console.error('[Auth] Falha ao enviar e-mail de verificação:', emailErr);
-    }
+    const user = {
+      id: userId,
+      email: email.toLowerCase().trim(),
+      full_name: full_name?.trim() || null,
+      user_type: normalizedUserType,
+      profile_picture: null,
+      email_verified: 1
+    };
 
     return res.status(201).json({
-      message:
-        'Cadastro realizado com sucesso! Um código de verificação de 4 dígitos foi enviado para seu e-mail (válido por 24 horas).',
-      userId,
-      email: email.toLowerCase().trim(),
-      user_type: normalizedUserType,
-      emailPreview: emailInfo?.previewUrl || null
+      message: 'Cadastro realizado com sucesso!',
+      token: generateToken(user),
+      user
     });
   } catch (error) {
     next(error);
@@ -295,23 +283,20 @@ export async function login(req, res, next) {
       throw new AppError('Credenciais inválidas.', 401);
     }
 
-    // Regra do DBML: Liberação depende exclusivamente da validação por e-mail
-    if (user.email_verified !== 1) {
-      return res.status(403).json({
-        error: 'E-mail não verificado',
-        message:
-          'Seu e-mail ainda não foi verificado. Insira o código de 4 dígitos enviado para seu e-mail para liberar seu acesso.',
-        email: user.email,
-        requiresVerification: true
-      });
-    }
-
     // Se a aplicação especificar o papel esperado (Mobile = TRAVELER, Web = BUSINESS)
     if (expected_role && user.user_type !== expected_role.toUpperCase()) {
       return res.status(403).json({
         error: 'Acesso negado para este tipo de frontend',
         message: `Esta interface é exclusiva para usuários [${expected_role}]. Sua conta possui o perfil [${user.user_type}].`
       });
+    }
+
+    if (user.email_verified !== 1) {
+      await db('users').where({ id: user.id }).update({
+        email_verified: 1,
+        email_code: null
+      });
+      user.email_verified = 1;
     }
 
     const token = generateToken(user);

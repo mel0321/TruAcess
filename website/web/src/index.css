@@ -13,7 +13,9 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
 .nav { display: flex; gap: 32px; align-items: center; }
 .nav a { text-decoration: none; color: #0f172a; font-weight: 500; font-size: 14px; transition: color 0.2s; }
 .nav a:hover { color: #2AC2D2; }
+.header-auth-actions { display: flex; align-items: center; gap: 10px; }
 .btn-plan { background: #052659; color: white; padding: 10px 24px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 14px; }
+.btn-register { background: #2AC2D2; color: white; padding: 10px 20px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 14px; }
 
 .hero { position: relative; height: 600px; background: linear-gradient(135deg, #052659, #0a3d7a); display: flex; align-items: center; justify-content: center; text-align: center; color: white; overflow: hidden; }
 .hero::before { content: ''; position: absolute; inset: 0; background: url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1920&q=80') center/cover no-repeat; opacity: 0.3; }

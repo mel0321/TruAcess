@@ -7,12 +7,8 @@ import { IconUser, IconBuilding, IconMail, IconLock, IconUserCircle } from '../c
 export function RegisterPage() {
   const [form, setForm] = useState({ full_name: '', email: '', password: '', confirmPassword: '', user_type: 'TRAVELER' as UserType });
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
-  const [verificationRequired, setVerificationRequired] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [emailPreview, setEmailPreview] = useState<string | null>(null);
-  const { register, verifyEmail, resendVerificationCode } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -38,41 +34,12 @@ export function RegisterPage() {
       user_type: form.user_type
     });
     
-    setNotice('');
-    if (result.success && result.requiresVerification) {
-      setVerificationRequired(true);
-      setEmailPreview(result.emailPreview || null);
-      setError('');
-    } else if (result.success) {
+    if (result.success) {
       navigate('/onboarding');
     } else {
       setError(result.message);
     }
     
-    setLoading(false);
-  };
-
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    const result = await verifyEmail(form.email, verificationCode);
-    if (result.success) {
-      navigate('/onboarding');
-      return;
-    }
-    setError(result.message);
-    setLoading(false);
-  };
-
-  const handleResendCode = async () => {
-    setError('');
-    setNotice('');
-    setLoading(true);
-    const result = await resendVerificationCode(form.email);
-    if (result.success) setNotice(result.message);
-    else setError(result.message);
-    if (result.emailPreview) setEmailPreview(result.emailPreview);
     setLoading(false);
   };
 
@@ -91,44 +58,6 @@ export function RegisterPage() {
             {error}
           </div>
         )}
-        {notice && (
-          <div role="status" style={{ background: '#D1FAE5', color: '#065F46', padding: 12, borderRadius: 8, marginBottom: 20, fontSize: 14, textAlign: 'center' }}>
-            {notice}
-          </div>
-        )}
-
-        {verificationRequired ? (
-          <form onSubmit={handleVerify}>
-            <p style={{ color: '#475569', marginBottom: 20, textAlign: 'center' }}>
-              Informe o código de 4 dígitos enviado para <strong>{form.email}</strong> para ativar sua conta.
-            </p>
-            {emailPreview && (
-              <p style={{ textAlign: 'center', marginBottom: 16 }}>
-                <a href={emailPreview} target="_blank" rel="noreferrer">Abrir e-mail de verificação</a>
-              </p>
-            )}
-            <label htmlFor="verification-code" style={{ display: 'block', fontWeight: 600, marginBottom: 8, fontSize: 14 }}>
-              Código de verificação
-            </label>
-            <input
-              id="verification-code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={4}
-              pattern="[0-9]{4}"
-              value={verificationCode}
-              onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, ''))}
-              required
-              style={{ width: '100%', padding: 14, border: '2px solid #E2E8F0', borderRadius: 10, fontSize: 20, letterSpacing: 8, textAlign: 'center', marginBottom: 20 }}
-            />
-            <button type="submit" disabled={loading} style={{ width: '100%', padding: 16, background: '#052659', color: 'white', border: 0, borderRadius: 10, fontWeight: 700, fontSize: 16, cursor: 'pointer' }}>
-              {loading ? 'Verificando...' : 'Confirmar e continuar'}
-            </button>
-            <button type="button" onClick={() => void handleResendCode()} disabled={loading} style={{ width: '100%', padding: 14, marginTop: 12, background: 'transparent', color: '#052659', border: 0, fontWeight: 600, cursor: 'pointer' }}>
-              Reenviar código
-            </button>
-          </form>
-        ) : (
         <form onSubmit={handleRegister}>
           <div style={{marginBottom: '20px'}}>
             <label style={{display: 'block', fontWeight: '600', marginBottom: '10px', fontSize: '14px', color: '#0F172A'}}>Quero usar como</label>
@@ -214,7 +143,6 @@ export function RegisterPage() {
             {loading ? 'Criando conta...' : 'Criar Conta e Continuar'}
           </button>
         </form>
-        )}
 
         <div style={{textAlign: 'center', marginTop: '24px', fontSize: '14px', color: '#64748B', paddingTop: '20px', borderTop: '1px solid #E2E8F0'}}>
           Já tem conta? <Link to="/login" style={{color: '#2AC2D2', textDecoration: 'none', fontWeight: '700'}}>Fazer login</Link>
