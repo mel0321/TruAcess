@@ -48,7 +48,8 @@ type ApiError = { message?: string };
 type Screen = 'home' | 'login' | 'register';
 
 // --- CONFIGURAÇÃO DA API ---
-const API_URL = 'http://192.168.1.15:3000/api'; 
+// ⚠️ IMPORTANTE: Se for testar no celular físico, troque 'localhost' ou '10.0.2.2' pelo IP da sua rede (ex: '192.168.1.15')
+   const API_URL = 'http://192.168.1.15:3000/api'; 
 const api = axios.create({ baseURL: API_URL, timeout: 10000 });
 
 const categories = [
@@ -80,10 +81,12 @@ export default function App() {
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
   
+  // Auth states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   
+  // UI states
   const [loading, setLoading] = useState(false);
   const [placesLoading, setPlacesLoading] = useState(true);
   const [notice, setNotice] = useState('');
@@ -105,7 +108,7 @@ export default function App() {
       const response = await api.get<{ places: Place[] }>('/places', { params: { limit: 100 } });
       setPlaces(response.data.places);
     } catch (loadError) {
-      setError(getErrorMessage(loadError, 'Não foi possível carregar os locais.'));
+      setError(getErrorMessage(loadError, 'Não foi possível carregar os locais. Verifique sua conexão.'));
     } finally {
       setPlacesLoading(false);
     }
@@ -119,6 +122,7 @@ export default function App() {
       setUser(response.data.user);
     } catch (restoreError) {
       await SecureStore.deleteItemAsync('@TruAcess:token');
+      if (axios.isAxiosError(restoreError) && restoreError.response?.status === 401) return;
     }
   };
 
@@ -203,7 +207,54 @@ export default function App() {
     setNotice('Você saiu da sua conta.');
   };
 
-  // Ícones corrigidos para a tela de detalhes
+  // --- RENDERIZADORES DE TELA ---
+
+  const renderAuthScreen = () => (
+    <View style={styles.authCard}>
+      <View style={styles.logoContainer}>
+        <Text style={styles.logoText}>Tru<Text style={styles.logoAccent}>Acess</Text></Text>
+      </View>
+      <Text style={styles.authTitle}>
+        {screen === 'login' ? 'Bem-vindo de volta!' : 'Crie sua conta'}
+      </Text>
+      <Text style={styles.authSubtitle}>
+        {screen === 'login' ? 'Acesse seus locais salvos e planeje sua viagem.' : 'Cadastre-se para salvar destinos acessíveis.'}
+      </Text>
+      
+      {notice ? <View style={styles.noticeBox}><Ionicons name="information-circle" size={18} color="#075985" /><Text style={styles.noticeText}>{notice}</Text></View> : null}
+      {error ? <View style={styles.errorBox}><Ionicons name="alert-circle" size={18} color="#991B1B" /><Text style={styles.errorText}>{error}</Text></View> : null}
+
+      {screen === 'register' && (
+        <View style={styles.inputContainer}>
+          <Ionicons name="person-outline" size={20} color="#94A3B8" />
+          <TextInput value={fullName} onChangeText={setFullName} placeholder="Nome completo" style={styles.input} autoCapitalize="words" />
+        </View>
+      )}
+
+      <View style={styles.inputContainer}>
+        <Ionicons name="mail-outline" size={20} color="#94A3B8" />
+        <TextInput value={email} onChangeText={setEmail} placeholder="E-mail" style={styles.input} keyboardType="email-address" autoCapitalize="none" />
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Ionicons name="lock-closed-outline" size={20} color="#94A3B8" />
+        <TextInput value={password} onChangeText={setPassword} placeholder="Senha (mínimo 6 caracteres)" style={styles.input} secureTextEntry />
+      </View>
+      <Pressable onPress={() => void (screen === 'login' ? handleLogin() : handleRegister())} disabled={loading} style={[styles.primaryButton, loading && styles.disabledButton]}>
+        {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryButtonText}>{screen === 'login' ? 'Entrar' : 'Criar conta'}</Text>}
+      </Pressable>
+
+      <Pressable onPress={() => { setError(''); setNotice(''); setScreen(screen === 'login' ? 'register' : 'login'); }} style={styles.switchAuthButton}>
+        <Text style={styles.switchAuthText}>{screen === 'login' ? 'Não tem conta? Cadastre-se' : 'Já tem uma conta? Faça login'}</Text>
+      </Pressable>
+      
+      <Pressable onPress={() => { setSelectedPlace(null); setScreen('home'); setError(''); setNotice(''); }} style={styles.backHomeButton}>
+        <Ionicons name="arrow-back" size={16} color="#64748B" />
+        <Text style={styles.backHomeText}>Voltar aos locais</Text>
+      </Pressable>
+    </View>
+  );
+
   const renderPlaceDetails = (place: Place) => (
     <ScrollView style={styles.detailsContainer} showsVerticalScrollIndicator={false}>
       <View style={styles.detailsHeader}>
@@ -236,42 +287,19 @@ export default function App() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Acessibilidade</Text>
           <View style={styles.tagsContainer}>
-            {place.has_access_ramp && (
-              <View style={styles.tag}>
-                <Ionicons name="accessibility" size={14} color="#087F8C" />
-                <Text style={styles.tagText}>Rampa de acesso</Text>
+            {[
+              place.has_access_ramp && { label: 'Rampa de acesso', icon: 'accessibility' },
+              place.has_adapted_bathroom && { label: 'Banheiro adaptado', icon: 'water' },
+              place.allows_guide_dog && { label: 'Permite cão-guia', icon: 'paw' },
+              place.has_braille_signage && { label: 'Sinalização Braille', icon: 'eye' },
+              place.has_sign_language_interpreter && { label: 'Intérprete de Libras', icon: 'hand-left' },
+              place.has_asd_friendly_space && { label: 'Espaço TEA', icon: 'brain' },
+            ].filter(Boolean).map((item: any, idx) => (
+              <View key={idx} style={styles.tag}>
+                <Ionicons name={item.icon} size={14} color="#087F8C" />
+                <Text style={styles.tagText}>{item.label}</Text>
               </View>
-            )}
-            {place.has_adapted_bathroom && (
-              <View style={styles.tag}>
-                <Ionicons name="water-outline" size={14} color="#087F8C" />
-                <Text style={styles.tagText}>Banheiro adaptado</Text>
-              </View>
-            )}
-            {place.allows_guide_dog && (
-              <View style={styles.tag}>
-                <Ionicons name="dog" size={14} color="#087F8C" />
-                <Text style={styles.tagText}>Permite cão-guia</Text>
-              </View>
-            )}
-            {place.has_braille_signage && (
-              <View style={styles.tag}>
-                <Ionicons name="eye-outline" size={14} color="#087F8C" />
-                <Text style={styles.tagText}>Sinalização Braille</Text>
-              </View>
-            )}
-            {place.has_sign_language_interpreter && (
-              <View style={styles.tag}>
-                <Ionicons name="hand-left-outline" size={14} color="#087F8C" />
-                <Text style={styles.tagText}>Intérprete de Libras</Text>
-              </View>
-            )}
-            {place.has_asd_friendly_space && (
-              <View style={styles.tag}>
-                <Ionicons name="people-outline" size={14} color="#087F8C" />
-                <Text style={styles.tagText}>Espaço TEA</Text>
-              </View>
-            )}
+            ))}
             {!place.has_access_ramp && !place.has_adapted_bathroom && !place.allows_guide_dog && !place.has_braille_signage && !place.has_sign_language_interpreter && !place.has_asd_friendly_space && (
               <Text style={styles.noInfoText}>Nenhum recurso de acessibilidade informado.</Text>
             )}
@@ -293,6 +321,7 @@ export default function App() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
       
+      {/* HEADER */}
       <View style={styles.header}>
         <Pressable onPress={() => { setSelectedPlace(null); setShowFavorites(false); setScreen('home'); }}>
           <Text style={styles.brand}>Tru<Text style={styles.brandAccent}>Acess</Text></Text>
@@ -319,53 +348,11 @@ export default function App() {
         )}
       </View>
 
+      {/* CONTEÚDO */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
         {screen !== 'home' ? (
           <ScrollView contentContainerStyle={styles.authContainer} keyboardShouldPersistTaps="handled">
-            <View style={styles.authCard}>
-              <View style={styles.logoContainer}>
-                <Text style={styles.logoText}>Tru<Text style={styles.logoAccent}>Acess</Text></Text>
-              </View>
-              <Text style={styles.authTitle}>
-                {screen === 'login' ? 'Bem-vindo de volta!' : 'Crie sua conta'}
-              </Text>
-              <Text style={styles.authSubtitle}>
-                {screen === 'login' ? 'Acesse seus locais salvos.' : 'Cadastre-se para salvar destinos.'}
-              </Text>
-              
-              {notice ? <View style={styles.noticeBox}><Ionicons name="information-circle" size={18} color="#075985" /><Text style={styles.noticeText}>{notice}</Text></View> : null}
-              {error ? <View style={styles.errorBox}><Ionicons name="alert-circle" size={18} color="#991B1B" /><Text style={styles.errorText}>{error}</Text></View> : null}
-
-              {screen === 'register' && (
-                <View style={styles.inputContainer}>
-                  <Ionicons name="person-outline" size={20} color="#94A3B8" />
-                  <TextInput value={fullName} onChangeText={setFullName} placeholder="Nome completo" style={styles.input} autoCapitalize="words" />
-                </View>
-              )}
-
-              <View style={styles.inputContainer}>
-                <Ionicons name="mail-outline" size={20} color="#94A3B8" />
-                <TextInput value={email} onChangeText={setEmail} placeholder="E-mail" style={styles.input} keyboardType="email-address" autoCapitalize="none" />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color="#94A3B8" />
-                <TextInput value={password} onChangeText={setPassword} placeholder="Senha (mínimo 6 caracteres)" style={styles.input} secureTextEntry />
-              </View>
-              
-              <Pressable onPress={() => void (screen === 'login' ? handleLogin() : handleRegister())} disabled={loading} style={[styles.primaryButton, loading && styles.disabledButton]}>
-                {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryButtonText}>{screen === 'login' ? 'Entrar' : 'Cadastrar'}</Text>}
-              </Pressable>
-
-              <Pressable onPress={() => { setError(''); setNotice(''); setScreen(screen === 'login' ? 'register' : 'login'); }} style={styles.switchAuthButton}>
-                <Text style={styles.switchAuthText}>{screen === 'login' ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Faça login'}</Text>
-              </Pressable>
-              
-              <Pressable onPress={() => { setSelectedPlace(null); setScreen('home'); setError(''); setNotice(''); }} style={styles.backHomeButton}>
-                <Ionicons name="arrow-back" size={16} color="#64748B" />
-                <Text style={styles.backHomeText}>Voltar aos locais</Text>
-              </Pressable>
-            </View>
+            {renderAuthScreen()}
           </ScrollView>
         ) : selectedPlace ? (
           renderPlaceDetails(selectedPlace)
@@ -374,7 +361,7 @@ export default function App() {
             <View style={styles.heroSection}>
               <Text style={styles.eyebrow}>TURISMO ACESSÍVEL</Text>
               <Text style={styles.heroTitle}>Encontre seu próximo <Text style={styles.heroTitleAccent}>destino</Text></Text>
-              <Text style={styles.heroSubtitle}>Locais com informações para planejar sua viagem.</Text>
+              <Text style={styles.heroSubtitle}>Locais com informações para planejar sua viagem com autonomia.</Text>
             </View>
 
             {notice && <View style={styles.noticeBox}><Ionicons name="information-circle" size={18} color="#075985" /><Text style={styles.noticeText}>{notice}</Text></View>}
@@ -383,6 +370,7 @@ export default function App() {
             <View style={styles.searchContainer}>
               <Ionicons name="search" size={20} color="#94A3B8" style={styles.searchIcon} />
               <TextInput value={search} onChangeText={setSearch} placeholder="Buscar por local ou cidade" style={styles.searchInput} />
+              {search.length > 0 && <Pressable onPress={() => setSearch('')}><Ionicons name="close-circle" size={20} color="#94A3B8" /></Pressable>}
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
@@ -397,8 +385,15 @@ export default function App() {
               <Pressable onPress={() => setShowFavorites((current) => !current)} style={[styles.favoritesToggle, showFavorites && styles.favoritesToggleActive]}>
                 <Ionicons name={showFavorites ? 'heart' : 'heart-outline'} size={18} color={showFavorites ? '#FFF' : '#052659'} />
                 <Text style={[styles.favoritesToggleText, showFavorites && styles.favoritesToggleTextActive]}>
-                  {showFavorites ? 'Ver todos' : `Salvos (${favorites.length})`}
+                  {showFavorites ? 'Ver todos os locais' : `Meus locais salvos (${favorites.length})`}
                 </Text>
+              </Pressable>
+            )}
+
+            {!user && (
+              <Pressable onPress={() => setScreen('register')} style={styles.signupCallout}>
+                <Ionicons name="star" size={18} color="#087F8C" />
+                <Text style={styles.signupCalloutText}>Cadastre-se para salvar seus locais favoritos</Text>
               </Pressable>
             )}
 
@@ -422,9 +417,9 @@ export default function App() {
                   <View style={styles.cardFooter}>
                     <View style={styles.accessibilityRow}>
                       {place.has_access_ramp && <Ionicons name="accessibility" size={14} color="#087F8C" />}
-                      {place.has_asd_friendly_space && <Ionicons name="people" size={14} color="#087F8C" />}
+                      {place.has_asd_friendly_space && <Ionicons name="brain" size={14} color="#087F8C" />}
                       <Text style={styles.accessibilityText}>
-                        {[place.has_access_ramp && 'Rampa', place.has_asd_friendly_space && 'TEA'].filter(Boolean).join(' · ') || 'Acessível'}
+                        {[place.has_access_ramp && 'Rampa', place.has_asd_friendly_space && 'TEA', place.allows_guide_dog && 'Cão-guia'].filter(Boolean).join(' · ') || 'Acessibilidade básica'}
                       </Text>
                     </View>
                     <Text style={styles.seeMoreText}>Ver detalhes ›</Text>
@@ -448,7 +443,16 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F8FAFC' },
   keyboardView: { flex: 1 },
-  header: { height: 60, paddingHorizontal: 20, backgroundColor: '#FFFFFF', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+  header: {
+    height: 60,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
   brand: { color: '#052659', fontSize: 22, fontWeight: '800' },
   brandAccent: { color: '#2AC2D2' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -481,6 +485,9 @@ const styles = StyleSheet.create({
   favoritesToggleActive: { backgroundColor: '#052659', borderColor: '#052659' },
   favoritesToggleText: { color: '#052659', fontWeight: '700', fontSize: 14 },
   favoritesToggleTextActive: { color: '#FFFFFF' },
+
+  signupCallout: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#F0FDFA', borderRadius: 10, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: '#CCFBF1' },
+  signupCalloutText: { color: '#0F766E', fontWeight: '600', fontSize: 14 },
 
   placeCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   placeCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
@@ -531,7 +538,11 @@ const styles = StyleSheet.create({
   input: { flex: 1, paddingVertical: 14, fontSize: 15, color: '#0F172A', marginLeft: 10 },
   primaryButton: { backgroundColor: '#052659', borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 8, marginBottom: 12 },
   primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  secondaryButton: { borderWidth: 1, borderColor: '#052659', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginVertical: 6 },
+  secondaryButtonText: { color: '#052659', fontSize: 15, fontWeight: '700' },
   disabledButton: { opacity: 0.6 },
+  linkButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 16 },
+  linkText: { color: '#087F8C', fontWeight: '600', fontSize: 14 },
   switchAuthButton: { alignItems: 'center', marginTop: 16, padding: 12 },
   switchAuthText: { color: '#052659', fontWeight: '600', fontSize: 14 },
   backHomeButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8, padding: 12 },
