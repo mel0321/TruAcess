@@ -60,7 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(userData);
       localStorage.setItem('@TruAcess:user', JSON.stringify(userData));
     } catch (error) {
-      console.error('Erro ao carregar usuário:', error);
+      if (!axios.isAxiosError(error) || error.response?.status !== 401) {
+        console.error('Erro ao carregar usuário:', error);
+      }
       localStorage.removeItem('@TruAcess:token');
       localStorage.removeItem('@TruAcess:user');
     } finally {
@@ -75,11 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const savedUser = localStorage.getItem('@TruAcess:user');
       const profile = savedUser ? (JSON.parse(savedUser) as User).profile : undefined;
       const userData = { ...user, profile };
-      
+
       localStorage.setItem('@TruAcess:token', token);
       localStorage.setItem('@TruAcess:user', JSON.stringify(userData));
       setUser(userData);
-      
+
       return { success: true, message: 'Login realizado com sucesso!' };
     } catch (error: unknown) {
       const apiError = axios.isAxiosError<ApiErrorResponse>(error) ? error.response?.data : undefined;
@@ -214,22 +216,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      loading, 
-      login, 
-      register, 
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      login,
+      register,
       verifyEmail,
       resendVerificationCode,
       requestPasswordReset,
       resetPassword,
-      logout, 
-      deleteAccount, 
-      updateUser, 
-      updateUserProfile, 
-      isProfileComplete, 
-      getOnboardingStep, 
-      refreshUser 
+      logout,
+      deleteAccount,
+      updateUser,
+      updateUserProfile,
+      isProfileComplete,
+      getOnboardingStep,
+      refreshUser
     }}>
       {children}
     </AuthContext.Provider>
