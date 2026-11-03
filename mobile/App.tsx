@@ -33,6 +33,7 @@ type Place = {
   full_address?: string;
   price: number;
   main_image?: string | null;
+  is_public?: boolean;
   has_access_ramp: boolean;
   has_adapted_bathroom: boolean;
   allows_guide_dog: boolean;
@@ -50,14 +51,22 @@ const categories = [
   { value: 'OTHERS', label: 'Outros' },
 ];
 
-// ✅ Chave válida (sem @ e :)
 const favoriteStorageKey = (userId: number) => `TruAcessFavoritos${userId}`;
 
-// Formata preço (detecta se está em centavos ou reais)
-const formatPrice = (price: number | null | undefined) => {
-  if (price == null || price === 0) return 'Gratuito';
-  const valor = price > 1000 ? price : price / 100;
-  return `R$ ${valor.toFixed(2).replace('.', ',')}`;
+// ✅ FORMATAÇÃO DE PREÇO CORRIGIDA
+const formatPrice = (price: number | null | undefined): string => {
+  if (price == null || price === 0 || price === 0.0) return 'Gratuito';
+  // Se o valor for muito pequeno (ex: 0.70), provavelmente está em reais com centavos
+  if (price < 10) return `R$ ${price.toFixed(2).replace('.', ',')}`;
+  // Se for um valor normal (ex: 70, 150, 250), está em reais
+  if (price < 10000) return `R$ ${price.toFixed(2).replace('.', ',')}`;
+  // Se for muito grande (ex: 7000), provavelmente está em centavos
+  return `R$ ${(price / 100).toFixed(2).replace('.', ',')}`;
+};
+
+// Verifica se é gratuito
+const isFree = (price: number | null | undefined): boolean => {
+  return price == null || price === 0 || price === 0.0;
 };
 
 export default function App() {
@@ -92,9 +101,15 @@ export default function App() {
     try {
       const res = await api.get<any>('/places', { params: { limit: 100 } });
       const data = res.data;
-      setPlaces(Array.isArray(data) ? data : (data.places || []));
+      const placesArray = Array.isArray(data) ? data : (data.places || []);
+      console.log('📍 Locais carregados:', placesArray.length);
+      placesArray.forEach(p => {
+        console.log(`- ${p.establishment_name} | Preço: ${p.price} | Formatado: ${formatPrice(p.price)} | Público: ${p.is_public}`);
+      });
+      setPlaces(placesArray);
       setError('');
     } catch (err: any) {
+      console.error('❌ Erro ao carregar locais:', err.message);
       setError('Erro ao carregar locais. Verifique o IP da API: ' + API_URL);
     } finally {
       setPlacesLoading(false);
@@ -220,7 +235,7 @@ export default function App() {
     );
   }
 
-  // --- TELA DE DETALHES COM RESUMO ---
+  // --- TELA DE DETALHES ---
   if (selectedPlace) {
     const hasAnyAccessibility =
       selectedPlace.has_access_ramp ||
@@ -231,6 +246,8 @@ export default function App() {
       selectedPlace.has_asd_friendly_space;
 
     const placeCategoryLabel = categories.find(c => c.value === selectedPlace.category)?.label || selectedPlace.category;
+    const free = isFree(selectedPlace.price);
+    const isPublic = selectedPlace.is_public === true;
 
     return (
       <SafeAreaView style={styles.safe}>
@@ -242,17 +259,16 @@ export default function App() {
             <Text style={styles.detailsCategory}>{placeCategoryLabel}</Text>
           </View>
 
-          {/* FOTO REAL DO LOCAL */}
-          <View style={styles.detailsImage}>
+          <View style={styles.detailsImageContainer}>
             {selectedPlace.main_image ? (
               <Image
                 source={{ uri: selectedPlace.main_image }}
-                style={{ width: '100%', height: '100%' }}
+                style={styles.detailsImage}
                 resizeMode="cover"
               />
             ) : (
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="image-outline" size={48} color="#CBD5E1" />
+              <View style={styles.detailsImagePlaceholder}>
+                <Ionicons name="image-outline" size={64} color="#CBD5E1" />
                 <Text style={styles.detailsImageText}>Sem foto disponível</Text>
               </View>
             )}
@@ -264,6 +280,24 @@ export default function App() {
               <Ionicons name="location" size={16} color="#64748B" />
               <Text style={styles.locText}>{selectedPlace.full_address || `${selectedPlace.city}, ${selectedPlace.state}`}</Text>
             </View>
+
+            {/* ✅ BADGES: GRATUITO E PÚBLICO */}
+            {(free || isPublic) && (
+              <View style={styles.badgesRow}>
+                {free && (
+                  <View style={styles.badgeFree}>
+                    <Ionicons name="gift" size={14} color="#059669" />
+                    <Text style={styles.badgeFreeText}>Gratuito</Text>
+                  </View>
+                )}
+                {isPublic && (
+                  <View style={styles.badgePublic}>
+                    <Ionicons name="globe" size={14} color="#0284C7" />
+                    <Text style={styles.badgePublicText}>Espaço Público</Text>
+                  </View>
+                )}
+              </View>
+            )}
 
             {/* CARD DE RESUMO */}
             <View style={styles.summaryCard}>
@@ -277,7 +311,9 @@ export default function App() {
 
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Preço</Text>
-                <Text style={styles.summaryPrice}>{formatPrice(selectedPlace.price)}</Text>
+                <Text style={free ? styles.summaryPriceFree : styles.summaryPrice}>
+                  {formatPrice(selectedPlace.price)}
+                </Text>
               </View>
               <View style={styles.summaryDivider} />
 
@@ -296,13 +332,11 @@ export default function App() {
               </View>
             </View>
 
-            {/* SOBRE */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Sobre</Text>
               <Text style={styles.desc}>{selectedPlace.description || 'Descrição não disponível.'}</Text>
             </View>
 
-            {/* RECURSOS DE ACESSIBILIDADE */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Recursos de Acessibilidade</Text>
               <View style={styles.tags}>
@@ -415,34 +449,57 @@ export default function App() {
           {placesLoading ? (
             <ActivityIndicator color="#2AC2D2" size="large" style={styles.spinner} />
           ) : filteredPlaces.length > 0 ? (
-            filteredPlaces.map((place) => (
-              <Pressable key={place.id} onPress={() => setSelectedPlace(place)} style={styles.card}>
-                {place.main_image && (
-                  <Image
-                    source={{ uri: place.main_image }}
-                    style={styles.cardImage}
-                    resizeMode="cover"
-                  />
-                )}
-                <View style={styles.cardBody}>
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.cardCat}>{categories.find(c => c.value === place.category)?.label || place.category}</Text>
-                    <Pressable onPress={(e) => { e.stopPropagation(); toggleFavorite(place.id); }}>
-                      <Ionicons name={favorites.includes(place.id) ? 'heart' : 'heart-outline'} size={22} color={favorites.includes(place.id) ? '#EF4444' : '#94A3B8'} />
-                    </Pressable>
+            filteredPlaces.map((place) => {
+              const free = isFree(place.price);
+              const isPublic = place.is_public === true;
+              return (
+                <Pressable key={place.id} onPress={() => setSelectedPlace(place)} style={styles.card}>
+                  <View style={styles.cardImageContainer}>
+                    {place.main_image ? (
+                      <Image
+                        source={{ uri: place.main_image }}
+                        style={styles.cardImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.cardImagePlaceholder}>
+                        <Ionicons name="image-outline" size={40} color="#CBD5E1" />
+                        <Text style={styles.cardImagePlaceholderText}>Sem foto</Text>
+                      </View>
+                    )}
+                    {/* ✅ BADGES NO CARD */}
+                    {(free || isPublic) && (
+                      <View style={styles.cardBadges}>
+                        {free && <View style={styles.cardBadgeFree}><Text style={styles.cardBadgeFreeText}>Grátis</Text></View>}
+                        {isPublic && <View style={styles.cardBadgePublic}><Text style={styles.cardBadgePublicText}>Público</Text></View>}
+                      </View>
+                    )}
                   </View>
-                  <Text style={styles.cardName}>{place.establishment_name}</Text>
-                  <View style={styles.locRow}>
-                    <Ionicons name="location" size={14} color="#64748B" />
-                    <Text style={styles.locText}>{place.city}, {place.state}</Text>
+
+                  <View style={styles.cardBody}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardCat}>{categories.find(c => c.value === place.category)?.label || place.category}</Text>
+                      <Pressable onPress={(e) => { e.stopPropagation(); toggleFavorite(place.id); }}>
+                        <Ionicons name={favorites.includes(place.id) ? 'heart' : 'heart-outline'} size={22} color={favorites.includes(place.id) ? '#EF4444' : '#94A3B8'} />
+                      </Pressable>
+                    </View>
+                    <Text style={styles.cardName}>{place.establishment_name}</Text>
+                    <View style={styles.locRow}>
+                      <Ionicons name="location" size={14} color="#64748B" />
+                      <Text style={styles.locText}>{place.city}, {place.state}</Text>
+                    </View>
+                    {/* ✅ PREÇO NO CARD */}
+                    <Text style={[styles.cardPrice, free && styles.cardPriceFree]}>
+                      {formatPrice(place.price)}
+                    </Text>
+                    {place.description && <Text numberOfLines={2} style={styles.desc}>{place.description}</Text>}
+                    <View style={styles.cardFooter}>
+                      <Text style={styles.seeMore}>Ver detalhes ›</Text>
+                    </View>
                   </View>
-                  {place.description && <Text numberOfLines={2} style={styles.desc}>{place.description}</Text>}
-                  <View style={styles.cardFooter}>
-                    <Text style={styles.seeMore}>Ver detalhes ›</Text>
-                  </View>
-                </View>
-              </Pressable>
-            ))
+                </Pressable>
+              );
+            })
           ) : (
             <View style={styles.empty}>
               <Ionicons name="search" size={48} color="#CBD5E1" />
@@ -483,15 +540,25 @@ const styles = StyleSheet.create({
   favToggleText: { color: '#052659', fontWeight: '700', fontSize: 14 },
   favToggleTextActive: { color: '#FFF' },
 
-  // Card da lista
+  // Card
   card: { backgroundColor: '#FFF', borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden' },
-  cardImage: { width: '100%', height: 160 },
+  cardImageContainer: { width: '100%', height: 160, backgroundColor: '#E2E8F0', overflow: 'hidden', position: 'relative' },
+  cardImage: { width: '100%', height: '100%' },
+  cardImagePlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },
+  cardImagePlaceholderText: { color: '#94A3B8', fontSize: 14, fontWeight: '600' },
+  cardBadges: { position: 'absolute', top: 12, left: 12, flexDirection: 'row', gap: 6 },
+  cardBadgeFree: { backgroundColor: '#059669', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  cardBadgeFreeText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
+  cardBadgePublic: { backgroundColor: '#0284C7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  cardBadgePublicText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
   cardBody: { padding: 16 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   cardCat: { color: '#087F8C', textTransform: 'uppercase', fontSize: 11, fontWeight: '800' },
   cardName: { color: '#052659', fontWeight: '700', fontSize: 17, marginBottom: 6 },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
   locText: { color: '#64748B', fontSize: 13 },
+  cardPrice: { color: '#052659', fontSize: 16, fontWeight: '800', marginBottom: 8 },
+  cardPriceFree: { color: '#059669' },
   desc: { color: '#475569', fontSize: 14, lineHeight: 20, marginBottom: 12 },
   cardFooter: { flexDirection: 'row', justifyContent: 'flex-end', borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 12 },
   seeMore: { color: '#2AC2D2', fontSize: 13, fontWeight: '700' },
@@ -505,14 +572,23 @@ const styles = StyleSheet.create({
   detailsHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
   backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
   detailsCategory: { color: '#2AC2D2', textTransform: 'uppercase', fontSize: 12, fontWeight: '800' },
-  detailsImage: { height: 220, backgroundColor: '#E2E8F0', overflow: 'hidden' },
+  detailsImageContainer: { height: 220, backgroundColor: '#E2E8F0', overflow: 'hidden' },
+  detailsImage: { width: '100%', height: '100%' },
+  detailsImagePlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },
   detailsImageText: { color: '#94A3B8', fontWeight: '600' },
   detailsContent: { padding: 20 },
   detailsTitle: { color: '#052659', fontSize: 24, fontWeight: '800', marginBottom: 8 },
   section: { marginTop: 24 },
   sectionTitle: { color: '#052659', fontWeight: '700', fontSize: 18, marginBottom: 12 },
 
-  // Card de Resumo
+  // Badges na tela de detalhes
+  badgesRow: { flexDirection: 'row', gap: 8, marginTop: 12, marginBottom: 8 },
+  badgeFree: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#D1FAE5', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  badgeFreeText: { color: '#059669', fontSize: 13, fontWeight: '700' },
+  badgePublic: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#E0F2FE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  badgePublicText: { color: '#0284C7', fontSize: 13, fontWeight: '700' },
+
+  // Resumo
   summaryCard: {
     backgroundColor: '#FFF',
     borderRadius: 16,
@@ -520,55 +596,18 @@ const styles = StyleSheet.create({
     marginTop: 20,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  summaryTitle: {
-    color: '#052659',
-    fontSize: 22,
-    fontWeight: '800',
-    marginBottom: 16,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  summaryLabel: {
-    color: '#64748B',
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  summaryValue: {
-    color: '#052659',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  summaryPrice: {
-    color: '#052659',
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  summaryDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-  },
-  accessibilityRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  accessibilityScore: {
-    color: '#2AC2D2',
-    fontSize: 16,
-    fontWeight: '800',
-  },
+  summaryTitle: { color: '#052659', fontSize: 22, fontWeight: '800', marginBottom: 16 },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
+  summaryLabel: { color: '#64748B', fontSize: 15, fontWeight: '500' },
+  summaryValue: { color: '#052659', fontSize: 15, fontWeight: '700' },
+  summaryPrice: { color: '#052659', fontSize: 18, fontWeight: '800' },
+  summaryPriceFree: { color: '#059669', fontSize: 18, fontWeight: '800' },
+  summaryDivider: { height: 1, backgroundColor: '#F1F5F9' },
+  accessibilityRating: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  accessibilityScore: { color: '#2AC2D2', fontSize: 16, fontWeight: '800' },
 
-  // Tags de acessibilidade
+  // Tags
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tag: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F0F9FF', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#BAE6FD' },
   tagText: { color: '#052659', fontSize: 13, fontWeight: '600' },
@@ -578,7 +617,7 @@ const styles = StyleSheet.create({
   saveBtnText: { color: '#052659', fontSize: 16, fontWeight: '700' },
   saveBtnTextActive: { color: '#FFF' },
 
-  // Autenticação
+  // Auth
   authContainer: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   authCard: { backgroundColor: '#FFF', borderRadius: 24, padding: 28, borderWidth: 1, borderColor: '#E2E8F0' },
   logoText: { fontSize: 32, fontWeight: '800', color: '#052659', textAlign: 'center', marginBottom: 8 },
