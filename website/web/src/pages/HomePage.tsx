@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { Header } from '../components/Header';
-import { IconShield, IconStar, IconMapPin, IconUsers, IconRamp, IconBrain, IconCulture, IconBeach, IconMuseum, IconRestaurant, IconTrail, IconHotel } from '../components/Icons';
+import { IconShield, IconStar, IconMapPin, IconUsers, IconRamp, IconBrain, IconCulture, IconMuseum, IconRestaurant, IconHotel } from '../components/Icons';
 import type { Place } from '../types';
+import { getPlaceCategoryLabel } from '../utils/placeCategories';
 
 export function HomePage() {
   const [places, setPlaces] = useState<Place[]>([]);
@@ -18,13 +19,16 @@ export function HomePage() {
   const uniqueCategories = Array.from(new Set(places.map(p => p.category))).filter(Boolean);
 
   const getCategoryIcon = (category: string) => {
-    const cat = category?.toLowerCase();
-    if (cat?.includes('hotel')) return <IconHotel width={20} height={20} />;
-    if (cat?.includes('praia')) return <IconBeach width={20} height={20} />;
-    if (cat?.includes('museu')) return <IconMuseum width={20} height={20} />;
-    if (cat?.includes('restaurante')) return <IconRestaurant width={20} height={20} />;
-    if (cat?.includes('trilha')) return <IconTrail width={20} height={20} />;
-    return <IconCulture width={20} height={20} />;
+    switch (category) {
+      case 'ACCOMMODATION':
+        return <IconHotel width={20} height={20} />;
+      case 'GASTRONOMY':
+        return <IconRestaurant width={20} height={20} />;
+      case 'TOURIST_ATTRACTION':
+        return <IconMuseum width={20} height={20} />;
+      default:
+        return <IconCulture width={20} height={20} />;
+    }
   };
 
   const filteredPlaces = places.filter(place => selectedCategory === 'todos' || place.category === selectedCategory);
@@ -62,7 +66,7 @@ export function HomePage() {
             <button onClick={() => setSelectedCategory('todos')} style={{ padding: '8px 20px', borderRadius: '100px', border: 'none', cursor: 'pointer', background: selectedCategory === 'todos' ? '#052659' : '#F1F5F9', color: selectedCategory === 'todos' ? 'white' : '#64748B', fontWeight: 600, fontSize: '14px' }}>Todos</button>
             {uniqueCategories.map((cat, index) => (
               <button key={index} onClick={() => setSelectedCategory(cat)} style={{ padding: '8px 20px', borderRadius: '100px', border: 'none', cursor: 'pointer', background: selectedCategory === cat ? '#052659' : '#F1F5F9', color: selectedCategory === cat ? 'white' : '#64748B', fontWeight: 600, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {getCategoryIcon(cat)} {cat}
+                {getCategoryIcon(cat)} {getPlaceCategoryLabel(cat)}
               </button>
             ))}
           </div>
@@ -84,7 +88,13 @@ export function HomePage() {
                     {place.has_access_ramp && <div className="badge-access"><IconRamp width={16} height={16} /> Acesso Físico</div>}
                     {place.has_asd_friendly_space && <div className="badge-access"><IconBrain width={16} height={16} /> TEA</div>}
                   </div>
-                  {(place.has_sign_language_interpreter || place.has_braille_signage) && <div className="stars">★★★★★</div>}
+                  {(place.has_sign_language_interpreter || place.has_braille_signage) && (
+                    <div className="stars" aria-label="Recursos de acessibilidade visual ou auditiva">
+                      {[0, 1, 2, 3, 4].map((star) => (
+                        <IconStar key={star} width={14} height={14} fill="#F59E0B" stroke="#F59E0B" />
+                      ))}
+                    </div>
+                  )}
                   <div className="destination-title">{place.establishment_name}</div>
                 </div>
               </Link>

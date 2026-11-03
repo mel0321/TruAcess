@@ -4,7 +4,8 @@ import api from '../services/api';
 import { Header } from '../components/Header';
 import { useFavorites } from '../context/FavoritesContext';
 import { useAuth } from '../context/AuthContext';
-import { IconRamp, IconBrain, IconLibras, IconBraille, IconMapPin, IconStar, IconHeart, IconMessageCircle, IconArrowLeft, IconDog } from '../components/Icons';
+import { IconRamp, IconBrain, IconLibras, IconBraille, IconMapPin, IconStar, IconHeart, IconMessageCircle, IconArrowLeft, IconDog, IconX, IconPlus } from '../components/Icons';
+import { getPlaceCategoryLabel } from '../utils/placeCategories';
 import type { Place, Review } from '../types';
 
 interface PlaceResponse {
@@ -25,13 +26,6 @@ function normalizeReview(review: ReviewsResponse['reviews'][number]): Review {
   );
   return { ...review, accessibility_rating: accessibilityRating };
 }
-
-const categoryLabels: Record<string, string> = {
-  ACCOMMODATION: 'Hospedagem',
-  GASTRONOMY: 'Gastronomia',
-  TOURIST_ATTRACTION: 'Atração turística',
-  OTHERS: 'Outro',
-};
 
 function formatPrice(price: number | null): string {
   if (price === null || price === 0) return 'Gratuito';
@@ -164,7 +158,7 @@ export function PlaceDetailsPage() {
           <div className="container">
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px'}}>
               <div>
-                <div style={{display: 'inline-block', background: '#2AC2D2', color: 'white', padding: '4px 12px', borderRadius: '100px', fontSize: '12px', fontWeight: 700, marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>{categoryLabels[place.category] || place.category}</div>
+                <div style={{display: 'inline-block', background: '#2AC2D2', color: 'white', padding: '4px 12px', borderRadius: '100px', fontSize: '12px', fontWeight: 700, marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>{getPlaceCategoryLabel(place.category)}</div>
                 <h1 style={{fontSize: '48px', fontWeight: 800, marginBottom: '12px', lineHeight: 1.1}}>{place.establishment_name}</h1>
                 <p style={{fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.9}}>
                   <IconMapPin width={18} height={18} /> {place.full_address || `${place.city}, ${place.state}`}
@@ -179,7 +173,7 @@ export function PlaceDetailsPage() {
                   {isFavorite(place.id) ? 'Salvo' : 'Salvar'}
                 </button>
                 <div style={{background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', padding: '12px 20px', borderRadius: '100px'}}>
-                  <span style={{fontWeight: 700, fontSize: '18px'}}>♿ {avgAccessibility}</span>
+                  <span style={{fontWeight: 700, fontSize: '18px', display: 'inline-flex', alignItems: 'center', gap: 6}}><IconRamp width={20} height={20} /> {avgAccessibility}</span>
                   <span style={{marginLeft: '8px', fontSize: '13px', opacity: 0.9}}>({reviews.length} avaliações)</span>
                 </div>
               </div>
@@ -238,7 +232,7 @@ export function PlaceDetailsPage() {
                   }
                   setShowReviewForm(!showReviewForm);
                 }} style={{background: showReviewForm ? '#E2E8F0' : '#052659', color: showReviewForm ? '#052659' : 'white', border: 'none', padding: '12px 24px', borderRadius: '100px', fontWeight: 600, cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                  {showReviewForm ? '✕ Cancelar' : user ? '✚ Avaliar este local' : '✚ Entre para avaliar'}
+                  {showReviewForm ? <><IconX width={16} height={16} /> Cancelar</> : <><IconPlus width={16} height={16} /> {user ? 'Avaliar este local' : 'Entre para avaliar'}</>}
                 </button>
               </div>
 
@@ -348,7 +342,7 @@ export function PlaceDetailsPage() {
               <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
                 <div style={{display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F1F5F9'}}>
                   <span style={{color: '#64748B', fontSize: '14px'}}>Categoria</span>
-                  <span style={{fontWeight: 600, color: '#052659', fontSize: '14px'}}>{categoryLabels[place.category] || place.category}</span>
+                  <span style={{fontWeight: 600, color: '#052659', fontSize: '14px'}}>{getPlaceCategoryLabel(place.category)}</span>
                 </div>
                 <div style={{display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F1F5F9'}}>
                   <span style={{color: '#64748B', fontSize: '14px'}}>Preço</span>
@@ -360,7 +354,7 @@ export function PlaceDetailsPage() {
                 </div>
                 <div style={{display: 'flex', justifyContent: 'space-between', padding: '12px 0'}}>
                   <span style={{color: '#64748B', fontSize: '14px'}}>Acessibilidade</span>
-                  <span style={{fontWeight: 700, color: '#2AC2D2', fontSize: '14px'}}>♿ {avgAccessibility}/5</span>
+                  <span style={{fontWeight: 700, color: '#2AC2D2', fontSize: '14px', display: 'inline-flex', alignItems: 'center', gap: 4}}><IconRamp width={16} height={16} /> {avgAccessibility}/5</span>
                 </div>
               </div>
             </div>

@@ -3,14 +3,8 @@ import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { IconBrain, IconMapPin, IconRamp } from '../components/Icons';
 import api from '../services/api';
+import { placeCategories } from '../utils/placeCategories';
 import type { Place } from '../types';
-
-const categories = [
-  { value: 'ACCOMMODATION', label: 'Hospedagem' },
-  { value: 'GASTRONOMY', label: 'Gastronomia' },
-  { value: 'TOURIST_ATTRACTION', label: 'Atrações' },
-  { value: 'OTHERS', label: 'Outros' },
-];
 
 export function DestinationsPage() {
   const [places, setPlaces] = useState<Place[]>([]);
@@ -93,7 +87,7 @@ export function DestinationsPage() {
                 style={{ flex: '0 1 220px', padding: '13px 16px', border: '1px solid #CBD5E1', borderRadius: 8, background: 'white', font: 'inherit' }}
               >
                 <option value="">Todas as categorias</option>
-                {categories.map((item) => (
+                {placeCategories.map((item) => (
                   <option key={item.value} value={item.value}>{item.label}</option>
                 ))}
               </select>
