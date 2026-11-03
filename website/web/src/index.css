@@ -82,21 +82,14 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
 .footer ul a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 14px; transition: color 0.2s; }
 .footer ul a:hover { color: #2AC2D2; }
 .footer-bottom { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; text-align: center; font-size: 12px; color: rgba(255,255,255,0.4); }
-
-.auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; padding: 24px; }
-.auth-card { background: white; padding: 48px; border-radius: 16px; box-shadow: 0 10px 40px rgba(5, 38, 89, 0.08); max-width: 480px; width: 100%; }
-.form-input { width: 100%; padding: 14px 16px; border: 2px solid #E2E8F0; border-radius: 8px; font-size: 15px; outline: none; transition: border-color 0.2s; box-sizing: border-box; margin-bottom: 20px; font-family: inherit; }
-.form-input:focus { border-color: #052659; }
-.role-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
-.role-btn { padding: 14px; border: 2px solid #E2E8F0; border-radius: 8px; background: white; color: #64748B; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; font-family: inherit; }
-.role-btn.active { border-color: #052659; background: #F0F9FF; color: #052659; }
-.btn-submit { width: 100%; padding: 16px; background: #052659; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 16px; cursor: pointer; transition: background 0.3s; font-family: inherit; }
-.btn-submit:hover { background: #2AC2D2; }
+.mobile-menu-toggle { display: none; }
 
 @media (max-width: 1024px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 768px) {
   .hero h1 { font-size: 36px; }
   .nav { display: none; }
+  .nav.nav-open { display: flex; position: absolute; top: 100%; left: 0; right: 0; padding: 16px 24px; flex-direction: column; align-items: flex-start; gap: 16px; background: white; box-shadow: 0 8px 16px rgba(0,0,0,0.08); }
+  .mobile-menu-toggle { display: inline-flex; align-items: center; justify-content: center; padding: 8px 12px; border: 1px solid #052659; border-radius: 6px; background: white; color: #052659; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
   .features-grid { grid-template-columns: repeat(3, 1fr); }
   .destinations-grid { grid-template-columns: 1fr; }
   .about-content h2 { font-size: 28px; }

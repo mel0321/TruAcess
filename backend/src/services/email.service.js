@@ -51,17 +51,24 @@ async function getTransporter() {
  * @param {string} code - Código de 4 dígitos
  * @param {string} userName - Nome do usuário (opcional)
  */
-export async function sendVerificationCodeEmail(to, code, userName = '') {
+export async function sendVerificationCodeEmail(to, code, userName = '', purpose = 'verification') {
   const transporter = await getTransporter();
   const from = process.env.EMAIL_FROM || '"AccessTrip" <no-reply@accesstrip.com>';
 
-  const subject = `Seu código de verificação AccessTrip: ${code}`;
+  const isPasswordReset = purpose === 'password-reset';
+  const subject = isPasswordReset
+    ? 'Seu código para redefinir a senha AccessTrip'
+    : `Seu código de verificação AccessTrip: ${code}`;
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
       <h2 style="color: #2b6cb0; text-align: center;">AccessTrip</h2>
       <p>Olá, <strong>${userName || 'Viajante / Parceiro'}</strong>!</p>
-      <p>Obrigado por se cadastrar na <strong>AccessTrip</strong>, a plataforma de turismo acessível.</p>
-      <p>Utilize o código de 4 dígitos abaixo para verificar seu endereço de e-mail e liberar seu acesso:</p>
+      <p>${isPasswordReset
+        ? 'Recebemos uma solicitação para redefinir a senha da sua conta.'
+        : 'Obrigado por se cadastrar na <strong>AccessTrip</strong>, a plataforma de turismo acessível.'}</p>
+      <p>${isPasswordReset
+        ? 'Utilize este código para redefinir sua senha:'
+        : 'Utilize o código de 4 dígitos abaixo para verificar seu endereço de e-mail e liberar seu acesso:'}</p>
       <div style="text-align: center; margin: 30px 0;">
         <span style="display: inline-block; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #2b6cb0; background: #ebf8ff; padding: 12px 24px; border-radius: 6px; border: 1px dashed #3182ce;">
           ${code}
@@ -71,7 +78,7 @@ export async function sendVerificationCodeEmail(to, code, userName = '') {
         Este código é válido por <strong>24 horas</strong>.
       </p>
       <p style="color: #718096; font-size: 12px; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
-        Se você não solicitou este cadastro, desconsidere este e-mail.
+        Se você não solicitou ${isPasswordReset ? 'a redefinição' : 'este cadastro'}, desconsidere este e-mail.
       </p>
     </div>
   `;
@@ -80,7 +87,9 @@ export async function sendVerificationCodeEmail(to, code, userName = '') {
     from,
     to,
     subject,
-    text: `Seu código de verificação AccessTrip é: ${code}. Válido por 24 horas.`,
+    text: isPasswordReset
+      ? `Seu código para redefinir a senha AccessTrip é: ${code}. Válido por 24 horas.`
+      : `Seu código de verificação AccessTrip é: ${code}. Válido por 24 horas.`,
     html
   });
 

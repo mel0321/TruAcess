@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { randomInt } from 'node:crypto';
 import db from '../../database/connection.js';
 import { AppError } from '../middlewares/error.middleware.js';
 import { sendVerificationCodeEmail } from '../services/email.service.js';
@@ -25,7 +26,7 @@ function generateToken(user) {
  * Gera código de verificação numérico de 4 dígitos
  */
 function generate4DigitCode() {
-  return Math.floor(1000 + Math.random() * 9000).toString();
+  return randomInt(1000, 10000).toString();
 }
 
 /**
@@ -202,6 +203,72 @@ export async function resendVerificationCode(req, res, next) {
       message: 'Novo código de verificação enviado para seu e-mail (válido por 24 horas).',
       emailPreview: emailInfo?.previewUrl || null
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Solicita código temporário para redefinição de senha
+ */
+export async function requestPasswordReset(req, res, next) {
+  try {
+    const email = req.body.email?.toLowerCase().trim();
+    if (!email) {
+      throw new AppError('O e-mail é obrigatório.', 400);
+    }
+
+    const user = await db('users').where({ email, email_verified: 1 }).first();
+    let emailPreview = null;
+    if (user) {
+      const code = generate4DigitCode();
+      await db('users').where({ id: user.id }).update({ email_code: code });
+      console.log(`Código de recuperação de senha gerado para ${email}.`);
+      const emailInfo = await sendVerificationCodeEmail(email, code, user.full_name, 'password-reset');
+      emailPreview = emailInfo?.previewUrl || null;
+    }
+
+    return res.status(200).json({
+      message: 'Se houver uma conta verificada com esse e-mail, enviaremos um código de recuperação.',
+      emailPreview
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Redefine a senha usando o código temporário enviado por e-mail
+ */
+export async function resetPassword(req, res, next) {
+  try {
+    const email = req.body.email?.toLowerCase().trim();
+    const code = req.body.code?.toString().trim();
+    const { password } = req.body;
+
+    if (!email || !code || !password) {
+      throw new AppError('E-mail, código e nova senha são obrigatórios.', 400);
+    }
+    if (password.length < 6) {
+      throw new AppError('A senha deve ter pelo menos 6 caracteres.', 400);
+    }
+
+    const user = await db('users').where({ email, email_verified: 1 }).first();
+    if (!user || !user.email_code || user.email_code !== code) {
+      throw new AppError('Código de recuperação inválido.', 400);
+    }
+
+    const updatedAt = new Date(user.updated_at || user.created_at).getTime();
+    if (Date.now() - updatedAt > 24 * 60 * 60 * 1000) {
+      throw new AppError('O código de recuperação expirou. Solicite um novo código.', 400);
+    }
+
+    await db('users').where({ id: user.id }).update({
+      password: await bcrypt.hash(password, 10),
+      email_code: null
+    });
+
+    return res.status(200).json({ message: 'Senha redefinida com sucesso. Você já pode entrar.' });
   } catch (error) {
     next(error);
   }
