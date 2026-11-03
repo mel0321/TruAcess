@@ -329,12 +329,18 @@ export function PlaceDetailsPage() {
                 <IconMapPin width={22} height={22} style={{color: '#2AC2D2'}} /> Localização
               </h3>
               <p style={{color: '#64748B', marginBottom: '16px', fontSize: '14px', lineHeight: '1.6'}}>{place.full_address || `${place.city}, ${place.state}`}</p>
-              <div style={{background: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%)', height: '180px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B', border: '1px solid #BAE6FD'}}>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.full_address || `${place.city}, ${place.state}`)}`}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Abrir ${place.establishment_name} no Google Maps`}
+                style={{ background: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%)', minHeight: 180, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#052659', border: '1px solid #BAE6FD', textDecoration: 'none' }}
+              >
                 <div style={{textAlign: 'center'}}>
                   <IconMapPin width={32} height={32} style={{color: '#2AC2D2', marginBottom: '8px'}} />
-                  <p style={{fontSize: '13px', margin: 0}}>Mapa interativo</p>
+                  <p style={{fontSize: '13px', margin: 0, fontWeight: 600}}>Abrir no Google Maps</p>
                 </div>
-              </div>
+              </a>
             </div>
 
             <div style={{background: 'white', padding: '28px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)'}}>
