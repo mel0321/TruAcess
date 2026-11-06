@@ -15,7 +15,7 @@ export function Header() {
 
   return (
     <header className="header">
-      <div className="container header-inner">
+      <div className={`container header-inner${user ? ' header-inner-authenticated' : ''}`}>
         <Link to="/" className="logo">
           <span className="tru">Tru</span>
           <span className="access">Acess</span>
@@ -34,23 +34,23 @@ export function Header() {
         >
           {menuOpen ? 'Fechar' : 'Menu'}
         </button>
-        <div>
+        <div className={user ? 'header-user-actions' : undefined}>
           {user ? (
             <>
-              <Link to="/perfil" style={{marginRight: '16px', textDecoration: 'none', color: '#0f172a', fontWeight: 600, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Link to="/perfil" className="header-profile-link">
                 {user.profile_picture ? (
-                  <img src={user.profile_picture} alt="Foto" style={{width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover'}} />
+                  <img src={user.profile_picture} alt="Foto do perfil" className="header-profile-avatar" />
                 ) : (
-                  <div style={{width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #052659, #2AC2D2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '12px', fontWeight: 800}}>
+                  <div className="header-profile-avatar header-profile-initials">
                     {getInitials()}
                   </div>
                 )}
-                Olá, {user.full_name?.split(' ')[0]}
+                <span className="header-profile-name">Olá, {user.full_name?.split(' ')[0]}</span>
               </Link>
               {user.user_type === 'BUSINESS' && (
-                <Link to="/dashboard" style={{marginRight: '16px', textDecoration: 'none', color: '#0f172a', fontWeight: 500, fontSize: '14px'}}>Painel</Link>
+                <Link to="/dashboard" className="header-dashboard-link">Painel</Link>
               )}
-              <button onClick={() => { logout(); navigate('/login'); }} style={{background: 'transparent', border: '1px solid #052659', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '13px'}}>Sair</button>
+              <button className="header-logout-button" onClick={() => { logout(); navigate('/login'); }}>Sair</button>
             </>
           ) : (
             <div className="header-auth-actions">
