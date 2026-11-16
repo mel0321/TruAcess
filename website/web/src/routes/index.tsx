@@ -9,11 +9,17 @@ import { PlaceDetailsPage } from '../pages/PlaceDetailsPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { ProfilePage } from '../pages/ProfilePage';
 import { OnboardingPage } from '../pages/OnboardingPage';
+import { DestinationsPage } from '../pages/DestinationsPage';
+import { AboutPage } from '../pages/AboutPage';
 import type { ReactNode } from 'react';
 
-// Rota protegida: só acessa se estiver logado
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div style={{padding: '100px', textAlign: 'center'}}>Carregando...</div>;
+  }
+  
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
@@ -38,8 +44,8 @@ export function AppRoutes() {
             <Route path="/perfil" element={
               <ProtectedRoute><ProfilePage /></ProtectedRoute>
             } />
-            <Route path="/destinos" element={<div style={{padding: '100px', textAlign: 'center'}}>Destinos (em breve)</div>} />
-            <Route path="/sobre" element={<div style={{padding: '100px', textAlign: 'center'}}>Sobre (em breve)</div>} />
+            <Route path="/destinos" element={<DestinationsPage />} />
+            <Route path="/sobre" element={<AboutPage />} />
           </Routes>
         </BrowserRouter>
       </FavoritesProvider>

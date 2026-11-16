@@ -11,10 +11,6 @@ export interface UserProfile {
   disabilities?: DisabilityType[];
   interests?: string[];
   companionType?: 'ALONE' | 'COUPLE' | 'FAMILY' | 'FRIENDS' | 'GROUP';
-  hasMobilityAid?: boolean;
-  needsQuietSpace?: boolean;
-  needsVisualAids?: boolean;
-  needsHearingAids?: boolean;
   profileCompleted?: boolean;
   onboardingStep?: number;
 }
@@ -25,9 +21,10 @@ export interface User {
   email: string;
   user_type: UserType;
   profile_picture?: string | null;
-  phone?: string;
-  birth_date?: string;
+  nickname?: string;
   profile?: UserProfile;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Place {
@@ -50,9 +47,46 @@ export interface Place {
 
 export interface Review {
   id: number;
+  user_id?: number;
+  place_id?: number;
   experience_rating: number;
-  accessibility_level: string;
-  comment_text: string | null;
-  owner_reply_text: string | null;
+  accessibility_rating: number;
+  comment_text: string;
+  created_at: string;
   traveler_name?: string;
+  traveler_avatar?: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  full_name: string;
+  email: string;
+  password: string;
+  user_type: UserType;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+export interface UpdateProfileRequest {
+  full_name?: string;
+  nickname?: string;
+  profile_picture?: string | null;
+}
+
+export interface DeleteAccountRequest {
+  password: string;
+}
+
+export interface CreateReviewRequest {
+  place_id: number;
+  experience_rating: number;
+  accessibility_rating: number;
+  comment_text: string;
 }

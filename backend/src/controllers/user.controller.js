@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import db from '../../database/connection.js';
 import { AppError } from '../middlewares/error.middleware.js';
 
@@ -16,6 +17,31 @@ export async function getProfile(req, res, next) {
     }
 
     return res.status(200).json({ user });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Listar comentários publicados pelo usuário autenticado
+ */
+export async function getMyComments(req, res, next) {
+  try {
+    const comments = await db('reviews')
+      .join('places', 'reviews.place_id', 'places.id')
+      .where('reviews.traveler_id', req.user.id)
+      .select(
+        'reviews.id',
+        'reviews.place_id',
+        'places.establishment_name as place_name',
+        'reviews.experience_rating',
+        'reviews.accessibility_level',
+        'reviews.comment_text',
+        'reviews.created_at'
+      )
+      .orderBy('reviews.created_at', 'desc');
+
+    return res.status(200).json({ comments });
   } catch (error) {
     next(error);
   }
@@ -72,6 +98,29 @@ export async function uploadAvatar(req, res, next) {
       profile_picture: fileUrl,
       filename: req.file.filename
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Excluir a conta autenticada após confirmar a senha
+ */
+export async function deleteAccount(req, res, next) {
+  try {
+    const { password } = req.body;
+    if (!password) {
+      throw new AppError('Informe sua senha para confirmar a exclusão da conta.', 400);
+    }
+
+    const user = await db('users').where({ id: req.user.id }).first();
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      throw new AppError('Senha incorreta.', 401);
+    }
+
+    await db('users').where({ id: req.user.id }).del();
+
+    return res.status(200).json({ message: 'Conta excluída com sucesso.' });
   } catch (error) {
     next(error);
   }
