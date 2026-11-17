@@ -58,11 +58,17 @@ export function AboutPage() {
                 <Link to="/destinos" className="btn-explore about-primary-action">
                   <span className="action-copy">
                     <strong>Encontrar meu próximo destino</strong>
-                    <small>Explore lugares com mais autonomia</small>
+                    <small>Destinos e recursos para planejar com autonomia</small>
                   </span>
                   <span className="action-arrow" aria-hidden="true">→</span>
                 </Link>
-                <a href="#missao" className="about-mission-action">Conheça nossa missão <span aria-hidden="true">↓</span></a>
+                <a href="#missao" className="about-mission-action">
+                  <span className="mission-copy">
+                    <strong>Conheça nossa missão</strong>
+                    <small>Veja como queremos transformar o turismo</small>
+                  </span>
+                  <span className="mission-arrow" aria-hidden="true">↓</span>
+                </a>
               </div>
               <div className="about-hero-highlights" aria-label="Recursos da TruAcess">
                 <span><i aria-hidden="true">✓</i> Filtros de acessibilidade</span>

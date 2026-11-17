@@ -3,13 +3,15 @@ import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { IconBrain, IconMapPin, IconRamp } from '../components/Icons';
 import api from '../services/api';
-import { placeCategories } from '../utils/placeCategories';
+import { getPlaceCategoryDetailLabel, getPlaceCategoryLabel, placeCategories, placeCategoryDetails } from '../utils/placeCategories';
 import type { Place } from '../types';
 
 export function DestinationsPage() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
+  const [categoryDetail, setCategoryDetail] = useState('');
+  const [minimumRating, setMinimumRating] = useState('');
   const [accessibleOnly, setAccessibleOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -44,14 +46,17 @@ export function DestinationsPage() {
       place.description,
     ].some((value) => value?.toLocaleLowerCase('pt-BR').includes(normalizedSearch));
     const matchesCategory = !category || place.category === category;
+    const matchesCategoryDetail = !categoryDetail || place.category_detail === categoryDetail;
+    const matchesRating = !minimumRating || (place.average_rating || 0) >= Number(minimumRating);
     const matchesAccessibility = !accessibleOnly || (
       place.has_access_ramp || place.has_asd_friendly_space ||
       place.has_adapted_bathroom || place.has_braille_signage ||
       place.has_sign_language_interpreter || place.allows_guide_dog
     );
 
-    return matchesSearch && matchesCategory && matchesAccessibility;
+    return matchesSearch && matchesCategory && matchesCategoryDetail && matchesRating && matchesAccessibility;
   });
+  const detailCategories = category ? placeCategoryDetails[category] || [] : [];
 
   return (
     <div className="destinations-page">
@@ -118,7 +123,7 @@ export function DestinationsPage() {
                   type="button"
                   className={`category-chip${category === '' ? ' is-active' : ''}`}
                   aria-pressed={category === ''}
-                  onClick={() => setCategory('')}
+                  onClick={() => { setCategory(''); setCategoryDetail(''); }}
                 >
                   Todas
                 </button>
@@ -128,12 +133,37 @@ export function DestinationsPage() {
                     key={item.value}
                     className={`category-chip category-chip-${index}${category === item.value ? ' is-active' : ''}`}
                     aria-pressed={category === item.value}
-                    onClick={() => setCategory(category === item.value ? '' : item.value)}
+                    onClick={() => {
+                      setCategory(category === item.value ? '' : item.value);
+                      setCategoryDetail('');
+                    }}
                   >
                     {item.label}
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="destination-extra-filters">
+              {category && (
+                <label>
+                  Tipo de local
+                  <select value={categoryDetail} onChange={(event) => setCategoryDetail(event.target.value)}>
+                    <option value="">Todos os tipos</option>
+                    {detailCategories.map((detail) => (
+                      <option key={detail.value} value={detail.value}>{detail.label}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <label>
+                Nota mínima
+                <select value={minimumRating} onChange={(event) => setMinimumRating(event.target.value)}>
+                  <option value="">Qualquer nota</option>
+                  <option value="3">3+ estrelas</option>
+                  <option value="4">4+ estrelas</option>
+                </select>
+              </label>
             </div>
 
             {loading ? (
@@ -174,6 +204,13 @@ export function DestinationsPage() {
                           {place.has_asd_friendly_space && <span className="badge-access"><IconBrain width={16} height={16} /> Espaço TEA</span>}
                         </div>
                         <div className="destination-title">{place.establishment_name}</div>
+                        <div className="destination-card-meta">
+                          <span>{getPlaceCategoryDetailLabel(place.category_detail) || getPlaceCategoryLabel(place.category)}</span>
+                          {place.average_rating !== null && place.average_rating !== undefined
+                            ? <span className="destination-rating">★ {place.average_rating.toFixed(1)} ({place.total_reviews || 0})</span>
+                            : <span className="destination-no-rating">Ainda sem avaliações</span>}
+                          {place.accessibility_level && <span className={`destination-level level-${place.accessibility_level.toLowerCase()}`}>{place.accessibility_level === 'INITIAL' ? 'Inicial' : place.accessibility_level === 'INTERMEDIATE' ? 'Intermediário' : 'Avançado'}</span>}
+                        </div>
                         <p className="destination-location">
                           <IconMapPin width={16} height={16} /> {place.city}, {place.state}
                         </p>

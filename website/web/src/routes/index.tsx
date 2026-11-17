@@ -11,6 +11,7 @@ import { ProfilePage } from '../pages/ProfilePage';
 import { OnboardingPage } from '../pages/OnboardingPage';
 import { DestinationsPage } from '../pages/DestinationsPage';
 import { AboutPage } from '../pages/AboutPage';
+import { PlaceManagementPage } from '../pages/PlaceManagementPage';
 import type { ReactNode } from 'react';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -40,6 +41,12 @@ export function AppRoutes() {
             <Route path="/local/:id" element={<PlaceDetailsPage />} />
             <Route path="/dashboard" element={
               <ProtectedRoute><DashboardPage /></ProtectedRoute>
+            } />
+            <Route path="/register-place" element={
+              <ProtectedRoute><PlaceManagementPage /></ProtectedRoute>
+            } />
+            <Route path="/edit-place/:id" element={
+              <ProtectedRoute><PlaceManagementPage /></ProtectedRoute>
             } />
             <Route path="/perfil" element={
               <ProtectedRoute><ProfilePage /></ProtectedRoute>

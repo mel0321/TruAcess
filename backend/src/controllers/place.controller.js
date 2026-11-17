@@ -1,5 +1,11 @@
 import db from '../../database/connection.js';
 import { AppError } from '../middlewares/error.middleware.js';
+import {
+  accessibilitySummary,
+  formatAccessibilityAssessment,
+  legacyAccessibilityFlags,
+  parseAccessibilityAssessment
+} from '../utils/placeAccessibility.js';
 
 const VALID_CATEGORIES = ['ACCOMMODATION', 'GASTRONOMY', 'TOURIST_ATTRACTION', 'OTHERS'];
 
@@ -11,6 +17,7 @@ export async function listPlaces(req, res, next) {
     const {
       search,
       category,
+      category_detail,
       city,
       state,
       min_price,
@@ -33,7 +40,9 @@ export async function listPlaces(req, res, next) {
         'places.*',
         'users.full_name as owner_name',
         db.raw('ROUND(AVG(reviews.experience_rating), 1) as average_rating'),
-        db.raw('COUNT(reviews.id) as total_reviews')
+        db.raw('COUNT(reviews.id) as total_reviews'),
+        db.raw(`AVG(CASE reviews.accessibility_level
+          WHEN 'POOR' THEN 1 WHEN 'GOOD' THEN 3 WHEN 'EXCELLENT' THEN 5 END) as average_accessibility_rating`)
       )
       .groupBy('places.id');
 
@@ -55,6 +64,9 @@ export async function listPlaces(req, res, next) {
       if (VALID_CATEGORIES.includes(catUpper)) {
         query = query.where('places.category', catUpper);
       }
+    }
+    if (category_detail) {
+      query = query.where('places.category_detail', category_detail);
     }
 
     // Filtros geográficos
@@ -124,17 +136,23 @@ export async function listPlaces(req, res, next) {
     const places = await query.limit(limitNum).offset(offset);
 
     // Format boolean fields and numeric ratings
-    const formattedPlaces = places.map((place) => ({
-      ...place,
-      average_rating: place.average_rating ? parseFloat(place.average_rating) : null,
-      total_reviews: parseInt(place.total_reviews, 10) || 0,
-      has_access_ramp: Boolean(place.has_access_ramp),
-      has_adapted_bathroom: Boolean(place.has_adapted_bathroom),
-      allows_guide_dog: Boolean(place.allows_guide_dog),
-      has_braille_signage: Boolean(place.has_braille_signage),
-      has_sign_language_interpreter: Boolean(place.has_sign_language_interpreter),
-      has_asd_friendly_space: Boolean(place.has_asd_friendly_space)
-    }));
+    const formattedPlaces = places.map((place) => {
+      const totalReviews = parseInt(place.total_reviews, 10) || 0;
+      const assessment = formatAccessibilityAssessment(place.accessibility_assessment);
+      return {
+        ...place,
+        accessibility_assessment: assessment,
+        average_rating: place.average_rating ? parseFloat(place.average_rating) : null,
+        total_reviews: totalReviews,
+        ...accessibilitySummary(assessment, place.average_accessibility_rating, totalReviews),
+        has_access_ramp: Boolean(place.has_access_ramp),
+        has_adapted_bathroom: Boolean(place.has_adapted_bathroom),
+        allows_guide_dog: Boolean(place.allows_guide_dog),
+        has_braille_signage: Boolean(place.has_braille_signage),
+        has_sign_language_interpreter: Boolean(place.has_sign_language_interpreter),
+        has_asd_friendly_space: Boolean(place.has_asd_friendly_space)
+      };
+    });
 
     return res.status(200).json({
       page: pageNum,
@@ -192,14 +210,20 @@ export async function getPlaceById(req, res, next) {
       .select(
         db.raw('ROUND(AVG(experience_rating), 1) as average_rating'),
         db.raw('COUNT(*) as total_reviews'),
+        db.raw(`AVG(CASE accessibility_level
+          WHEN 'POOR' THEN 1 WHEN 'GOOD' THEN 3 WHEN 'EXCELLENT' THEN 5 END) as average_accessibility_rating`),
         db.raw("SUM(CASE WHEN accessibility_level = 'EXCELLENT' THEN 1 ELSE 0 END) as count_excellent"),
         db.raw("SUM(CASE WHEN accessibility_level = 'GOOD' THEN 1 ELSE 0 END) as count_good"),
         db.raw("SUM(CASE WHEN accessibility_level = 'POOR' THEN 1 ELSE 0 END) as count_poor")
       )
       .first();
 
+    const assessment = formatAccessibilityAssessment(place.accessibility_assessment);
+    const reviewCount = parseInt(stats?.total_reviews || 0, 10);
     const formattedPlace = {
       ...place,
+      accessibility_assessment: assessment,
+      ...accessibilitySummary(assessment, stats?.average_accessibility_rating, reviewCount),
       has_access_ramp: Boolean(place.has_access_ramp),
       has_adapted_bathroom: Boolean(place.has_adapted_bathroom),
       allows_guide_dog: Boolean(place.allows_guide_dog),
@@ -208,7 +232,7 @@ export async function getPlaceById(req, res, next) {
       has_asd_friendly_space: Boolean(place.has_asd_friendly_space),
       stats: {
         average_rating: stats?.average_rating ? parseFloat(stats.average_rating) : null,
-        total_reviews: parseInt(stats?.total_reviews || 0, 10),
+        total_reviews: reviewCount,
         accessibility_breakdown: {
           excellent: parseInt(stats?.count_excellent || 0, 10),
           good: parseInt(stats?.count_good || 0, 10),
@@ -238,6 +262,11 @@ export async function createPlace(req, res, next) {
       description,
       price,
       main_image: imageUrl,
+      category_detail,
+      phone,
+      website,
+      opening_hours,
+      accessibility_assessment: rawAssessment,
       has_access_ramp,
       has_adapted_bathroom,
       allows_guide_dog,
@@ -267,7 +296,18 @@ export async function createPlace(req, res, next) {
       main_image = `${req.protocol}://${req.get('host')}/uploads/places/${req.file.filename}`;
     }
 
+    const assessment = parseAccessibilityAssessment(rawAssessment);
     const toBinary = (val) => (val === '1' || val === 'true' || val === true || val === 1 ? 1 : 0);
+    const accessibilityFlags = assessment
+      ? legacyAccessibilityFlags(assessment)
+      : {
+          has_access_ramp: toBinary(has_access_ramp),
+          has_adapted_bathroom: toBinary(has_adapted_bathroom),
+          allows_guide_dog: toBinary(allows_guide_dog),
+          has_braille_signage: toBinary(has_braille_signage),
+          has_sign_language_interpreter: toBinary(has_sign_language_interpreter),
+          has_asd_friendly_space: toBinary(has_asd_friendly_space)
+        };
 
     const [newId] = await db('places').insert({
       business_owner_id: req.user.id,
@@ -279,12 +319,12 @@ export async function createPlace(req, res, next) {
       description: description?.trim() || null,
       price: price !== undefined && price !== null ? Number(price) : null,
       main_image,
-      has_access_ramp: toBinary(has_access_ramp),
-      has_adapted_bathroom: toBinary(has_adapted_bathroom),
-      allows_guide_dog: toBinary(allows_guide_dog),
-      has_braille_signage: toBinary(has_braille_signage),
-      has_sign_language_interpreter: toBinary(has_sign_language_interpreter),
-      has_asd_friendly_space: toBinary(has_asd_friendly_space)
+      category_detail: category_detail?.trim() || null,
+      phone: phone?.trim() || null,
+      website: website?.trim() || null,
+      opening_hours: opening_hours?.trim() || null,
+      accessibility_assessment: assessment ? JSON.stringify(assessment) : null,
+      ...accessibilityFlags
     });
 
     const createdPlace = await db('places').where({ id: newId }).first();
@@ -313,6 +353,11 @@ export async function updatePlace(req, res, next) {
       description,
       price,
       main_image: imageUrl,
+      category_detail,
+      phone,
+      website,
+      opening_hours,
+      accessibility_assessment: rawAssessment,
       has_access_ramp,
       has_adapted_bathroom,
       allows_guide_dog,
@@ -344,17 +389,27 @@ export async function updatePlace(req, res, next) {
     if (state !== undefined) updateData.state = state.trim().toUpperCase();
     if (description !== undefined) updateData.description = description.trim();
     if (price !== undefined) updateData.price = Number(price);
+    if (category_detail !== undefined) updateData.category_detail = category_detail.trim() || null;
+    if (phone !== undefined) updateData.phone = phone.trim() || null;
+    if (website !== undefined) updateData.website = website.trim() || null;
+    if (opening_hours !== undefined) updateData.opening_hours = opening_hours.trim() || null;
 
     const toBinary = (val) => (val === '1' || val === 'true' || val === true || val === 1 ? 1 : 0);
 
-    if (has_access_ramp !== undefined) updateData.has_access_ramp = toBinary(has_access_ramp);
-    if (has_adapted_bathroom !== undefined) updateData.has_adapted_bathroom = toBinary(has_adapted_bathroom);
-    if (allows_guide_dog !== undefined) updateData.allows_guide_dog = toBinary(allows_guide_dog);
-    if (has_braille_signage !== undefined) updateData.has_braille_signage = toBinary(has_braille_signage);
-    if (has_sign_language_interpreter !== undefined)
-      updateData.has_sign_language_interpreter = toBinary(has_sign_language_interpreter);
-    if (has_asd_friendly_space !== undefined)
-      updateData.has_asd_friendly_space = toBinary(has_asd_friendly_space);
+    if (rawAssessment !== undefined) {
+      const assessment = parseAccessibilityAssessment(rawAssessment);
+      updateData.accessibility_assessment = assessment ? JSON.stringify(assessment) : null;
+      Object.assign(updateData, legacyAccessibilityFlags(assessment));
+    } else {
+      if (has_access_ramp !== undefined) updateData.has_access_ramp = toBinary(has_access_ramp);
+      if (has_adapted_bathroom !== undefined) updateData.has_adapted_bathroom = toBinary(has_adapted_bathroom);
+      if (allows_guide_dog !== undefined) updateData.allows_guide_dog = toBinary(allows_guide_dog);
+      if (has_braille_signage !== undefined) updateData.has_braille_signage = toBinary(has_braille_signage);
+      if (has_sign_language_interpreter !== undefined)
+        updateData.has_sign_language_interpreter = toBinary(has_sign_language_interpreter);
+      if (has_asd_friendly_space !== undefined)
+        updateData.has_asd_friendly_space = toBinary(has_asd_friendly_space);
+    }
 
     if (req.file) {
       updateData.main_image = `${req.protocol}://${req.get('host')}/uploads/places/${req.file.filename}`;

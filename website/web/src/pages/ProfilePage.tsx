@@ -271,10 +271,13 @@ export function ProfilePage() {
                   ))}
                 </div>
               ) : (
-                <div style={{textAlign: 'center', padding: '60px', color: '#64748B'}}>
-                  <IconMessageCircle width={48} height={48} style={{marginBottom: '16px', opacity: 0.3}} />
-                  <p style={{fontSize: '16px', marginBottom: '8px'}}>Você ainda não fez nenhum comentário</p>
-                  <Link to="/" style={{color: '#2AC2D2', fontWeight: 600}}>Explorar destinos para comentar</Link>
+                <div className="profile-empty-state">
+                  <span className="profile-empty-icon"><IconMessageCircle width={28} height={28} /></span>
+                  <h3>Seu primeiro comentário pode ajudar alguém</h3>
+                  <p>Conte como foi sua visita e ajude outros viajantes a escolher um lugar com mais confiança.</p>
+                  <Link className="profile-empty-cta" to="/destinos">
+                    Encontrar um destino <span aria-hidden="true">→</span>
+                  </Link>
                 </div>
               )}
             </div>
@@ -296,10 +299,13 @@ export function ProfilePage() {
                   ))}
                 </div>
               ) : (
-                <div style={{textAlign: 'center', padding: '60px', color: '#64748B'}}>
-                  <IconHeart width={48} height={48} style={{marginBottom: '16px', opacity: 0.3}} />
-                  <p style={{fontSize: '16px', marginBottom: '8px'}}>Você ainda não salvou nenhum local</p>
-                  <Link to="/" style={{color: '#2AC2D2', fontWeight: 600}}>Explorar destinos</Link>
+                <div className="profile-empty-state">
+                  <span className="profile-empty-icon"><IconHeart width={28} height={28} /></span>
+                  <h3>Guarde lugares para sua próxima viagem</h3>
+                  <p>Explore os destinos e toque no coração de um local para encontrá-lo aqui depois.</p>
+                  <Link className="profile-empty-cta" to="/destinos">
+                    Explorar destinos <span aria-hidden="true">→</span>
+                  </Link>
                 </div>
               )}
             </div>

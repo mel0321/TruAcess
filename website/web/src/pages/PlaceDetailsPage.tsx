@@ -6,6 +6,7 @@ import { useFavorites } from '../context/FavoritesContext';
 import { useAuth } from '../context/AuthContext';
 import { IconRamp, IconBrain, IconLibras, IconBraille, IconMapPin, IconStar, IconHeart, IconMessageCircle, IconArrowLeft, IconDog, IconX, IconPlus } from '../components/Icons';
 import { getPlaceCategoryLabel } from '../utils/placeCategories';
+import { accessibilityQuestions } from '../utils/accessibilityQuestionnaire';
 import type { Place, Review } from '../types';
 
 interface PlaceResponse {
@@ -22,7 +23,7 @@ interface ReviewsResponse {
 function normalizeReview(review: ReviewsResponse['reviews'][number]): Review {
   const accessibilityRating = review.accessibility_rating ?? (
     review.accessibility_level === 'EXCELLENT' ? 5 :
-      review.accessibility_level === 'GOOD' ? 4 : 1
+      review.accessibility_level === 'GOOD' ? 3 : 1
   );
   return { ...review, accessibility_rating: accessibilityRating };
 }
@@ -128,7 +129,16 @@ export function PlaceDetailsPage() {
     { show: place.has_asd_friendly_space, label: 'Espaço TEA-friendly', icon: <IconBrain width={24} height={24} /> },
   ].filter(x => x.show);
 
-  const avgAccessibility = reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.accessibility_rating, 0) / reviews.length).toFixed(1) : '0.0';
+  const avgAccessibility = place.accessibility_score === null || place.accessibility_score === undefined
+    ? '—'
+    : `${place.accessibility_score}%`;
+  const accessibilityLevelLabel = place.accessibility_level === 'INITIAL'
+    ? 'Inicial'
+    : place.accessibility_level === 'INTERMEDIATE'
+      ? 'Intermediário'
+      : place.accessibility_level === 'ADVANCED'
+        ? 'Avançado'
+        : 'Sem dados';
 
   const handleFavoriteToggle = () => {
     if (!user) {
@@ -188,7 +198,7 @@ export function PlaceDetailsPage() {
                 </button>
                 <div style={{background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', padding: '12px 20px', borderRadius: '100px'}}>
                   <span style={{fontWeight: 700, fontSize: '18px', display: 'inline-flex', alignItems: 'center', gap: 6}}><IconRamp width={20} height={20} /> {avgAccessibility}</span>
-                  <span style={{marginLeft: '8px', fontSize: '13px', opacity: 0.9}}>({reviews.length} avaliações)</span>
+                  <span style={{marginLeft: '8px', fontSize: '13px', opacity: 0.9}}>{accessibilityLevelLabel} · {place.stats?.total_reviews || 0} avaliações</span>
                 </div>
               </div>
             </div>
@@ -205,6 +215,12 @@ export function PlaceDetailsPage() {
                 Sobre o Local
               </h2>
               <p style={{lineHeight: '1.8', color: '#64748B', fontSize: '16px', marginBottom: '24px'}}>{place.description || 'Descrição não disponível.'}</p>
+              <div className="place-contact-grid">
+                {place.category_detail && <span><strong>Tipo:</strong> {place.category_detail.replaceAll('_', ' ')}</span>}
+                {place.phone && <span><strong>Telefone:</strong> {place.phone}</span>}
+                {place.website && <span><strong>Site:</strong> <a href={place.website} target="_blank" rel="noreferrer">{place.website}</a></span>}
+                {place.opening_hours && <span><strong>Funcionamento:</strong> {place.opening_hours}</span>}
+              </div>
               <div style={{display: 'flex', alignItems: 'baseline', gap: '8px'}}>
                 <span style={{fontSize: '36px', fontWeight: 800, color: '#052659'}}>
                   {formatPrice(place.price)}
@@ -213,7 +229,7 @@ export function PlaceDetailsPage() {
               </div>
             </div>
 
-            {accessItems.length > 0 && (
+            {(accessItems.length > 0 || place.accessibility_assessment) && (
               <div style={{background: 'white', padding: '32px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)', marginBottom: '24px'}}>
                 <h2 style={{fontFamily: 'Poppins', fontSize: '28px', fontWeight: 800, color: '#052659', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px'}}>
                   <span style={{width: '4px', height: '28px', background: '#2AC2D2', borderRadius: '2px', display: 'inline-block'}}></span>
@@ -229,6 +245,25 @@ export function PlaceDetailsPage() {
                     </div>
                   ))}
                 </div>
+                {place.accessibility_assessment && (
+                  <div className="place-assessment-summary">
+                    <h3>Respostas do estabelecimento <span>Autodeclarado</span></h3>
+                    <p>Questionário informativo, não representa certificação ou auditoria independente.</p>
+                    <div className="place-assessment-score-grid">
+                      <span>Questionário: <strong>{place.questionnaire_score == null ? 'Sem respostas' : `${place.questionnaire_score}%`}</strong></span>
+                      <span>Viajantes: <strong>{place.traveler_accessibility_score == null ? 'Sem avaliações' : `${place.traveler_accessibility_score}%`}</strong></span>
+                      <span>Resultado combinado: <strong>{avgAccessibility} · {accessibilityLevelLabel}</strong></span>
+                    </div>
+                    <ul className="place-assessment-answers">
+                      {accessibilityQuestions.filter(({ key }) => place.accessibility_assessment?.[key]).map(({ key, label }) => (
+                        <li key={key}>
+                          <span>{label}</span>
+                          <strong>{place.accessibility_assessment?.[key] === 'yes' ? 'Sim' : place.accessibility_assessment?.[key] === 'no' ? 'Não' : 'Não sei / não se aplica'}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
 
@@ -368,7 +403,7 @@ export function PlaceDetailsPage() {
                 </div>
                 <div style={{display: 'flex', justifyContent: 'space-between', padding: '12px 0'}}>
                   <span style={{color: '#64748B', fontSize: '14px'}}>Acessibilidade</span>
-                  <span style={{fontWeight: 700, color: '#2AC2D2', fontSize: '14px', display: 'inline-flex', alignItems: 'center', gap: 4}}><IconRamp width={16} height={16} /> {avgAccessibility}/5</span>
+                  <span style={{fontWeight: 700, color: '#2AC2D2', fontSize: '14px', display: 'inline-flex', alignItems: 'center', gap: 4}}><IconRamp width={16} height={16} /> {avgAccessibility}</span>
                 </div>
               </div>
             </div>

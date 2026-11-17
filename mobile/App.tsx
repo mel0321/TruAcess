@@ -18,21 +18,32 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// ⚠️ IP REAL DO SEU COMPUTADOR
-const API_URL = 'http://10.75.154.249:3000/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL ||
+  (Platform.OS === 'android' ? 'http://10.0.2.2:3000/api' : 'http://localhost:3000/api');
 const api = axios.create({ baseURL: API_URL, timeout: 10000 });
 
 type User = { id: number; email: string; full_name: string; user_type: string };
+type AccessibilityAnswer = 'yes' | 'no' | 'unsure';
+type AccessibilityAssessment = Record<string, AccessibilityAnswer>;
 type Place = {
   id: number;
   establishment_name: string;
   category: string;
+  category_detail?: string | null;
   city: string;
   state: string;
   description?: string;
   full_address?: string;
   price: number;
   main_image?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  opening_hours?: string | null;
+  accessibility_assessment?: AccessibilityAssessment | null;
+  average_rating?: number | null;
+  total_reviews?: number;
+  accessibility_score?: number | null;
+  accessibility_level?: 'INITIAL' | 'INTERMEDIATE' | 'ADVANCED' | null;
   is_public?: boolean;
   has_access_ramp: boolean;
   has_adapted_bathroom: boolean;
@@ -41,8 +52,22 @@ type Place = {
   has_sign_language_interpreter: boolean;
   has_asd_friendly_space: boolean;
 };
-type Screen = 'home' | 'login' | 'register';
+type Screen = 'home' | 'login' | 'register' | 'placeForm';
 type MainTab = 'home' | 'explore' | 'favorites' | 'profile';
+type PlaceDraft = {
+  establishment_name: string;
+  category: string;
+  category_detail: string;
+  full_address: string;
+  city: string;
+  state: string;
+  description: string;
+  price: string;
+  main_image: string;
+  phone: string;
+  website: string;
+  opening_hours: string;
+};
 
 const categories = [
   { value: '', label: 'Todos' },
@@ -51,17 +76,40 @@ const categories = [
   { value: 'TOURIST_ATTRACTION', label: 'Atrações turísticas' },
   { value: 'OTHERS', label: 'Outros' },
 ];
+const categoryDetails: Record<string, Array<{ value: string; label: string }>> = {
+  ACCOMMODATION: [{ value: 'HOTEL', label: 'Hotel' }, { value: 'HOSTEL', label: 'Hostel' }, { value: 'INN', label: 'Pousada' }, { value: 'RESORT', label: 'Resort' }, { value: 'CAMPING', label: 'Camping' }],
+  GASTRONOMY: [{ value: 'RESTAURANT', label: 'Restaurante' }, { value: 'CAFE', label: 'Café' }, { value: 'BAR', label: 'Bar' }, { value: 'BAKERY', label: 'Padaria' }, { value: 'FOOD_TRUCK', label: 'Food truck' }],
+  TOURIST_ATTRACTION: [{ value: 'MUSEUM', label: 'Museu' }, { value: 'PARK', label: 'Parque' }, { value: 'BEACH', label: 'Praia' }, { value: 'TRAIL', label: 'Trilha' }, { value: 'CULTURAL_SITE', label: 'Espaço cultural' }, { value: 'EVENT_VENUE', label: 'Eventos' }],
+  OTHERS: [{ value: 'SHOPPING', label: 'Compras' }, { value: 'HEALTH', label: 'Saúde' }, { value: 'TRANSPORT', label: 'Transporte' }, { value: 'PUBLIC_SERVICE', label: 'Serviço público' }],
+};
+const accessibilityQuestions = [
+  { key: 'step_free_route', label: 'Rota acessível sem degraus até as áreas públicas?' },
+  { key: 'accessible_entrance', label: 'Entrada utilizável por pessoas com mobilidade reduzida?' },
+  { key: 'access_ramp', label: 'Há rampa de acesso onde existe desnível no percurso?' },
+  { key: 'adapted_restroom', label: 'Há banheiro acessível para visitantes?' },
+  { key: 'accessible_parking', label: 'Há vaga reservada com rota acessível até a entrada?' },
+  { key: 'guide_dog', label: 'É permitida a entrada de cão-guia?' },
+  { key: 'tactile_signage', label: 'Há sinalização tátil ou orientação acessível?' },
+  { key: 'braille_information', label: 'Informações importantes estão disponíveis em Braille ou formato tátil?' },
+  { key: 'libras_support', label: 'Há atendimento em Libras ou recurso equivalente?' },
+  { key: 'accessible_website', label: 'Os canais digitais trazem informações acessíveis sobre a visita?' },
+  { key: 'accessible_service', label: 'A equipe está preparada para atendimento inclusivo?' },
+  { key: 'quiet_space', label: 'Há espaço tranquilo para reduzir estímulos?' },
+  { key: 'asd_friendly_space', label: 'Há recursos ou espaços adequados para acolher pessoas autistas?' },
+  { key: 'sensory_support', label: 'São informados ruídos, iluminação ou estímulos sensoriais?' },
+  { key: 'staff_training', label: 'A equipe recebe orientação sobre acessibilidade?' },
+];
+const emptyPlaceDraft: PlaceDraft = {
+  establishment_name: '', category: 'ACCOMMODATION', category_detail: '',
+  full_address: '', city: '', state: '', description: '', price: '',
+  main_image: '', phone: '', website: '', opening_hours: '',
+};
 
 const favoriteStorageKey = (userId: number) => `TruAcessFavoritos${userId}`;
 
 // ✅ FORMATAÇÃO DE PREÇO CORRIGIDA
 const formatPrice = (price: number | null | undefined): string => {
   if (price == null || price === 0 || price === 0.0) return 'Gratuito';
-  // Se o valor for muito pequeno (ex: 0.70), provavelmente está em reais com centavos
-  if (price < 10) return `R$ ${price.toFixed(2).replace('.', ',')}`;
-  // Se for um valor normal (ex: 70, 150, 250), está em reais
-  if (price < 10000) return `R$ ${price.toFixed(2).replace('.', ',')}`;
-  // Se for muito grande (ex: 7000), provavelmente está em centavos
   return `R$ ${(price / 100).toFixed(2).replace('.', ',')}`;
 };
 
@@ -79,10 +127,17 @@ export default function App() {
   const [favorites, setFavorites] = useState<number[]>([]);
   const [showFavorites, setShowFavorites] = useState(false);
   const [category, setCategory] = useState('');
+  const [categoryDetail, setCategoryDetail] = useState('');
   const [search, setSearch] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [accountType, setAccountType] = useState<'TRAVELER' | 'BUSINESS'>('TRAVELER');
+  const [myPlaces, setMyPlaces] = useState<Place[]>([]);
+  const [placeDraft, setPlaceDraft] = useState<PlaceDraft>(emptyPlaceDraft);
+  const [placeAssessment, setPlaceAssessment] = useState<AccessibilityAssessment>({});
+  const [editingPlaceId, setEditingPlaceId] = useState<number | null>(null);
+  const [confirmDeletePlaceId, setConfirmDeletePlaceId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [placesLoading, setPlacesLoading] = useState(true);
   const [notice, setNotice] = useState('');
@@ -96,6 +151,27 @@ export default function App() {
   useEffect(() => {
     if (user) void loadFavorites(user.id);
     else setFavorites([]);
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.user_type !== 'BUSINESS') {
+      setMyPlaces([]);
+      return;
+    }
+    let active = true;
+    void SecureStore.getItemAsync('TruAcessToken').then(async (token) => {
+      if (!token) throw new Error('Sessão expirada. Entre novamente.');
+      const response = await api.get<{ places: Place[] }>('/business/places', {
+        headers: { Authorization: 'Bearer ' + token },
+      });
+      if (active) setMyPlaces(response.data.places);
+    }).catch((loadError: unknown) => {
+      if (active) {
+        console.error('Erro ao carregar locais da empresa:', loadError);
+        setError('Não foi possível carregar seus estabelecimentos.');
+      }
+    });
+    return () => { active = false; };
   }, [user]);
 
   const loadPlaces = async () => {
@@ -112,7 +188,7 @@ export default function App() {
       setError('');
     } catch (err: any) {
       console.error('❌ Erro ao carregar locais:', err.message);
-      setError('Erro ao carregar locais. Verifique o IP da API: ' + API_URL);
+      setError('Não foi possível carregar os locais. Verifique se a API está em execução e tente novamente.');
     } finally {
       setPlacesLoading(false);
     }
@@ -122,7 +198,7 @@ export default function App() {
     try {
       const token = await SecureStore.getItemAsync('TruAcessToken');
       if (!token) return;
-      const res = await api.get<any>('/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await api.get<any>('/auth/me', { headers: { Authorization: 'Bearer ' + token } });
       setUser(res.data.user || res.data);
       await SecureStore.setItemAsync('TruAcessUser', JSON.stringify(res.data.user || res.data));
     } catch {
@@ -142,11 +218,12 @@ export default function App() {
     const q = search.trim().toLowerCase();
     return places.filter((p) => {
       const matchCat = !category || p.category === category;
-      const matchSearch = !q || [p.establishment_name, p.city, p.state].some(v => v.toLowerCase().includes(q));
+      const matchDetail = !categoryDetail || p.category_detail === categoryDetail;
+      const matchSearch = !q || [p.establishment_name, p.city, p.state, p.category_detail || ''].some(v => v.toLowerCase().includes(q));
       const matchFav = !showFavorites || favorites.includes(p.id);
-      return matchCat && matchSearch && matchFav;
+      return matchCat && matchDetail && matchSearch && matchFav;
     });
-  }, [category, favorites, places, search, showFavorites]);
+  }, [category, categoryDetail, favorites, places, search, showFavorites]);
 
   const toggleFavorite = async (placeId: number) => {
     if (!user) { setNotice('Faça login para salvar.'); setScreen('login'); return; }
@@ -158,7 +235,7 @@ export default function App() {
   const handleLogin = async () => {
     setLoading(true); setError(''); setNotice('');
     try {
-      const res = await api.post<any>('/auth/login', { email, password, expected_role: 'TRAVELER' });
+      const res = await api.post<any>('/auth/login', { email, password });
       await SecureStore.setItemAsync('TruAcessToken', res.data.token);
       await SecureStore.setItemAsync('TruAcessUser', JSON.stringify(res.data.user || res.data));
       setUser(res.data.user || res.data);
@@ -173,7 +250,7 @@ export default function App() {
     if (password.length < 6) { setError('Senha deve ter pelo menos 6 caracteres.'); return; }
     setLoading(true); setError(''); setNotice('');
     try {
-      const res = await api.post<any>('/auth/register', { full_name: fullName.trim(), email, password, user_type: 'TRAVELER' });
+      const res = await api.post<any>('/auth/register', { full_name: fullName.trim(), email, password, user_type: accountType });
       await SecureStore.setItemAsync('TruAcessToken', res.data.token);
       await SecureStore.setItemAsync('TruAcessUser', JSON.stringify(res.data.user || res.data));
       setUser(res.data.user || res.data);
@@ -213,8 +290,88 @@ export default function App() {
     }
   };
 
+  const startNewPlace = () => {
+    setEditingPlaceId(null);
+    setPlaceDraft(emptyPlaceDraft);
+    setPlaceAssessment({});
+    setError('');
+    setScreen('placeForm');
+  };
+
+  const startEditPlace = (place: Place) => {
+    setEditingPlaceId(place.id);
+    setPlaceDraft({
+      establishment_name: place.establishment_name,
+      category: place.category,
+      category_detail: place.category_detail || '',
+      full_address: place.full_address || '',
+      city: place.city,
+      state: place.state,
+      description: place.description || '',
+      price: place.price ? (place.price / 100).toFixed(2) : '',
+      main_image: place.main_image || '',
+      phone: place.phone || '',
+      website: place.website || '',
+      opening_hours: place.opening_hours || '',
+    });
+    setPlaceAssessment(place.accessibility_assessment || {});
+    setError('');
+    setScreen('placeForm');
+  };
+
+  const savePlace = async () => {
+    if (!placeDraft.establishment_name.trim() || !placeDraft.full_address.trim() || !placeDraft.city.trim() || !placeDraft.state.trim()) {
+      setError('Preencha nome, endereço, cidade e estado.');
+      return;
+    }
+    const price = placeDraft.price.trim() ? Number(placeDraft.price.replace(',', '.')) : null;
+    if (price !== null && (!Number.isFinite(price) || price < 0)) {
+      setError('Informe um preço válido ou deixe o campo em branco.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const token = await SecureStore.getItemAsync('TruAcessToken');
+      if (!token) throw new Error('Sua sessão expirou. Entre novamente.');
+      const payload = {
+        ...placeDraft,
+        establishment_name: placeDraft.establishment_name.trim(),
+        full_address: placeDraft.full_address.trim(),
+        city: placeDraft.city.trim(),
+        state: placeDraft.state.trim().toUpperCase(),
+        price: price === null ? null : Math.round(price * 100),
+        accessibility_assessment: placeAssessment,
+      };
+      const config = { headers: { Authorization: 'Bearer ' + token } };
+      if (editingPlaceId) await api.put(`/places/${editingPlaceId}`, payload, config);
+      else await api.post('/places', payload, config);
+      const response = await api.get<{ places: Place[] }>('/business/places', config);
+      setMyPlaces(response.data.places);
+      setScreen('home');
+      setActiveTab('profile');
+      setNotice(editingPlaceId ? 'Estabelecimento atualizado.' : 'Estabelecimento publicado.');
+    } catch (saveError: any) {
+      setError(saveError.response?.data?.message || saveError.message || 'Não foi possível salvar o estabelecimento.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deletePlace = async (placeId: number) => {
+    try {
+      const token = await SecureStore.getItemAsync('TruAcessToken');
+      if (!token) throw new Error('Sua sessão expirou. Entre novamente.');
+      await api.delete(`/places/${placeId}`, { headers: { Authorization: 'Bearer ' + token } });
+      setMyPlaces((current) => current.filter((place) => place.id !== placeId));
+      setNotice('Estabelecimento removido.');
+    } catch (deleteError: any) {
+      setError(deleteError.response?.data?.message || deleteError.message || 'Não foi possível excluir o estabelecimento.');
+    }
+  };
+
   // --- TELA DE AUTENTICAÇÃO ---
-  if (screen !== 'home') {
+  if (screen === 'login' || screen === 'register') {
     return (
       <SafeAreaView style={styles.safe}>
         <ScrollView contentContainerStyle={styles.authContainer} keyboardShouldPersistTaps="handled">
@@ -226,10 +383,20 @@ export default function App() {
             {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View> : null}
 
             {screen === 'register' && (
-              <View style={styles.inputWrap}>
-                <Ionicons name="person" size={20} color="#94A3B8" />
-                <TextInput value={fullName} onChangeText={setFullName} placeholder="Nome completo" style={styles.input} />
-              </View>
+              <>
+                <View style={styles.inputWrap}>
+                  <Ionicons name="person" size={20} color="#94A3B8" />
+                  <TextInput value={fullName} onChangeText={setFullName} placeholder="Nome completo" style={styles.input} />
+                </View>
+                <Text style={styles.formLabel}>Tipo de conta</Text>
+                <View style={styles.roleChoiceRow}>
+                  {(['TRAVELER', 'BUSINESS'] as const).map((type) => (
+                    <Pressable key={type} onPress={() => setAccountType(type)} style={[styles.roleChoice, accountType === type && styles.roleChoiceActive]}>
+                      <Text style={[styles.roleChoiceText, accountType === type && styles.roleChoiceTextActive]}>{type === 'TRAVELER' ? 'Viajante' : 'Estabelecimento'}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
             )}
 
             <View style={styles.inputWrap}>
@@ -260,6 +427,92 @@ export default function App() {
     );
   }
 
+  if (screen === 'placeForm') {
+    const categoryOptions = categories.filter((item) => item.value);
+    const detailOptions = categoryDetails[placeDraft.category] || [];
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ScrollView contentContainerStyle={styles.placeFormContainer} keyboardShouldPersistTaps="handled">
+          <Pressable onPress={() => { setError(''); setScreen('home'); setActiveTab('profile'); }} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={16} color="#64748B" />
+            <Text style={styles.backBtnText}>Voltar ao perfil</Text>
+          </Pressable>
+          <Text style={styles.placeFormTitle}>{editingPlaceId ? 'Editar estabelecimento' : 'Novo estabelecimento'}</Text>
+          <Text style={styles.placeFormIntro}>Preencha os detalhes para viajantes encontrarem e planejarem a visita.</Text>
+          {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View> : null}
+
+          <Text style={styles.formLabel}>Nome do estabelecimento *</Text>
+          <TextInput value={placeDraft.establishment_name} onChangeText={(value) => setPlaceDraft((current) => ({ ...current, establishment_name: value }))} placeholder="Ex.: Pousada ..." style={styles.formInput} />
+          <Text style={styles.formLabel}>Categoria</Text>
+          <View style={styles.formChoiceWrap}>
+            {categoryOptions.map((item) => (
+              <Pressable key={item.value} onPress={() => setPlaceDraft((current) => ({ ...current, category: item.value, category_detail: '' }))} style={[styles.formChoice, placeDraft.category === item.value && styles.formChoiceActive]}>
+                <Text style={[styles.formChoiceText, placeDraft.category === item.value && styles.formChoiceTextActive]}>{item.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={styles.formLabel}>Tipo de local</Text>
+          <View style={styles.formChoiceWrap}>
+            {detailOptions.map((item) => (
+              <Pressable key={item.value} onPress={() => setPlaceDraft((current) => ({ ...current, category_detail: item.value }))} style={[styles.formChoice, placeDraft.category_detail === item.value && styles.formChoiceActive]}>
+                <Text style={[styles.formChoiceText, placeDraft.category_detail === item.value && styles.formChoiceTextActive]}>{item.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          {([
+            ['full_address', 'Endereço completo *'],
+            ['city', 'Cidade *'],
+            ['state', 'Estado (UF) *'],
+            ['phone', 'Telefone'],
+            ['website', 'Site'],
+            ['opening_hours', 'Horário de funcionamento'],
+            ['price', 'Preço aproximado em reais'],
+            ['main_image', 'Link da foto principal'],
+          ] as Array<[keyof PlaceDraft, string]>).map(([field, label]) => (
+            <View key={field}>
+              <Text style={styles.formLabel}>{label}</Text>
+              <TextInput
+                value={placeDraft[field]}
+                onChangeText={(value) => setPlaceDraft((current) => ({ ...current, [field]: field === 'state' ? value.toUpperCase() : value }))}
+                placeholder={field === 'website' || field === 'main_image' ? 'https://' : ''}
+                keyboardType={field === 'phone' ? 'phone-pad' : field === 'price' ? 'decimal-pad' : 'default'}
+                autoCapitalize={field === 'website' || field === 'main_image' ? 'none' : 'sentences'}
+                style={styles.formInput}
+              />
+            </View>
+          ))}
+          <Text style={styles.formLabel}>Descrição</Text>
+          <TextInput value={placeDraft.description} onChangeText={(value) => setPlaceDraft((current) => ({ ...current, description: value }))} placeholder="Conte o que visitantes precisam saber" multiline style={[styles.formInput, styles.formTextArea]} />
+
+          <View style={styles.questionnaireCard}>
+            <Text style={styles.sectionTitle}>Questionário de acessibilidade</Text>
+            <Text style={styles.questionnaireNotice}>Autoavaliação informativa inspirada nos princípios de acessibilidade e remoção de barreiras da Lei Brasileira de Inclusão (Lei nº 13.146/2015). Não é auditoria nem certificação. “Não sei / não se aplica” não reduz a pontuação.</Text>
+            {accessibilityQuestions.map((question) => (
+              <View key={question.key} style={styles.mobileQuestion}>
+                <Text style={styles.mobileQuestionText}>{question.label}</Text>
+                <View style={styles.formChoiceWrap}>
+                  {([
+                    ['yes', 'Sim'],
+                    ['no', 'Não'],
+                    ['unsure', 'Não sei / N/A'],
+                  ] as Array<[AccessibilityAnswer, string]>).map(([answer, label]) => (
+                    <Pressable key={answer} onPress={() => setPlaceAssessment((current) => ({ ...current, [question.key]: answer }))} style={[styles.formChoice, placeAssessment[question.key] === answer && styles.formChoiceActive]}>
+                      <Text style={[styles.formChoiceText, placeAssessment[question.key] === answer && styles.formChoiceTextActive]}>{label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ))}
+            <Text style={styles.questionnaireNotice}>O nível usa 50% do questionário e 50% das avaliações de acessibilidade dos viajantes, quando ambas existirem. A nota de 1 a 5 considera as avaliações dos viajantes.</Text>
+          </View>
+          <Pressable onPress={() => void savePlace()} disabled={loading} style={[styles.primaryBtn, loading && styles.disabledBtn]}>
+            {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>{editingPlaceId ? 'Salvar alterações' : 'Publicar estabelecimento'}</Text>}
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   // --- TELA DE DETALHES ---
   if (selectedPlace) {
     const hasAnyAccessibility =
@@ -273,6 +526,9 @@ export default function App() {
     const placeCategoryLabel = categories.find(c => c.value === selectedPlace.category)?.label || selectedPlace.category;
     const free = isFree(selectedPlace.price);
     const isPublic = selectedPlace.is_public === true;
+    const accessibilityLevelLabel = selectedPlace.accessibility_level === 'INITIAL' ? 'Inicial' :
+      selectedPlace.accessibility_level === 'INTERMEDIATE' ? 'Intermediário' :
+        selectedPlace.accessibility_level === 'ADVANCED' ? 'Avançado' : 'Sem dados';
 
     return (
       <SafeAreaView style={styles.safe}>
@@ -344,7 +600,7 @@ export default function App() {
 
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Avaliações</Text>
-                <Text style={styles.summaryValue}>1</Text>
+                <Text style={styles.summaryValue}>{selectedPlace.total_reviews || 0}</Text>
               </View>
               <View style={styles.summaryDivider} />
 
@@ -352,14 +608,20 @@ export default function App() {
                 <Text style={styles.summaryLabel}>Acessibilidade</Text>
                 <View style={styles.accessibilityRating}>
                   <Ionicons name="accessibility" size={16} color="#2AC2D2" />
-                  <Text style={styles.accessibilityScore}>5.0/5</Text>
+                  <Text style={styles.accessibilityScore}>
+                    {selectedPlace.accessibility_score == null ? 'Sem dados' : `${selectedPlace.accessibility_score}% · ${accessibilityLevelLabel}`}
+                  </Text>
                 </View>
               </View>
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Sobre</Text>
+              <Text style={styles.sectionTitle}>Informações do local</Text>
               <Text style={styles.desc}>{selectedPlace.description || 'Descrição não disponível.'}</Text>
+              {selectedPlace.category_detail ? <Text style={styles.detailInfo}>Tipo: {selectedPlace.category_detail.replaceAll('_', ' ')}</Text> : null}
+              {selectedPlace.phone ? <Text style={styles.detailInfo}>Telefone: {selectedPlace.phone}</Text> : null}
+              {selectedPlace.website ? <Text style={styles.detailInfo}>Site: {selectedPlace.website}</Text> : null}
+              {selectedPlace.opening_hours ? <Text style={styles.detailInfo}>Funcionamento: {selectedPlace.opening_hours}</Text> : null}
             </View>
 
             <View style={styles.section}>
@@ -405,6 +667,17 @@ export default function App() {
                   <Text style={styles.noInfoText}>Nenhum recurso de acessibilidade informado.</Text>
                 )}
               </View>
+              {selectedPlace.accessibility_assessment ? (
+                <View style={styles.assessmentSummary}>
+                  <Text style={styles.sectionTitle}>Autoavaliação do estabelecimento</Text>
+                  <Text style={styles.questionnaireNotice}>Informação autodeclarada; não é certificação.</Text>
+                  {accessibilityQuestions.map((question) => {
+                    const answer = selectedPlace.accessibility_assessment?.[question.key];
+                    if (!answer) return null;
+                    return <Text key={question.key} style={styles.detailInfo}>{question.label} {answer === 'yes' ? '— Sim' : answer === 'no' ? '— Não' : '— Não sei / N/A'}</Text>;
+                  })}
+                </View>
+              ) : null}
             </View>
 
             <Pressable onPress={() => toggleFavorite(selectedPlace.id)} style={[styles.saveBtn, favorites.includes(selectedPlace.id) && styles.saveBtnActive]}>
@@ -432,6 +705,8 @@ export default function App() {
         <ScrollView contentContainerStyle={styles.content}>
           {activeTab === 'profile' && user ? (
             <View style={styles.profilePanel}>
+              {notice ? <View style={styles.noticeBox}><Text style={styles.noticeText}>{notice}</Text></View> : null}
+              {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View> : null}
               <View style={styles.profileAvatar}>
                 <Text style={styles.profileAvatarText}>{user.full_name.trim().charAt(0).toUpperCase()}</Text>
               </View>
@@ -441,6 +716,48 @@ export default function App() {
                 <Text style={styles.profileInfoLabel}>Tipo de conta</Text>
                 <Text style={styles.profileInfoValue}>{user.user_type === 'BUSINESS' ? 'Empresa' : 'Viajante'}</Text>
               </View>
+              {user.user_type === 'BUSINESS' && (
+                <View style={styles.businessManagement}>
+                  <View style={styles.businessManagementHeader}>
+                    <View>
+                      <Text style={styles.sectionTitle}>Meus estabelecimentos</Text>
+                      <Text style={styles.businessManagementCaption}>{myPlaces.length} local(is) cadastrado(s)</Text>
+                    </View>
+                    <Pressable onPress={startNewPlace} style={styles.businessAddButton}>
+                      <Ionicons name="add" size={18} color="#FFF" />
+                      <Text style={styles.businessAddButtonText}>Novo local</Text>
+                    </Pressable>
+                  </View>
+                  {myPlaces.length === 0 ? (
+                    <Text style={styles.emptyBusinessText}>Cadastre seu primeiro local com endereço, contatos e informações de acessibilidade.</Text>
+                  ) : myPlaces.map((place) => (
+                    <View key={place.id} style={styles.businessPlaceRow}>
+                      <View style={styles.businessPlaceSummary}>
+                        <Text style={styles.businessPlaceName}>{place.establishment_name}</Text>
+                        <Text style={styles.businessPlaceLocation}>{place.city}, {place.state} · {place.total_reviews || 0} avaliação(ões)</Text>
+                        <Text style={styles.businessPlaceLocation}>
+                          {place.accessibility_score == null ? 'Acessibilidade sem dados' : `${place.accessibility_score}% · ${place.accessibility_level === 'ADVANCED' ? 'Avançado' : place.accessibility_level === 'INTERMEDIATE' ? 'Intermediário' : 'Inicial'}`}
+                        </Text>
+                      </View>
+                      <Pressable onPress={() => startEditPlace(place)} style={styles.businessEditButton}>
+                        <Ionicons name="create-outline" size={18} color="#087F8C" />
+                        <Text style={styles.businessEditText}>Editar</Text>
+                      </Pressable>
+                      {confirmDeletePlaceId === place.id ? (
+                        <View style={styles.deleteConfirm}>
+                          <Text style={styles.deleteConfirmLabel}>Excluir?</Text>
+                          <Pressable onPress={() => { void deletePlace(place.id); setConfirmDeletePlaceId(null); }}><Text style={styles.deleteConfirmYes}>Sim</Text></Pressable>
+                          <Pressable onPress={() => setConfirmDeletePlaceId(null)}><Text style={styles.deleteConfirmNo}>Não</Text></Pressable>
+                        </View>
+                      ) : (
+                        <Pressable onPress={() => setConfirmDeletePlaceId(place.id)} style={styles.businessDeleteButton}>
+                          <Ionicons name="trash-outline" size={18} color="#B42318" />
+                        </Pressable>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
               <Pressable onPress={handleLogout} style={styles.profileLogout}>
                 <Ionicons name="log-out-outline" size={19} color="#B42318" />
                 <Text style={styles.profileLogoutText}>Sair da conta</Text>
@@ -463,11 +780,21 @@ export default function App() {
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
             {categories.map((item) => (
-              <Pressable key={item.value} onPress={() => { setCategory(item.value); setShowFavorites(false); }} style={[styles.filterBtn, category === item.value && !showFavorites && styles.filterActive]}>
+              <Pressable key={item.value} onPress={() => { setCategory(item.value); setCategoryDetail(''); setShowFavorites(false); }} style={[styles.filterBtn, category === item.value && !showFavorites && styles.filterActive]}>
                 <Text style={[styles.filterText, category === item.value && !showFavorites && styles.filterTextActive]}>{item.label}</Text>
               </Pressable>
             ))}
           </ScrollView>
+
+          {category && categoryDetails[category]?.length ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+              {categoryDetails[category].map((item) => (
+                <Pressable key={item.value} onPress={() => setCategoryDetail(categoryDetail === item.value ? '' : item.value)} style={[styles.filterBtn, categoryDetail === item.value && styles.filterActive]}>
+                  <Text style={[styles.filterText, categoryDetail === item.value && styles.filterTextActive]}>{item.label}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          ) : null}
 
           {placesLoading ? (
             <ActivityIndicator color="#2AC2D2" size="large" style={styles.spinner} />
@@ -501,12 +828,16 @@ export default function App() {
 
                   <View style={styles.cardBody}>
                     <View style={styles.cardHeader}>
-                      <Text style={styles.cardCat}>{categories.find(c => c.value === place.category)?.label || place.category}</Text>
+                      <Text style={styles.cardCat}>{place.category_detail ? `${categories.find(c => c.value === place.category)?.label || place.category} · ${place.category_detail.replaceAll('_', ' ')}` : categories.find(c => c.value === place.category)?.label || place.category}</Text>
                       <Pressable onPress={(e) => { e.stopPropagation(); toggleFavorite(place.id); }}>
                         <Ionicons name={favorites.includes(place.id) ? 'heart' : 'heart-outline'} size={22} color={favorites.includes(place.id) ? '#EF4444' : '#94A3B8'} />
                       </Pressable>
                     </View>
                     <Text style={styles.cardName}>{place.establishment_name}</Text>
+                    <Text style={styles.mobilePlaceRating}>
+                      {place.average_rating == null ? 'Sem avaliações' : `★ ${place.average_rating.toFixed(1)} (${place.total_reviews || 0})`}
+                      {place.accessibility_score == null ? '' : ` · ${place.accessibility_score}% ${place.accessibility_level === 'ADVANCED' ? 'Avançado' : place.accessibility_level === 'INTERMEDIATE' ? 'Intermediário' : 'Inicial'}`}
+                    </Text>
                     <View style={styles.locRow}>
                       <Ionicons name="location" size={14} color="#64748B" />
                       <Text style={styles.locText}>{place.city}, {place.state}</Text>
@@ -535,19 +866,19 @@ export default function App() {
       </KeyboardAvoidingView>
       <View style={styles.bottomNav}>
         <Pressable onPress={() => handleTabPress('home')} style={styles.bottomNavItem} accessibilityRole="button" accessibilityLabel="Início">
-          <Text style={[styles.bottomNavEmoji, activeTab === 'home' && styles.bottomNavEmojiActive]}>🏠</Text>
+          <Ionicons name={activeTab === 'home' ? 'home' : 'home-outline'} size={20} color={activeTab === 'home' ? '#087F8C' : '#94A3B8'} />
           <Text style={[styles.bottomNavLabel, activeTab === 'home' && styles.bottomNavLabelActive]}>Início</Text>
         </Pressable>
         <Pressable onPress={() => handleTabPress('explore')} style={styles.bottomNavItem} accessibilityRole="button" accessibilityLabel="Explorar">
-          <Text style={[styles.bottomNavEmoji, activeTab === 'explore' && styles.bottomNavEmojiActive]}>🔎</Text>
+          <Ionicons name={activeTab === 'explore' ? 'search' : 'search-outline'} size={20} color={activeTab === 'explore' ? '#087F8C' : '#94A3B8'} />
           <Text style={[styles.bottomNavLabel, activeTab === 'explore' && styles.bottomNavLabelActive]}>Explorar</Text>
         </Pressable>
         <Pressable onPress={() => handleTabPress('favorites')} style={styles.bottomNavItem} accessibilityRole="button" accessibilityLabel="Favoritos">
-          <Text style={[styles.bottomNavEmoji, activeTab === 'favorites' && styles.bottomNavEmojiActive]}>🤍</Text>
+          <Ionicons name={activeTab === 'favorites' ? 'heart' : 'heart-outline'} size={20} color={activeTab === 'favorites' ? '#087F8C' : '#94A3B8'} />
           <Text style={[styles.bottomNavLabel, activeTab === 'favorites' && styles.bottomNavLabelActive]}>Favoritos</Text>
         </Pressable>
         <Pressable onPress={() => handleTabPress('profile')} style={styles.bottomNavItem} accessibilityRole="button" accessibilityLabel="Perfil">
-          <Text style={[styles.bottomNavEmoji, activeTab === 'profile' && styles.bottomNavEmojiActive]}>👤</Text>
+          <Ionicons name={activeTab === 'profile' ? 'person' : 'person-outline'} size={20} color={activeTab === 'profile' ? '#087F8C' : '#94A3B8'} />
           <Text style={[styles.bottomNavLabel, activeTab === 'profile' && styles.bottomNavLabelActive]}>Perfil</Text>
         </Pressable>
       </View>
@@ -589,16 +920,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
-  },
-  bottomNavEmoji: {
-    color: '#94A3B8',
-    fontSize: 20,
-    lineHeight: 24,
-    fontWeight: '600',
-  },
-  bottomNavEmojiActive: {
-    color: '#087F8C',
-    transform: [{ scale: 1.08 }],
   },
   bottomNavLabel: {
     color: '#64748B',
@@ -660,6 +981,56 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  businessManagement: {
+    width: '100%',
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DCE5EF',
+  },
+  businessManagementHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 12,
+  },
+  businessManagementCaption: { color: '#64748B', fontSize: 12, marginTop: 3 },
+  businessAddButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#087F8C',
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
+  businessAddButtonText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
+  emptyBusinessText: { color: '#64748B', fontSize: 13, lineHeight: 20, paddingVertical: 8 },
+  businessPlaceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#DCE5EF',
+  },
+  businessPlaceSummary: { flex: 1, minWidth: 150 },
+  businessPlaceName: { color: '#052659', fontSize: 14, fontWeight: '800' },
+  businessPlaceLocation: { color: '#64748B', fontSize: 11, marginTop: 3 },
+  businessEditButton: { flexDirection: 'row', alignItems: 'center', gap: 3, padding: 6 },
+  businessEditText: { color: '#087F8C', fontWeight: '700', fontSize: 12 },
+  businessDeleteButton: { padding: 7, backgroundColor: '#FFF1F0', borderRadius: 8 },
+  deleteConfirm: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 5 },
+  deleteConfirmLabel: { color: '#64748B', fontSize: 12 },
+  deleteConfirmYes: { color: '#B42318', fontWeight: '800', fontSize: 12 },
+  deleteConfirmNo: { color: '#052659', fontWeight: '700', fontSize: 12 },
+  mobilePlaceRating: { color: '#64748B', fontSize: 12, marginBottom: 8 },
+  detailInfo: { color: '#475569', fontSize: 13, lineHeight: 19, marginBottom: 6 },
+  assessmentSummary: { marginTop: 20, padding: 14, borderRadius: 12, backgroundColor: '#F3FAFC' },
   profileLogout: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -801,7 +1172,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   searchInput: { flex: 1, paddingVertical: 14, fontSize: 15, color: '#0F172A', marginLeft: 10 },
-  filters: { gap: 8, marginBottom: 16 },
+  filters: { alignItems: 'center', gap: 8, marginBottom: 16, paddingVertical: 4 },
   filterBtn: { borderRadius: 20, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: '#F1F5F9' },
   filterActive: { backgroundColor: '#052659' },
   filterText: { color: '#475569', fontWeight: '600', fontSize: 13 },
@@ -890,6 +1261,37 @@ const styles = StyleSheet.create({
 
   // Auth
   authContainer: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  placeFormContainer: { padding: 18, paddingBottom: 42, flexGrow: 1 },
+  placeFormTitle: { color: '#052659', fontSize: 26, lineHeight: 32, fontWeight: '900', marginBottom: 6 },
+  placeFormIntro: { color: '#64748B', fontSize: 14, lineHeight: 20, marginBottom: 18 },
+  formLabel: { color: '#334155', fontSize: 13, fontWeight: '700', marginBottom: 6, marginTop: 8 },
+  formInput: {
+    minHeight: 48,
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    backgroundColor: '#FFF',
+    color: '#0F172A',
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  formTextArea: { minHeight: 96, textAlignVertical: 'top' },
+  formChoiceWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 8 },
+  formChoice: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#DCE5EF', backgroundColor: '#FFF' },
+  formChoiceActive: { backgroundColor: '#087F8C', borderColor: '#087F8C' },
+  formChoiceText: { color: '#475569', fontSize: 12, fontWeight: '700' },
+  formChoiceTextActive: { color: '#FFF' },
+  roleChoiceRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  roleChoice: { flex: 1, alignItems: 'center', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 10, paddingVertical: 12, backgroundColor: '#FFF' },
+  roleChoiceActive: { backgroundColor: '#087F8C', borderColor: '#087F8C' },
+  roleChoiceText: { color: '#475569', fontWeight: '700', fontSize: 13 },
+  roleChoiceTextActive: { color: '#FFF' },
+  questionnaireCard: { marginTop: 18, padding: 14, borderRadius: 14, backgroundColor: '#F2FAFC', borderWidth: 1, borderColor: '#D5EEF1' },
+  questionnaireNotice: { color: '#475569', fontSize: 12, lineHeight: 18, marginBottom: 10 },
+  mobileQuestion: { paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#DCE5EF' },
+  mobileQuestionText: { color: '#1E293B', fontSize: 13, lineHeight: 19, fontWeight: '700', marginBottom: 8 },
   authCard: { backgroundColor: '#FFF', borderRadius: 24, padding: 28, borderWidth: 1, borderColor: '#E2E8F0' },
   logoText: { fontSize: 32, fontWeight: '800', color: '#052659', textAlign: 'center', marginBottom: 8 },
   logoAccent: { color: '#2AC2D2' },
