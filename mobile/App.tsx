@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -11,6 +11,7 @@ import {
   Pressable,
   SafeAreaView,
   ScrollView,
+  type ScrollViewInstance,
   StyleSheet,
   Text,
   TextInput,
@@ -140,6 +141,7 @@ const isFree = (price: number | null | undefined): boolean => {
 export default function App() {
   const [screen, setScreen] = useState<Screen>('home');
   const [activeTab, setActiveTab] = useState<MainTab>('home');
+  const mainScrollRef = useRef<ScrollViewInstance>(null);
   const [user, setUser] = useState<User | null>(null);
   const [places, setPlaces] = useState<Place[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
@@ -369,6 +371,15 @@ export default function App() {
     setNotice('Você saiu da conta.');
   };
 
+  const openExplore = (selectedCategory = '') => {
+    setActiveTab('explore');
+    setShowFavorites(false);
+    setSearch('');
+    setCategory(selectedCategory);
+    setCategoryDetail('');
+    requestAnimationFrame(() => mainScrollRef.current?.scrollTo({ y: 0, animated: true }));
+  };
+
   const handleTabPress = (tab: MainTab) => {
     if (tab === 'favorites' && !user) {
       setNotice('Entre na sua conta para acessar seus favoritos.');
@@ -382,12 +393,18 @@ export default function App() {
       return;
     }
 
+    if (tab === 'explore') {
+      openExplore();
+      return;
+    }
+
     setActiveTab(tab);
     setShowFavorites(tab === 'favorites');
-
-    if (tab === 'home' || tab === 'explore') {
+    if (tab === 'home') {
       setSearch('');
       setCategory('');
+      setCategoryDetail('');
+      requestAnimationFrame(() => mainScrollRef.current?.scrollTo({ y: 0, animated: true }));
     }
   };
 
@@ -973,7 +990,7 @@ export default function App() {
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView ref={mainScrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {activeTab === 'profile' && user ? (
             <View style={styles.profilePanel}>
               {notice ? <View style={styles.noticeBox}><Text style={styles.noticeText}>{notice}</Text></View> : null}
@@ -1061,12 +1078,7 @@ export default function App() {
               </View>
               <View style={styles.homeCategoryGrid}>
                 {categories.filter((item) => item.value).map((item) => (
-                  <Pressable key={item.value} onPress={() => {
-                    setCategory(item.value);
-                    setCategoryDetail('');
-                    setShowFavorites(false);
-                    setActiveTab('explore');
-                  }} style={styles.homeCategoryCard}>
+                  <Pressable key={item.value} onPress={() => openExplore(item.value)} style={styles.homeCategoryCard}>
                     <Ionicons
                       name={item.value === 'ACCOMMODATION' ? 'bed-outline' : item.value === 'GASTRONOMY' ? 'restaurant-outline' : item.value === 'TOURIST_ATTRACTION' ? 'camera-outline' : 'compass-outline'}
                       size={22}

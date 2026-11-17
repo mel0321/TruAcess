@@ -1544,8 +1544,10 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
 }
 .destination-extra-filters {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
   margin: 18px 0 24px;
 }
 .destination-extra-filters label {
@@ -1564,6 +1566,74 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
   color: #052659;
   font: inherit;
   font-size: 13px;
+}
+.destination-rating-filter {
+  display: grid;
+  gap: 5px;
+}
+.destination-rating-filter-title {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+}
+.destination-rating-filter-help {
+  color: #64748b;
+  font-size: 11px;
+}
+.destination-rating-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 3px;
+}
+.rating-filter-chip {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #d5e0ea;
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .16s ease, color .16s ease, border-color .16s ease;
+}
+.rating-filter-chip > span[aria-hidden="true"] {
+  color: #d18a00;
+}
+.rating-filter-count {
+  display: inline-flex;
+  min-width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  margin-left: 2px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 10px;
+}
+.rating-filter-chip:hover {
+  border-color: #087f8c;
+  color: #052659;
+}
+.rating-filter-chip.is-active {
+  border-color: #052659;
+  background: #052659;
+  color: #fff;
+}
+.rating-filter-chip.is-active > span[aria-hidden="true"] {
+  color: #ffd166;
+}
+.rating-filter-chip.is-active .rating-filter-count {
+  background: rgba(255,255,255,.16);
+  color: #fff;
+}
+.rating-filter-chip:focus-visible {
+  outline: 3px solid #2ac2d2;
+  outline-offset: 2px;
 }
 .destination-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 8px; }
 .destination-card-meta > span {
@@ -1590,8 +1660,9 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
 .place-assessment-answers li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid #dcecef; color: #475569; font-size: 12px; }
 .place-assessment-answers li strong { color: #087f8c; white-space: nowrap; }
 @media (max-width: 640px) {
-  .destination-extra-filters { justify-content: stretch; }
+  .destination-extra-filters { justify-content: flex-start; align-items: stretch; }
   .destination-extra-filters label { flex: 1; min-width: 0; }
   .destination-extra-filters select { min-width: 0; width: 100%; }
+  .destination-rating-filter { flex: 1 1 100%; }
   .place-assessment-answers li { flex-direction: column; gap: 3px; }
 }

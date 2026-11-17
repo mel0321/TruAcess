@@ -38,7 +38,7 @@ export function DestinationsPage() {
   }, []);
 
   const normalizedSearch = search.trim().toLocaleLowerCase('pt-BR');
-  const filteredPlaces = places.filter((place) => {
+  const placesMatchingOtherFilters = places.filter((place) => {
     const matchesSearch = !normalizedSearch || [
       place.establishment_name,
       place.city,
@@ -47,15 +47,27 @@ export function DestinationsPage() {
     ].some((value) => value?.toLocaleLowerCase('pt-BR').includes(normalizedSearch));
     const matchesCategory = !category || place.category === category;
     const matchesCategoryDetail = !categoryDetail || place.category_detail === categoryDetail;
-    const matchesRating = !minimumRating || (place.average_rating || 0) >= Number(minimumRating);
     const matchesAccessibility = !accessibleOnly || (
       place.has_access_ramp || place.has_asd_friendly_space ||
       place.has_adapted_bathroom || place.has_braille_signage ||
       place.has_sign_language_interpreter || place.allows_guide_dog
     );
 
-    return matchesSearch && matchesCategory && matchesCategoryDetail && matchesRating && matchesAccessibility;
+    return matchesSearch && matchesCategory && matchesCategoryDetail && matchesAccessibility;
   });
+  const filteredPlaces = placesMatchingOtherFilters.filter((place) => (
+    !minimumRating ||
+    (place.average_rating !== null && place.average_rating !== undefined && place.average_rating >= Number(minimumRating))
+  ));
+  const ratingOptions = ['3', '4', '5'] as const;
+  const ratingCounts = Object.fromEntries(ratingOptions.map((rating) => [
+    rating,
+    placesMatchingOtherFilters.filter((place) => (
+      place.average_rating !== null &&
+      place.average_rating !== undefined &&
+      place.average_rating >= Number(rating)
+    )).length,
+  ])) as Record<(typeof ratingOptions)[number], number>;
   const detailCategories = category ? placeCategoryDetails[category] || [] : [];
 
   return (
@@ -156,14 +168,32 @@ export function DestinationsPage() {
                   </select>
                 </label>
               )}
-              <label>
-                Nota mínima
-                <select value={minimumRating} onChange={(event) => setMinimumRating(event.target.value)}>
-                  <option value="">Qualquer nota</option>
-                  <option value="3">3+ estrelas</option>
-                  <option value="4">4+ estrelas</option>
-                </select>
-              </label>
+              <div className="destination-rating-filter" role="group" aria-labelledby="destination-rating-title">
+                <span id="destination-rating-title" className="destination-rating-filter-title">Nota dos viajantes</span>
+                <span className="destination-rating-filter-help">Média da experiência geral. Sem avaliações aparece em “Qualquer nota”.</span>
+                <div className="destination-rating-options">
+                  <button
+                    type="button"
+                    className={`rating-filter-chip${minimumRating === '' ? ' is-active' : ''}`}
+                    aria-pressed={minimumRating === ''}
+                    onClick={() => setMinimumRating('')}
+                  >
+                    Qualquer nota
+                  </button>
+                  {ratingOptions.map((rating) => (
+                    <button
+                      type="button"
+                      key={rating}
+                      className={`rating-filter-chip${minimumRating === rating ? ' is-active' : ''}`}
+                      aria-label={`Mostrar locais com média de pelo menos ${rating} de 5 estrelas. ${ratingCounts[rating]} locais correspondem`}
+                      aria-pressed={minimumRating === rating}
+                      onClick={() => setMinimumRating(minimumRating === rating ? '' : rating)}
+                    >
+                      <span aria-hidden="true">★</span> {rating}+ <span className="rating-filter-count">{ratingCounts[rating]}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {loading ? (
