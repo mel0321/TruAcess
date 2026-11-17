@@ -276,7 +276,7 @@ export function ProfilePage() {
                   <h3>Seu primeiro comentário pode ajudar alguém</h3>
                   <p>Conte como foi sua visita e ajude outros viajantes a escolher um lugar com mais confiança.</p>
                   <Link className="profile-empty-cta" to="/destinos">
-                    Encontrar um destino <span aria-hidden="true">→</span>
+                    Encontrar um destino
                   </Link>
                 </div>
               )}
@@ -304,7 +304,7 @@ export function ProfilePage() {
                   <h3>Guarde lugares para sua próxima viagem</h3>
                   <p>Explore os destinos e toque no coração de um local para encontrá-lo aqui depois.</p>
                   <Link className="profile-empty-cta" to="/destinos">
-                    Explorar destinos <span aria-hidden="true">→</span>
+                    Explorar destinos
                   </Link>
                 </div>
               )}

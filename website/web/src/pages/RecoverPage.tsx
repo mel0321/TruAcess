@@ -82,7 +82,7 @@ export function RecoverPage() {
           </form>
         )}
         <div style={{textAlign: 'center', marginTop: '24px', fontSize: '14px'}}>
-          <Link to="/login" style={{color: '#052659', textDecoration: 'none', fontWeight: '600'}}>← Voltar para o login</Link>
+          <Link to="/login" style={{color: '#052659', textDecoration: 'none', fontWeight: '600'}}>Voltar para o login</Link>
         </div>
       </div>
     </div>

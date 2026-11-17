@@ -166,7 +166,7 @@ export function OnboardingPage() {
         <div style={{marginBottom: '32px'}}>
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
             <span style={{fontSize: '14px', color: '#64748B', fontWeight: 600}}>Passo {currentStep + 1} de {STEPS.length}</span>
-            <button onClick={handleSkip} style={{background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', fontSize: '13px', fontWeight: 600}}>Pular →</button>
+            <button onClick={handleSkip} style={{background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', fontSize: '13px', fontWeight: 600}}>Pular</button>
           </div>
           <div style={{height: '6px', background: '#E2E8F0', borderRadius: '100px', overflow: 'hidden'}}>
             <div style={{height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg, #2AC2D2 0%, #0EA5E9 100%)', borderRadius: '100px', transition: 'width 0.5s ease'}} />
@@ -278,11 +278,11 @@ export function OnboardingPage() {
         <div style={{display: 'flex', gap: '12px'}}>
           {currentStep > 0 && (
             <button onClick={handleBack} style={{flex: 1, padding: '16px', background: '#F1F5F9', color: '#052659', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit'}}>
-              ← Voltar
+              Voltar
             </button>
           )}
           <button onClick={handleNext} disabled={!answers[step?.key] && step?.key !== 'disabilities' && step?.key !== 'interests'} style={{flex: 1, padding: '16px', background: 'linear-gradient(135deg, #052659 0%, #0a3d7a 100%)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit', boxShadow: '0 4px 15px rgba(5, 38, 89, 0.2)', opacity: (!answers[step?.key] && step?.key !== 'disabilities' && step?.key !== 'interests') ? 0.5 : 1, transition: 'all 0.3s'}}>
-            {currentStep === STEPS.length - 1 ? 'Finalizar e Explorar →' : 'Continuar →'}
+            {currentStep === STEPS.length - 1 ? 'Finalizar e Explorar' : 'Continuar'}
           </button>
         </div>
       </div>

@@ -4,7 +4,7 @@ import api from '../services/api';
 import { Header } from '../components/Header';
 import { useFavorites } from '../context/FavoritesContext';
 import { useAuth } from '../context/AuthContext';
-import { IconRamp, IconBrain, IconLibras, IconBraille, IconMapPin, IconStar, IconHeart, IconMessageCircle, IconArrowLeft, IconDog, IconX, IconPlus } from '../components/Icons';
+import { IconRamp, IconBrain, IconLibras, IconBraille, IconMapPin, IconStar, IconHeart, IconMessageCircle, IconDog, IconX, IconPlus } from '../components/Icons';
 import { getPlaceCategoryLabel } from '../utils/placeCategories';
 import { accessibilityQuestions } from '../utils/accessibilityQuestionnaire';
 import type { Place, Review } from '../types';
@@ -163,7 +163,7 @@ export function PlaceDetailsPage() {
           <button onClick={() => navigate(-1)} style={{background: '#F1F5F9', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontSize: '14px', color: '#052659'}}
             onMouseOver={e => (e.currentTarget.style.background = '#E2E8F0')}
             onMouseOut={e => (e.currentTarget.style.background = '#F1F5F9')}>
-            <IconArrowLeft width={18} height={18} /> Voltar
+            Voltar
           </button>
           <div style={{color: '#64748B', fontSize: '14px'}}>
             <Link to="/" style={{color: '#64748B', textDecoration: 'none'}}>Início</Link>

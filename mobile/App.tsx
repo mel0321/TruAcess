@@ -25,6 +25,15 @@ const api = axios.create({ baseURL: API_URL, timeout: 10000 });
 type User = { id: number; email: string; full_name: string; user_type: string };
 type AccessibilityAnswer = 'yes' | 'no' | 'unsure';
 type AccessibilityAssessment = Record<string, AccessibilityAnswer>;
+type PlaceReview = {
+  id: number;
+  traveler_name: string;
+  traveler_avatar?: string | null;
+  experience_rating: number;
+  accessibility_level: 'POOR' | 'GOOD' | 'EXCELLENT';
+  comment_text?: string | null;
+  created_at: string;
+};
 type Place = {
   id: number;
   establishment_name: string;
@@ -44,6 +53,8 @@ type Place = {
   total_reviews?: number;
   accessibility_score?: number | null;
   accessibility_level?: 'INITIAL' | 'INTERMEDIATE' | 'ADVANCED' | null;
+  questionnaire_score?: number | null;
+  traveler_accessibility_score?: number | null;
   is_public?: boolean;
   has_access_ramp: boolean;
   has_adapted_bathroom: boolean;
@@ -51,6 +62,14 @@ type Place = {
   has_braille_signage: boolean;
   has_sign_language_interpreter: boolean;
   has_asd_friendly_space: boolean;
+};
+type PlaceDetailsResponse = {
+  place: Place & {
+    stats?: {
+      average_rating: number | null;
+      total_reviews: number;
+    };
+  };
 };
 type Screen = 'home' | 'login' | 'register' | 'placeForm';
 type MainTab = 'home' | 'explore' | 'favorites' | 'profile';
@@ -124,6 +143,14 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [places, setPlaces] = useState<Place[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  const [placeReviews, setPlaceReviews] = useState<PlaceReview[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [reviewFormOpen, setReviewFormOpen] = useState(false);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [experienceRating, setExperienceRating] = useState(5);
+  const [accessibilityRating, setAccessibilityRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
   const [favorites, setFavorites] = useState<number[]>([]);
   const [showFavorites, setShowFavorites] = useState(false);
   const [category, setCategory] = useState('');
@@ -152,6 +179,33 @@ export default function App() {
     if (user) void loadFavorites(user.id);
     else setFavorites([]);
   }, [user]);
+
+  useEffect(() => {
+    const placeId = selectedPlace?.id;
+    if (!placeId) {
+      setPlaceReviews([]);
+      setReviewError('');
+      setReviewFormOpen(false);
+      return;
+    }
+
+    let active = true;
+    setReviewsLoading(true);
+    setReviewError('');
+    void api.get<{ reviews: PlaceReview[] }>(`/places/${placeId}/reviews`)
+      .then((response) => {
+        if (active) setPlaceReviews(response.data.reviews);
+      })
+      .catch((loadError: unknown) => {
+        console.error('Erro ao carregar avaliações do local:', loadError);
+        if (active) setReviewError('Não foi possível carregar os comentários. Tente novamente.');
+      })
+      .finally(() => {
+        if (active) setReviewsLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [selectedPlace?.id]);
 
   useEffect(() => {
     if (user?.user_type !== 'BUSINESS') {
@@ -230,6 +284,53 @@ export default function App() {
     const next = favorites.includes(placeId) ? favorites.filter(id => id !== placeId) : [...favorites, placeId];
     setFavorites(next);
     await AsyncStorage.setItem(favoriteStorageKey(user.id), JSON.stringify(next));
+  };
+
+  const submitPlaceReview = async () => {
+    if (!selectedPlace) return;
+    if (!user || user.user_type !== 'TRAVELER') {
+      setReviewError(user ? 'Somente contas de viajante podem avaliar locais.' : 'Entre na sua conta de viajante para avaliar este local.');
+      return;
+    }
+
+    setReviewSubmitting(true);
+    setReviewError('');
+    try {
+      const token = await SecureStore.getItemAsync('TruAcessToken');
+      if (!token) throw new Error('Sua sessão expirou. Entre novamente para avaliar.');
+      const response = await api.post<{ review: PlaceReview }>(`/places/${selectedPlace.id}/reviews`, {
+        experience_rating: experienceRating,
+        accessibility_level: accessibilityRating >= 5 ? 'EXCELLENT' : accessibilityRating >= 3 ? 'GOOD' : 'POOR',
+        comment_text: reviewComment.trim(),
+      }, { headers: { Authorization: `Bearer ${token}` } });
+
+      setPlaceReviews((current) => [response.data.review, ...current]);
+      setReviewComment('');
+      setExperienceRating(5);
+      setAccessibilityRating(5);
+      setReviewFormOpen(false);
+      setSelectedPlace((current) => current ? { ...current, total_reviews: (current.total_reviews || 0) + 1 } : current);
+
+      try {
+        const updated = await api.get<PlaceDetailsResponse>(`/places/${selectedPlace.id}`);
+        const refreshedPlace = {
+          ...updated.data.place,
+          average_rating: updated.data.place.stats?.average_rating ?? null,
+          total_reviews: updated.data.place.stats?.total_reviews ?? placeReviews.length + 1,
+        };
+        setSelectedPlace((current) => current?.id === selectedPlace.id ? refreshedPlace : current);
+      } catch (refreshError: unknown) {
+        console.error('Comentário publicado, mas não foi possível atualizar o nivelador:', refreshError);
+        setReviewError('Comentário publicado. O nivelador será atualizado quando os dados forem carregados novamente.');
+      }
+    } catch (submitError: unknown) {
+      console.error('Erro ao publicar comentário:', submitError);
+      setReviewError(axios.isAxiosError(submitError)
+        ? submitError.response?.data?.message || 'Não foi possível publicar seu comentário. Tente novamente.'
+        : submitError instanceof Error ? submitError.message : 'Não foi possível publicar seu comentário. Tente novamente.');
+    } finally {
+      setReviewSubmitting(false);
+    }
   };
 
   const handleLogin = async () => {
@@ -368,6 +469,55 @@ export default function App() {
     } catch (deleteError: any) {
       setError(deleteError.response?.data?.message || deleteError.message || 'Não foi possível excluir o estabelecimento.');
     }
+  };
+
+  const renderPlaceCard = (place: Place) => {
+    const free = isFree(place.price);
+    const isPublic = place.is_public === true;
+    return (
+      <Pressable key={place.id} onPress={() => setSelectedPlace(place)} style={styles.card}>
+        <View style={styles.cardImageContainer}>
+          {place.main_image ? (
+            <Image source={{ uri: place.main_image }} style={styles.cardImage} resizeMode="cover" />
+          ) : (
+            <View style={styles.cardImagePlaceholder}>
+              <Ionicons name="image-outline" size={40} color="#CBD5E1" />
+              <Text style={styles.cardImagePlaceholderText}>Sem foto</Text>
+            </View>
+          )}
+          {(free || isPublic) && (
+            <View style={styles.cardBadges}>
+              {free && <View style={styles.cardBadgeFree}><Text style={styles.cardBadgeFreeText}>Grátis</Text></View>}
+              {isPublic && <View style={styles.cardBadgePublic}><Text style={styles.cardBadgePublicText}>Público</Text></View>}
+            </View>
+          )}
+        </View>
+        <View style={styles.cardBody}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardCat}>
+              {place.category_detail
+                ? `${categories.find((item) => item.value === place.category)?.label || place.category} · ${place.category_detail.replaceAll('_', ' ')}`
+                : categories.find((item) => item.value === place.category)?.label || place.category}
+            </Text>
+            <Pressable onPress={(event) => { event.stopPropagation(); void toggleFavorite(place.id); }}>
+              <Ionicons name={favorites.includes(place.id) ? 'heart' : 'heart-outline'} size={22} color={favorites.includes(place.id) ? '#EF4444' : '#94A3B8'} />
+            </Pressable>
+          </View>
+          <Text style={styles.cardName}>{place.establishment_name}</Text>
+          <Text style={styles.mobilePlaceRating}>
+            {place.average_rating == null ? 'Sem avaliações' : `★ ${place.average_rating.toFixed(1)} (${place.total_reviews || 0})`}
+            {place.accessibility_score == null ? '' : ` · ${place.accessibility_score}% ${place.accessibility_level === 'ADVANCED' ? 'Avançado' : place.accessibility_level === 'INTERMEDIATE' ? 'Intermediário' : 'Inicial'}`}
+          </Text>
+          <View style={styles.locRow}>
+            <Ionicons name="location" size={14} color="#64748B" />
+            <Text style={styles.locText}>{place.city}, {place.state}</Text>
+          </View>
+          <Text style={[styles.cardPrice, free && styles.cardPriceFree]}>{formatPrice(place.price)}</Text>
+          {place.description ? <Text numberOfLines={2} style={styles.desc}>{place.description}</Text> : null}
+          <View style={styles.cardFooter}><Text style={styles.seeMore}>Ver detalhes ›</Text></View>
+        </View>
+      </Pressable>
+    );
   };
 
   // --- TELA DE AUTENTICAÇÃO ---
@@ -532,12 +682,23 @@ export default function App() {
 
     return (
       <SafeAreaView style={styles.safe}>
+        <StatusBar style="dark" />
         <ScrollView style={styles.detailsContainer} showsVerticalScrollIndicator={false}>
           <View style={styles.detailsHeader}>
-            <Pressable onPress={() => setSelectedPlace(null)} style={styles.backButton}>
+            <Pressable onPress={() => setSelectedPlace(null)} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Voltar para destinos">
               <Ionicons name="arrow-back" size={24} color="#052659" />
             </Pressable>
-            <Text style={styles.detailsCategory}>{placeCategoryLabel}</Text>
+            <View style={styles.detailsCategoryPill}>
+              <Text numberOfLines={1} style={styles.detailsCategory}>{placeCategoryLabel}</Text>
+            </View>
+            <Pressable
+              onPress={() => void toggleFavorite(selectedPlace.id)}
+              style={styles.detailsFavoriteButton}
+              accessibilityRole="button"
+              accessibilityLabel={favorites.includes(selectedPlace.id) ? 'Remover dos favoritos' : 'Salvar nos favoritos'}
+            >
+              <Ionicons name={favorites.includes(selectedPlace.id) ? 'heart' : 'heart-outline'} size={20} color={favorites.includes(selectedPlace.id) ? '#D92D20' : '#052659'} />
+            </Pressable>
           </View>
 
           <View style={styles.detailsImageContainer}>
@@ -613,6 +774,27 @@ export default function App() {
                   </Text>
                 </View>
               </View>
+              <View
+                style={styles.levelTrack}
+                accessibilityRole="progressbar"
+                accessibilityValue={{
+                  min: 0,
+                  max: 100,
+                  now: selectedPlace.accessibility_score ?? 0,
+                  text: selectedPlace.accessibility_score == null ? 'Sem dados' : `${selectedPlace.accessibility_score}% · ${accessibilityLevelLabel}`,
+                }}
+              >
+                <View style={[
+                  styles.levelFill,
+                  selectedPlace.accessibility_score == null && styles.levelFillEmpty,
+                  selectedPlace.accessibility_score != null && { width: `${selectedPlace.accessibility_score}%` },
+                ]} />
+              </View>
+              <View style={styles.levelLabels}>
+                <Text style={[styles.levelLabel, selectedPlace.accessibility_level === 'INITIAL' && styles.levelLabelActive]}>Inicial</Text>
+                <Text style={[styles.levelLabel, selectedPlace.accessibility_level === 'INTERMEDIATE' && styles.levelLabelActive]}>Intermediário</Text>
+                <Text style={[styles.levelLabel, selectedPlace.accessibility_level === 'ADVANCED' && styles.levelLabelActive]}>Avançado</Text>
+              </View>
             </View>
 
             <View style={styles.section}>
@@ -678,6 +860,95 @@ export default function App() {
                   })}
                 </View>
               ) : null}
+            </View>
+
+            <View style={styles.reviewSection}>
+              <View style={styles.reviewHeading}>
+                <View>
+                  <Text style={styles.sectionTitle}>Comentários</Text>
+                  <Text style={styles.reviewCount}>{placeReviews.length} avaliação(ões)</Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    if (!user) {
+                      setNotice('Entre na sua conta de viajante para avaliar este local.');
+                      setScreen('login');
+                    } else if (user.user_type !== 'TRAVELER') {
+                      setReviewError('Somente contas de viajante podem avaliar locais.');
+                    } else {
+                      setReviewError('');
+                      setReviewFormOpen((open) => !open);
+                    }
+                  }}
+                  style={styles.reviewButton}
+                >
+                  <Text style={styles.reviewButtonText}>{reviewFormOpen ? 'Cancelar' : 'Avaliar local'}</Text>
+                </Pressable>
+              </View>
+
+              {reviewError ? <Text accessibilityRole="alert" style={styles.reviewError}>{reviewError}</Text> : null}
+              {reviewFormOpen ? (
+                <View style={styles.reviewForm}>
+                  <Text style={styles.reviewFormLabel}>Como foi sua experiência?</Text>
+                  <View style={styles.reviewStars}>
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <Pressable key={`experience-${rating}`} onPress={() => setExperienceRating(rating)} accessibilityRole="button" accessibilityLabel={`${rating} de 5 estrelas para experiência`}>
+                        <Ionicons name={rating <= experienceRating ? 'star' : 'star-outline'} size={25} color="#F59E0B" />
+                      </Pressable>
+                    ))}
+                  </View>
+                  <Text style={styles.reviewFormLabel}>Como avalia a acessibilidade?</Text>
+                  <View style={styles.reviewStars}>
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <Pressable key={`accessibility-${rating}`} onPress={() => setAccessibilityRating(rating)} accessibilityRole="button" accessibilityLabel={`${rating} de 5 para acessibilidade`}>
+                        <Ionicons name={rating <= accessibilityRating ? 'star' : 'star-outline'} size={25} color="#087F8C" />
+                      </Pressable>
+                    ))}
+                  </View>
+                  <TextInput
+                    value={reviewComment}
+                    onChangeText={setReviewComment}
+                    placeholder="Conte como foi sua visita"
+                    multiline
+                    maxLength={2000}
+                    style={styles.reviewInput}
+                    accessibilityLabel="Comentário sobre o local"
+                  />
+                  <Pressable
+                    onPress={() => void submitPlaceReview()}
+                    disabled={reviewSubmitting || !reviewComment.trim()}
+                    style={[styles.reviewSubmitButton, (reviewSubmitting || !reviewComment.trim()) && styles.reviewSubmitDisabled]}
+                  >
+                    {reviewSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.reviewSubmitText}>Publicar comentário</Text>}
+                  </Pressable>
+                </View>
+              ) : null}
+
+              {reviewsLoading ? (
+                <ActivityIndicator color="#087F8C" style={styles.reviewLoading} />
+              ) : placeReviews.length ? placeReviews.map((review) => (
+                <View key={review.id} style={styles.reviewCard}>
+                  <View style={styles.reviewCardHeading}>
+                    <Text style={styles.reviewAuthor}>{review.traveler_name}</Text>
+                    <Text style={styles.reviewDate}>{review.created_at ? new Date(review.created_at).toLocaleDateString('pt-BR') : ''}</Text>
+                  </View>
+                  <View style={styles.reviewRatingRow}>
+                    <Text style={styles.reviewRatingLabel}>Experiência</Text>
+                    <Text style={styles.reviewStarsText}>{'★'.repeat(Math.max(0, Math.min(5, review.experience_rating)))}</Text>
+                  </View>
+                  <View style={styles.reviewRatingRow}>
+                    <Text style={styles.reviewRatingLabel}>Acessibilidade</Text>
+                    <Text style={styles.reviewStarsText}>{'★'.repeat(review.accessibility_level === 'EXCELLENT' ? 5 : review.accessibility_level === 'GOOD' ? 3 : 1)}</Text>
+                  </View>
+                  {review.comment_text ? <Text style={styles.reviewComment}>{review.comment_text}</Text> : <Text style={styles.reviewNoComment}>Sem comentário escrito.</Text>}
+                </View>
+              )) : (
+                <View style={styles.reviewEmpty}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={24} color="#087F8C" />
+                  <Text style={styles.reviewEmptyText}>{reviewError ? 'As avaliações não puderam ser carregadas.' : 'Ainda não há comentários. Seja a primeira pessoa a avaliar este local.'}</Text>
+                </View>
+              )}
             </View>
 
             <Pressable onPress={() => toggleFavorite(selectedPlace.id)} style={[styles.saveBtn, favorites.includes(selectedPlace.id) && styles.saveBtnActive]}>
@@ -763,11 +1034,101 @@ export default function App() {
                 <Text style={styles.profileLogoutText}>Sair da conta</Text>
               </Pressable>
             </View>
+          ) : activeTab === 'home' ? (
+            <View>
+              {notice ? <View style={styles.noticeBox}><Text style={styles.noticeText}>{notice}</Text></View> : null}
+              {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View> : null}
+              <View style={styles.homeLandingHero}>
+                <Text style={styles.homeLandingEyebrow}>TURISMO PARA TODOS</Text>
+                <Text style={styles.homeLandingTitle}>Sua próxima viagem começa com mais autonomia.</Text>
+                <Text style={styles.homeLandingDescription}>Descubra lugares, compare informações de acessibilidade e planeje cada etapa no seu ritmo.</Text>
+                <Pressable onPress={() => handleTabPress('explore')} style={styles.homeLandingButton}>
+                  <Text style={styles.homeLandingButtonText}>Explorar destinos</Text>
+                  <Ionicons name="arrow-forward" size={18} color="#052659" />
+                </Pressable>
+                <View style={styles.homeLandingFeatures}>
+                  <View style={styles.homeLandingFeature}><Ionicons name="accessibility-outline" size={17} color="#7DE4E0" /><Text style={styles.homeLandingFeatureText}>Acessibilidade</Text></View>
+                  <View style={styles.homeLandingFeature}><Ionicons name="information-circle-outline" size={17} color="#7DE4E0" /><Text style={styles.homeLandingFeatureText}>Informações claras</Text></View>
+                  <View style={styles.homeLandingFeature}><Ionicons name="people-outline" size={17} color="#7DE4E0" /><Text style={styles.homeLandingFeatureText}>Experiências reais</Text></View>
+                </View>
+              </View>
+
+              <View style={styles.homeSectionHeading}>
+                <View>
+                  <Text style={styles.homeSectionTitle}>Explore por categoria</Text>
+                  <Text style={styles.homeSectionSubtitle}>Escolha o tipo de experiência</Text>
+                </View>
+              </View>
+              <View style={styles.homeCategoryGrid}>
+                {categories.filter((item) => item.value).map((item) => (
+                  <Pressable key={item.value} onPress={() => {
+                    setCategory(item.value);
+                    setCategoryDetail('');
+                    setShowFavorites(false);
+                    setActiveTab('explore');
+                  }} style={styles.homeCategoryCard}>
+                    <Ionicons
+                      name={item.value === 'ACCOMMODATION' ? 'bed-outline' : item.value === 'GASTRONOMY' ? 'restaurant-outline' : item.value === 'TOURIST_ATTRACTION' ? 'camera-outline' : 'compass-outline'}
+                      size={22}
+                      color="#087F8C"
+                    />
+                    <Text style={styles.homeCategoryText}>{item.label}</Text>
+                    <Ionicons name="arrow-forward" size={14} color="#94A3B8" />
+                  </Pressable>
+                ))}
+              </View>
+
+              <View style={styles.homeSectionHeading}>
+                <View>
+                  <Text style={styles.homeSectionTitle}>Um lugar para conhecer</Text>
+                  <Text style={styles.homeSectionSubtitle}>Destaque entre os locais cadastrados</Text>
+                </View>
+              </View>
+              {placesLoading ? (
+                <ActivityIndicator color="#2AC2D2" size="large" style={styles.spinner} />
+              ) : places[0] ? (
+                <Pressable onPress={() => setSelectedPlace(places[0])} style={styles.homeFeaturedCard}>
+                  {places[0].main_image ? (
+                    <Image source={{ uri: places[0].main_image }} style={styles.homeFeaturedImage} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.homeFeaturedImage, styles.homeFeaturedPlaceholder]}>
+                      <Ionicons name="image-outline" size={34} color="#087F8C" />
+                    </View>
+                  )}
+                  <View style={styles.homeFeaturedContent}>
+                    <Text style={styles.homeFeaturedCategory}>{categories.find((item) => item.value === places[0].category)?.label || places[0].category}</Text>
+                    <Text numberOfLines={1} style={styles.homeFeaturedTitle}>{places[0].establishment_name}</Text>
+                    <View style={styles.homeFeaturedLocation}>
+                      <Ionicons name="location-outline" size={14} color="#64748B" />
+                      <Text numberOfLines={1} style={styles.homeFeaturedLocationText}>{places[0].city}, {places[0].state}</Text>
+                    </View>
+                    <View style={styles.homeFeaturedFooter}>
+                      <Text style={styles.homeFeaturedScore}>
+                        {places[0].accessibility_score == null
+                          ? 'Acessibilidade sem dados'
+                          : `${places[0].accessibility_score}% · ${places[0].accessibility_level === 'ADVANCED' ? 'Avançado' : places[0].accessibility_level === 'INTERMEDIATE' ? 'Intermediário' : 'Inicial'}`}
+                      </Text>
+                      <Text style={styles.homeFeaturedAction}>Ver local</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              ) : (
+                <View style={styles.homeEmptyState}>
+                  <Ionicons name="map-outline" size={30} color="#087F8C" />
+                  <Text style={styles.homeEmptyTitle}>Novos destinos estão chegando</Text>
+                  <Text style={styles.homeEmptyText}>Quando houver locais cadastrados, eles aparecerão aqui e na área Explorar.</Text>
+                  <Pressable onPress={() => handleTabPress('explore')} style={styles.homeEmptyButton}>
+                    <Text style={styles.homeEmptyButtonText}>Buscar destinos</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
           ) : (
             <>
           <View style={styles.hero}>
-            <Text style={styles.eyebrow}>TURISMO ACESSÍVEL</Text>
-            <Text style={styles.heroTitle}>Encontre seu <Text style={styles.heroAccent}>destino</Text></Text>
+            <Text style={styles.eyebrow}>{activeTab === 'favorites' ? 'SUA LISTA PESSOAL' : 'BUSCA E FILTROS'}</Text>
+            <Text style={styles.heroTitle}>{activeTab === 'favorites' ? 'Lugares salvos' : 'Encontre um destino'}</Text>
+            {activeTab === 'explore' ? <Text style={styles.heroSubtitle}>Pesquise locais, escolha uma categoria e compare informações de acessibilidade.</Text> : null}
           </View>
 
           {notice && <View style={styles.noticeBox}><Text style={styles.noticeText}>{notice}</Text></View>}
@@ -799,61 +1160,10 @@ export default function App() {
           {placesLoading ? (
             <ActivityIndicator color="#2AC2D2" size="large" style={styles.spinner} />
           ) : filteredPlaces.length > 0 ? (
-            filteredPlaces.map((place) => {
-              const free = isFree(place.price);
-              const isPublic = place.is_public === true;
-              return (
-                <Pressable key={place.id} onPress={() => setSelectedPlace(place)} style={styles.card}>
-                  <View style={styles.cardImageContainer}>
-                    {place.main_image ? (
-                      <Image
-                        source={{ uri: place.main_image }}
-                        style={styles.cardImage}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={styles.cardImagePlaceholder}>
-                        <Ionicons name="image-outline" size={40} color="#CBD5E1" />
-                        <Text style={styles.cardImagePlaceholderText}>Sem foto</Text>
-                      </View>
-                    )}
-                    {/* ✅ BADGES NO CARD */}
-                    {(free || isPublic) && (
-                      <View style={styles.cardBadges}>
-                        {free && <View style={styles.cardBadgeFree}><Text style={styles.cardBadgeFreeText}>Grátis</Text></View>}
-                        {isPublic && <View style={styles.cardBadgePublic}><Text style={styles.cardBadgePublicText}>Público</Text></View>}
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={styles.cardBody}>
-                    <View style={styles.cardHeader}>
-                      <Text style={styles.cardCat}>{place.category_detail ? `${categories.find(c => c.value === place.category)?.label || place.category} · ${place.category_detail.replaceAll('_', ' ')}` : categories.find(c => c.value === place.category)?.label || place.category}</Text>
-                      <Pressable onPress={(e) => { e.stopPropagation(); toggleFavorite(place.id); }}>
-                        <Ionicons name={favorites.includes(place.id) ? 'heart' : 'heart-outline'} size={22} color={favorites.includes(place.id) ? '#EF4444' : '#94A3B8'} />
-                      </Pressable>
-                    </View>
-                    <Text style={styles.cardName}>{place.establishment_name}</Text>
-                    <Text style={styles.mobilePlaceRating}>
-                      {place.average_rating == null ? 'Sem avaliações' : `★ ${place.average_rating.toFixed(1)} (${place.total_reviews || 0})`}
-                      {place.accessibility_score == null ? '' : ` · ${place.accessibility_score}% ${place.accessibility_level === 'ADVANCED' ? 'Avançado' : place.accessibility_level === 'INTERMEDIATE' ? 'Intermediário' : 'Inicial'}`}
-                    </Text>
-                    <View style={styles.locRow}>
-                      <Ionicons name="location" size={14} color="#64748B" />
-                      <Text style={styles.locText}>{place.city}, {place.state}</Text>
-                    </View>
-                    {/* ✅ PREÇO NO CARD */}
-                    <Text style={[styles.cardPrice, free && styles.cardPriceFree]}>
-                      {formatPrice(place.price)}
-                    </Text>
-                    {place.description && <Text numberOfLines={2} style={styles.desc}>{place.description}</Text>}
-                    <View style={styles.cardFooter}>
-                      <Text style={styles.seeMore}>Ver detalhes ›</Text>
-                    </View>
-                  </View>
-                </Pressable>
-              );
-            })
+            <>
+              <Text style={styles.exploreResultsCount}>{filteredPlaces.length} {filteredPlaces.length === 1 ? 'local encontrado' : 'locais encontrados'}</Text>
+              {filteredPlaces.map(renderPlaceCard)}
+            </>
           ) : (
             <View style={styles.empty}>
               <Ionicons name="search" size={48} color="#CBD5E1" />
@@ -1136,7 +1446,39 @@ const styles = StyleSheet.create({
   },
   eyebrow: { color: '#2AC2D2', fontSize: 12, fontWeight: '800', letterSpacing: 1.2, marginBottom: 6 },
   heroTitle: { color: '#052659', fontSize: 28, fontWeight: '800' },
+  heroSubtitle: { color: '#64748B', fontSize: 13, lineHeight: 19, marginTop: 6 },
   heroAccent: { color: '#2AC2D2' },
+  homeLandingHero: { backgroundColor: '#052659', borderRadius: 24, padding: 20, marginBottom: 28, overflow: 'hidden' },
+  homeLandingEyebrow: { color: '#7DE4E0', fontSize: 11, fontWeight: '800', letterSpacing: 1.2, marginBottom: 12 },
+  homeLandingTitle: { color: '#FFFFFF', fontSize: 27, lineHeight: 34, fontWeight: '900' },
+  homeLandingDescription: { color: '#D5E4F3', fontSize: 14, lineHeight: 21, marginTop: 10, marginBottom: 18 },
+  homeLandingButton: { backgroundColor: '#7DE4E0', minHeight: 48, borderRadius: 12, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  homeLandingButtonText: { color: '#052659', fontSize: 14, fontWeight: '800' },
+  homeLandingFeatures: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 19 },
+  homeLandingFeature: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  homeLandingFeatureText: { color: '#E2F3FF', fontSize: 11, fontWeight: '600' },
+  homeSectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, marginTop: 2 },
+  homeSectionTitle: { color: '#052659', fontSize: 19, fontWeight: '800' },
+  homeSectionSubtitle: { color: '#64748B', fontSize: 12, marginTop: 4 },
+  homeCategoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginBottom: 27 },
+  homeCategoryCard: { flexBasis: '47%', flexGrow: 1, minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 11, paddingVertical: 10, backgroundColor: '#FFFFFF', borderRadius: 13, borderWidth: 1, borderColor: '#DCE5EF' },
+  homeCategoryText: { color: '#052659', fontSize: 12, fontWeight: '700', flex: 1 },
+  homeFeaturedCard: { backgroundColor: '#FFFFFF', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#DCE5EF', marginBottom: 8 },
+  homeFeaturedImage: { width: '100%', height: 150, backgroundColor: '#DDF3F3' },
+  homeFeaturedPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  homeFeaturedContent: { padding: 14 },
+  homeFeaturedCategory: { color: '#087F8C', fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 },
+  homeFeaturedTitle: { color: '#052659', fontSize: 17, fontWeight: '800' },
+  homeFeaturedLocation: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  homeFeaturedLocationText: { color: '#64748B', fontSize: 12, flex: 1 },
+  homeFeaturedFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E2E8F0', marginTop: 12, paddingTop: 10 },
+  homeFeaturedScore: { color: '#087F8C', fontSize: 11, fontWeight: '700', flexShrink: 1 },
+  homeFeaturedAction: { color: '#052659', fontSize: 12, fontWeight: '800' },
+  homeEmptyState: { alignItems: 'center', padding: 20, backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#DCE5EF' },
+  homeEmptyTitle: { color: '#052659', fontSize: 15, fontWeight: '800', textAlign: 'center', marginTop: 10 },
+  homeEmptyText: { color: '#64748B', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 6 },
+  homeEmptyButton: { backgroundColor: '#E6F7F7', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginTop: 14 },
+  homeEmptyButtonText: { color: '#087F8C', fontSize: 13, fontWeight: '800' },
   searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, paddingHorizontal: 14, marginBottom: 16 },
   statsGrid: {
     flexDirection: 'row',
@@ -1181,6 +1523,7 @@ const styles = StyleSheet.create({
   favToggleActive: { backgroundColor: '#052659', borderColor: '#052659' },
   favToggleText: { color: '#052659', fontWeight: '700', fontSize: 14 },
   favToggleTextActive: { color: '#FFF' },
+  exploreResultsCount: { color: '#64748B', fontSize: 12, fontWeight: '700', marginBottom: 10 },
 
   // Card
   card: { backgroundColor: '#FFF', borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden' },
@@ -1211,14 +1554,16 @@ const styles = StyleSheet.create({
 
   // Detalhes
   detailsContainer: { flex: 1, backgroundColor: '#F8FAFC' },
-  detailsHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
-  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
-  detailsCategory: { color: '#2AC2D2', textTransform: 'uppercase', fontSize: 12, fontWeight: '800' },
-  detailsImageContainer: { height: 220, backgroundColor: '#E2E8F0', overflow: 'hidden' },
+  detailsHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, gap: 10, minHeight: 52, backgroundColor: '#F8FAFC', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E2E8F0' },
+  backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#DCE5EF' },
+  detailsCategoryPill: { flex: 1, minWidth: 0, alignItems: 'flex-start' },
+  detailsCategory: { overflow: 'hidden', color: '#087F8C', textTransform: 'uppercase', fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
+  detailsFavoriteButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#DCE5EF' },
+  detailsImageContainer: { height: 180, backgroundColor: '#E2E8F0', overflow: 'hidden' },
   detailsImage: { width: '100%', height: '100%' },
   detailsImagePlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },
   detailsImageText: { color: '#94A3B8', fontWeight: '600' },
-  detailsContent: { padding: 20 },
+  detailsContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 },
   detailsTitle: { color: '#052659', fontSize: 24, fontWeight: '800', marginBottom: 8 },
   section: { marginTop: 24 },
   sectionTitle: { color: '#052659', fontWeight: '700', fontSize: 18, marginBottom: 12 },
@@ -1233,21 +1578,53 @@ const styles = StyleSheet.create({
   // Resumo
   summaryCard: {
     backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 20,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginTop: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  summaryTitle: { color: '#052659', fontSize: 22, fontWeight: '800', marginBottom: 16 },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
-  summaryLabel: { color: '#64748B', fontSize: 15, fontWeight: '500' },
-  summaryValue: { color: '#052659', fontSize: 15, fontWeight: '700' },
-  summaryPrice: { color: '#052659', fontSize: 18, fontWeight: '800' },
-  summaryPriceFree: { color: '#059669', fontSize: 18, fontWeight: '800' },
+  summaryTitle: { color: '#052659', fontSize: 18, fontWeight: '800', marginBottom: 6 },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, gap: 10 },
+  summaryLabel: { color: '#64748B', fontSize: 12, fontWeight: '500' },
+  summaryValue: { color: '#052659', fontSize: 12, fontWeight: '700', textAlign: 'right', flexShrink: 1 },
+  summaryPrice: { color: '#052659', fontSize: 14, fontWeight: '800' },
+  summaryPriceFree: { color: '#059669', fontSize: 14, fontWeight: '800' },
   summaryDivider: { height: 1, backgroundColor: '#F1F5F9' },
-  accessibilityRating: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  accessibilityScore: { color: '#2AC2D2', fontSize: 16, fontWeight: '800' },
+  accessibilityRating: { flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 1 },
+  accessibilityScore: { color: '#087F8C', fontSize: 12, fontWeight: '800', flexShrink: 1, textAlign: 'right' },
+  levelTrack: { height: 8, backgroundColor: '#E2E8F0', borderRadius: 8, overflow: 'hidden', marginTop: 3 },
+  levelFill: { height: '100%', backgroundColor: '#16A085', borderRadius: 8 },
+  levelFillEmpty: { width: '0%' },
+  levelLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 5 },
+  levelLabel: { color: '#94A3B8', fontSize: 9, fontWeight: '600' },
+  levelLabelActive: { color: '#087F8C', fontWeight: '800' },
+  reviewSection: { marginTop: 24 },
+  reviewHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 },
+  reviewCount: { color: '#64748B', fontSize: 12, marginTop: -7 },
+  reviewButton: { backgroundColor: '#087F8C', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 },
+  reviewButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+  reviewError: { color: '#B42318', fontSize: 12, lineHeight: 18, marginBottom: 10 },
+  reviewForm: { backgroundColor: '#FFFFFF', padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#DCE5EF', marginBottom: 12 },
+  reviewFormLabel: { color: '#334155', fontSize: 12, fontWeight: '700', marginBottom: 7 },
+  reviewStars: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12 },
+  reviewInput: { minHeight: 82, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 10, padding: 11, color: '#0F172A', fontSize: 13, textAlignVertical: 'top', marginBottom: 10 },
+  reviewSubmitButton: { minHeight: 42, borderRadius: 10, backgroundColor: '#052659', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
+  reviewSubmitDisabled: { opacity: 0.5 },
+  reviewSubmitText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
+  reviewLoading: { marginVertical: 20 },
+  reviewCard: { backgroundColor: '#FFFFFF', padding: 13, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 10 },
+  reviewCardHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 },
+  reviewAuthor: { color: '#052659', fontSize: 13, fontWeight: '800', flexShrink: 1 },
+  reviewDate: { color: '#94A3B8', fontSize: 10 },
+  reviewRatingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 },
+  reviewRatingLabel: { color: '#64748B', fontSize: 11 },
+  reviewStarsText: { color: '#F59E0B', fontSize: 13 },
+  reviewComment: { color: '#334155', fontSize: 13, lineHeight: 19, marginTop: 7 },
+  reviewNoComment: { color: '#94A3B8', fontSize: 12, fontStyle: 'italic', marginTop: 7 },
+  reviewEmpty: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 12, backgroundColor: '#F0F9FA' },
+  reviewEmptyText: { color: '#475569', fontSize: 12, lineHeight: 18, flex: 1 },
 
   // Tags
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

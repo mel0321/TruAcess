@@ -142,7 +142,7 @@ export function PlaceManagementPage() {
     <div className="place-form-page">
       <Header />
       <main className="place-form-shell">
-        <Link className="place-form-back" to="/dashboard">← Voltar ao painel</Link>
+        <Link className="place-form-back" to="/dashboard">Voltar ao painel</Link>
         <header className="place-form-heading">
           <span>PERFIL DO ESTABELECIMENTO</span>
           <h1>{id ? 'Atualize as informações do local' : 'Cadastre seu estabelecimento'}</h1>
