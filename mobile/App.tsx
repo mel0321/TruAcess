@@ -103,7 +103,7 @@ export default function App() {
       const data = res.data;
       const placesArray = Array.isArray(data) ? data : (data.places || []);
       console.log('📍 Locais carregados:', placesArray.length);
-      placesArray.forEach(p => {
+      placesArray.forEach((p: any) => {
         console.log(`- ${p.establishment_name} | Preço: ${p.price} | Formatado: ${formatPrice(p.price)} | Público: ${p.is_public}`);
       });
       setPlaces(placesArray);
@@ -416,9 +416,27 @@ export default function App() {
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
         <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.hero}>
-            <Text style={styles.eyebrow}>TURISMO ACESSÍVEL</Text>
-            <Text style={styles.heroTitle}>Encontre seu <Text style={styles.heroAccent}>destino</Text></Text>
+          <View style={styles.heroPanel}>
+            <View style={styles.heroBadge}>
+              <Text style={styles.heroBadgeText}>SOBRE A TRUACESS</Text>
+            </View>
+            <Text style={styles.heroTitleLarge}>
+              Descubra lugares que respeitam
+              <Text style={styles.heroHighlight}> o seu ritmo</Text>
+              {'\n'}e apoiam sua próxima viagem.
+            </Text>
+            <Text style={styles.heroDescription}>
+              A TruAcess conecta pessoas a destinos com acessibilidade, conforto e autonomia em cada etapa da jornada.
+            </Text>
+            <Pressable onPress={() => setShowFavorites(false)} style={styles.heroButton}>
+              <Text style={styles.heroButtonText}>Ver destinos acessíveis</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}><Text style={styles.statNumber}>+500</Text><Text style={styles.statLabel}>locais verificados</Text></View>
+            <View style={styles.statCard}><Text style={styles.statNumber}>10k+</Text><Text style={styles.statLabel}>viajantes apoiados</Text></View>
+            <View style={styles.statCard}><Text style={styles.statNumber}>98%</Text><Text style={styles.statLabel}>de satisfação</Text></View>
           </View>
 
           {notice && <View style={styles.noticeBox}><Text style={styles.noticeText}>{notice}</Text></View>}
@@ -525,10 +543,105 @@ const styles = StyleSheet.create({
   headerSignupText: { color: '#FFF', fontWeight: '700', fontSize: 13 },
   content: { padding: 20, paddingBottom: 40 },
   hero: { marginBottom: 20 },
+  heroPanel: {
+    backgroundColor: '#052659',
+    borderRadius: 28,
+    padding: 20,
+    marginBottom: 20,
+    overflow: 'hidden',
+    shadowColor: '#052659',
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
+  },
+  heroBadge: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 18,
+  },
+  heroBadgeText: {
+    color: '#E2F3FF',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  heroTitleLarge: {
+    color: '#E2E8F0',
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  heroHighlight: {
+    backgroundColor: 'rgba(148, 163, 184, 0.45)',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    color: '#F8FAFC',
+  },
+  heroDescription: {
+    color: '#DBEAFE',
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: 'center',
+    marginTop: 18,
+    marginBottom: 20,
+  },
+  heroButton: {
+    backgroundColor: '#2AC2D2',
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignSelf: 'center',
+  },
+  heroButtonText: {
+    color: '#052659',
+    fontSize: 15,
+    fontWeight: '800',
+  },
   eyebrow: { color: '#2AC2D2', fontSize: 12, fontWeight: '800', letterSpacing: 1.2, marginBottom: 6 },
   heroTitle: { color: '#052659', fontSize: 28, fontWeight: '800' },
   heroAccent: { color: '#2AC2D2' },
   searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, paddingHorizontal: 14, marginBottom: 16 },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 18,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  statNumber: {
+    color: '#2AC2D2',
+    fontSize: 30,
+    fontWeight: '900',
+    marginBottom: 6,
+  },
+  statLabel: {
+    color: '#475569',
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
   searchInput: { flex: 1, paddingVertical: 14, fontSize: 15, color: '#0F172A', marginLeft: 10 },
   filters: { gap: 8, marginBottom: 16 },
   filterBtn: { borderRadius: 20, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: '#F1F5F9' },

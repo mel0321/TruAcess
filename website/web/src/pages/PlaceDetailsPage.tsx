@@ -130,6 +130,20 @@ export function PlaceDetailsPage() {
 
   const avgAccessibility = reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.accessibility_rating, 0) / reviews.length).toFixed(1) : '0.0';
 
+  const handleFavoriteToggle = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    if (isFavorite(place.id)) {
+      removeFavorite(place.id);
+      return;
+    }
+
+    addFavorite(place.id);
+  };
+
   return (
     <div style={{background: '#f8fafc', minHeight: '100vh'}}>
       <Header />
@@ -166,7 +180,7 @@ export function PlaceDetailsPage() {
               </div>
               <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
                 <button 
-                  onClick={() => isFavorite(place.id) ? removeFavorite(place.id) : addFavorite(place.id)}
+                  onClick={handleFavoriteToggle}
                   style={{background: isFavorite(place.id) ? '#EF4444' : 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', padding: '12px 20px', borderRadius: '100px', color: 'white', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px'}}
                 >
                   <IconHeart width={18} height={18} fill={isFavorite(place.id) ? 'white' : 'none'} />

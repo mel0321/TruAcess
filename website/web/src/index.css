@@ -85,40 +85,43 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
   position: relative;
   padding: 56px 24px 28px;
   overflow: hidden;
-  background: linear-gradient(135deg, #f2f8ff 0%, #eaf6fc 38%, #eef4ff 100%);
+  background: linear-gradient(135deg, #edf9ff 0%, #dfeef8 45%, #edf3ff 100%);
 }
 .about-hero::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top left, rgba(42,194,210,0.18), transparent 35%),
-              radial-gradient(circle at bottom right, rgba(5,38,89,0.08), transparent 30%);
+  background: radial-gradient(circle at left top, rgba(42,194,210,0.20), transparent 30%),
+              radial-gradient(circle at right bottom, rgba(5,38,89,0.08), transparent 25%);
 }
 .about-hero-content {
   position: relative;
   z-index: 1;
   max-width: 1240px;
   margin: 0 auto;
-  padding: 56px 34px 52px;
-  border-radius: 34px;
-  background: linear-gradient(135deg, #082a5d 0%, #0d3c75 46%, #0a2d5c 100%);
+  padding: 28px 0 18px;
+  border-radius: 0;
+  background: transparent;
   text-align: center;
   color: white;
+  border: none;
+  box-shadow: none;
 }
 .about-hero-content h1 {
   font-size: clamp(2.8rem, 4vw, 5rem);
   line-height: 1.04;
   font-weight: 800;
-  margin: 14px auto 22px;
+  margin: 14px auto 18px;
   max-width: 1180px;
   letter-spacing: -0.06em;
-  color: white;
+  color: #052659;
+  text-shadow: none;
 }
 .about-hero-content p {
   max-width: 760px;
   margin: 0 auto;
   font-size: 1.04rem;
-  color: rgba(255,255,255,0.86);
+  color: #334155;
 }
 .about-hero-actions {
   display: flex;

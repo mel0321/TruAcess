@@ -133,6 +133,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    if (user?.id) {
+      localStorage.removeItem(`@TruAcess:favoritos:${user.id}`);
+    }
     localStorage.removeItem('@TruAcess:token');
     localStorage.removeItem('@TruAcess:user');
     setUser(null);

@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { useAuth } from './AuthContext';
 
 interface FavoritesContextType {
   favorites: number[];
-  addFavorite: (placeId: number) => void;
+  addFavorite: (placeId: number) => boolean;
   removeFavorite: (placeId: number) => void;
   isFavorite: (placeId: number) => boolean;
 }
@@ -10,21 +11,43 @@ interface FavoritesContextType {
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const favoritesKey = user ? `@TruAcess:favoritos:${user.id}` : null;
+
   const [favorites, setFavorites] = useState<number[]>(() => {
-    const saved = localStorage.getItem('@TruAcess:favoritos');
+    if (!user || !favoritesKey) return [];
+    const saved = localStorage.getItem(favoritesKey);
     return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
-    localStorage.setItem('@TruAcess:favoritos', JSON.stringify(favorites));
-  }, [favorites]);
+    if (!user || !favoritesKey) {
+      setFavorites([]);
+      return;
+    }
+
+    const saved = localStorage.getItem(favoritesKey);
+    setFavorites(saved ? JSON.parse(saved) : []);
+  }, [user, favoritesKey]);
+
+  useEffect(() => {
+    if (!user || !favoritesKey) return;
+    localStorage.setItem(favoritesKey, JSON.stringify(favorites));
+  }, [favorites, user, favoritesKey]);
 
   const addFavorite = (placeId: number) => {
-    if (!favorites.includes(placeId)) setFavorites([...favorites, placeId]);
+    if (!user) return false;
+
+    setFavorites((current) => {
+      if (current.includes(placeId)) return current;
+      return [...current, placeId];
+    });
+
+    return true;
   };
 
   const removeFavorite = (placeId: number) => {
-    setFavorites(favorites.filter(id => id !== placeId));
+    setFavorites((current) => current.filter((id) => id !== placeId));
   };
 
   const isFavorite = (placeId: number) => favorites.includes(placeId);
