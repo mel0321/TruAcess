@@ -42,6 +42,7 @@ type Place = {
   has_asd_friendly_space: boolean;
 };
 type Screen = 'home' | 'login' | 'register';
+type MainTab = 'home' | 'explore' | 'favorites' | 'profile';
 
 const categories = [
   { value: '', label: 'Todos' },
@@ -71,6 +72,7 @@ const isFree = (price: number | null | undefined): boolean => {
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('home');
+  const [activeTab, setActiveTab] = useState<MainTab>('home');
   const [user, setUser] = useState<User | null>(null);
   const [places, setPlaces] = useState<Place[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
@@ -185,7 +187,30 @@ export default function App() {
     await SecureStore.deleteItemAsync('TruAcessToken');
     await SecureStore.deleteItemAsync('TruAcessUser');
     setUser(null); setFavorites([]); setShowFavorites(false); setSelectedPlace(null);
+    setActiveTab('home');
     setNotice('Você saiu da conta.');
+  };
+
+  const handleTabPress = (tab: MainTab) => {
+    if (tab === 'favorites' && !user) {
+      setNotice('Entre na sua conta para acessar seus favoritos.');
+      setScreen('login');
+      return;
+    }
+
+    if (tab === 'profile' && !user) {
+      setNotice('Entre na sua conta para acessar seu perfil.');
+      setScreen('login');
+      return;
+    }
+
+    setActiveTab(tab);
+    setShowFavorites(tab === 'favorites');
+
+    if (tab === 'home' || tab === 'explore') {
+      setSearch('');
+      setCategory('');
+    }
   };
 
   // --- TELA DE AUTENTICAÇÃO ---
@@ -401,42 +426,31 @@ export default function App() {
 
       <View style={styles.header}>
         <Text style={styles.brand}>Tru<Text style={styles.brandAccent}>Acess</Text></Text>
-        {user ? (
-          <View style={styles.headerActions}>
-            <Text style={styles.userName}>{user.full_name.split(' ')[0]}</Text>
-            <Pressable onPress={handleLogout}><Ionicons name="log-out" size={20} color="#EF4444" /></Pressable>
-          </View>
-        ) : (
-          <View style={styles.headerActions}>
-            <Pressable onPress={() => setScreen('login')}><Text style={styles.headerLinkText}>Entrar</Text></Pressable>
-            <Pressable onPress={() => setScreen('register')} style={styles.headerSignup}><Text style={styles.headerSignupText}>Cadastrar</Text></Pressable>
-          </View>
-        )}
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
         <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.heroPanel}>
-            <View style={styles.heroBadge}>
-              <Text style={styles.heroBadgeText}>SOBRE A TRUACESS</Text>
+          {activeTab === 'profile' && user ? (
+            <View style={styles.profilePanel}>
+              <View style={styles.profileAvatar}>
+                <Text style={styles.profileAvatarText}>{user.full_name.trim().charAt(0).toUpperCase()}</Text>
+              </View>
+              <Text style={styles.profileTitle}>{user.full_name}</Text>
+              <Text style={styles.profileEmail}>{user.email}</Text>
+              <View style={styles.profileInfoRow}>
+                <Text style={styles.profileInfoLabel}>Tipo de conta</Text>
+                <Text style={styles.profileInfoValue}>{user.user_type === 'BUSINESS' ? 'Empresa' : 'Viajante'}</Text>
+              </View>
+              <Pressable onPress={handleLogout} style={styles.profileLogout}>
+                <Ionicons name="log-out-outline" size={19} color="#B42318" />
+                <Text style={styles.profileLogoutText}>Sair da conta</Text>
+              </Pressable>
             </View>
-            <Text style={styles.heroTitleLarge}>
-              Descubra lugares que respeitam
-              <Text style={styles.heroHighlight}> o seu ritmo</Text>
-              {'\n'}e apoiam sua próxima viagem.
-            </Text>
-            <Text style={styles.heroDescription}>
-              A TruAcess conecta pessoas a destinos com acessibilidade, conforto e autonomia em cada etapa da jornada.
-            </Text>
-            <Pressable onPress={() => setShowFavorites(false)} style={styles.heroButton}>
-              <Text style={styles.heroButtonText}>Ver destinos acessíveis</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}><Text style={styles.statNumber}>+500</Text><Text style={styles.statLabel}>locais verificados</Text></View>
-            <View style={styles.statCard}><Text style={styles.statNumber}>10k+</Text><Text style={styles.statLabel}>viajantes apoiados</Text></View>
-            <View style={styles.statCard}><Text style={styles.statNumber}>98%</Text><Text style={styles.statLabel}>de satisfação</Text></View>
+          ) : (
+            <>
+          <View style={styles.hero}>
+            <Text style={styles.eyebrow}>TURISMO ACESSÍVEL</Text>
+            <Text style={styles.heroTitle}>Encontre seu <Text style={styles.heroAccent}>destino</Text></Text>
           </View>
 
           {notice && <View style={styles.noticeBox}><Text style={styles.noticeText}>{notice}</Text></View>}
@@ -454,15 +468,6 @@ export default function App() {
               </Pressable>
             ))}
           </ScrollView>
-
-          {user && (
-            <Pressable onPress={() => setShowFavorites(c => !c)} style={[styles.favToggle, showFavorites && styles.favToggleActive]}>
-              <Ionicons name={showFavorites ? 'heart' : 'heart-outline'} size={18} color={showFavorites ? '#FFF' : '#052659'} />
-              <Text style={[styles.favToggleText, showFavorites && styles.favToggleTextActive]}>
-                {showFavorites ? 'Ver todos' : `Salvos (${favorites.length})`}
-              </Text>
-            </Pressable>
-          )}
 
           {placesLoading ? (
             <ActivityIndicator color="#2AC2D2" size="large" style={styles.spinner} />
@@ -524,8 +529,28 @@ export default function App() {
               <Text style={styles.emptyText}>{showFavorites ? 'Nenhum local salvo.' : 'Nenhum local encontrado.'}</Text>
             </View>
           )}
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
+      <View style={styles.bottomNav}>
+        <Pressable onPress={() => handleTabPress('home')} style={styles.bottomNavItem} accessibilityRole="button" accessibilityLabel="Início">
+          <Text style={[styles.bottomNavEmoji, activeTab === 'home' && styles.bottomNavEmojiActive]}>🏠</Text>
+          <Text style={[styles.bottomNavLabel, activeTab === 'home' && styles.bottomNavLabelActive]}>Início</Text>
+        </Pressable>
+        <Pressable onPress={() => handleTabPress('explore')} style={styles.bottomNavItem} accessibilityRole="button" accessibilityLabel="Explorar">
+          <Text style={[styles.bottomNavEmoji, activeTab === 'explore' && styles.bottomNavEmojiActive]}>🔎</Text>
+          <Text style={[styles.bottomNavLabel, activeTab === 'explore' && styles.bottomNavLabelActive]}>Explorar</Text>
+        </Pressable>
+        <Pressable onPress={() => handleTabPress('favorites')} style={styles.bottomNavItem} accessibilityRole="button" accessibilityLabel="Favoritos">
+          <Text style={[styles.bottomNavEmoji, activeTab === 'favorites' && styles.bottomNavEmojiActive]}>🤍</Text>
+          <Text style={[styles.bottomNavLabel, activeTab === 'favorites' && styles.bottomNavLabelActive]}>Favoritos</Text>
+        </Pressable>
+        <Pressable onPress={() => handleTabPress('profile')} style={styles.bottomNavItem} accessibilityRole="button" accessibilityLabel="Perfil">
+          <Text style={[styles.bottomNavEmoji, activeTab === 'profile' && styles.bottomNavEmojiActive]}>👤</Text>
+          <Text style={[styles.bottomNavLabel, activeTab === 'profile' && styles.bottomNavLabelActive]}>Perfil</Text>
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 }
@@ -541,7 +566,116 @@ const styles = StyleSheet.create({
   headerLinkText: { color: '#052659', fontWeight: '600', fontSize: 14 },
   headerSignup: { backgroundColor: '#052659', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
   headerSignupText: { color: '#FFF', fontWeight: '700', fontSize: 13 },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 20, paddingBottom: 28, flexGrow: 1 },
+  bottomNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingTop: 9,
+    paddingBottom: Platform.OS === 'ios' ? 8 : 10,
+    paddingHorizontal: 8,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#DCE5EF',
+    shadowColor: '#052659',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 12,
+  },
+  bottomNavItem: {
+    flex: 1,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  bottomNavEmoji: {
+    color: '#94A3B8',
+    fontSize: 20,
+    lineHeight: 24,
+    fontWeight: '600',
+  },
+  bottomNavEmojiActive: {
+    color: '#087F8C',
+    transform: [{ scale: 1.08 }],
+  },
+  bottomNavLabel: {
+    color: '#64748B',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  bottomNavLabelActive: {
+    color: '#052659',
+    fontWeight: '800',
+  },
+  profilePanel: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: 42,
+  },
+  profileAvatar: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DDF7F7',
+    marginBottom: 16,
+  },
+  profileAvatarText: {
+    color: '#087F8C',
+    fontSize: 34,
+    fontWeight: '800',
+  },
+  profileTitle: {
+    color: '#052659',
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  profileEmail: {
+    color: '#64748B',
+    fontSize: 14,
+    marginTop: 5,
+    marginBottom: 32,
+  },
+  profileInfoRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#DCE5EF',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#DCE5EF',
+  },
+  profileInfoLabel: {
+    color: '#64748B',
+    fontSize: 14,
+  },
+  profileInfoValue: {
+    color: '#052659',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  profileLogout: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    width: '100%',
+    marginTop: 24,
+    padding: 15,
+    backgroundColor: '#FFF1F0',
+    borderRadius: 12,
+  },
+  profileLogoutText: {
+    color: '#B42318',
+    fontSize: 14,
+    fontWeight: '700',
+  },
   hero: { marginBottom: 20 },
   heroPanel: {
     backgroundColor: '#052659',
@@ -589,16 +723,40 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: 'center',
     marginTop: 18,
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  heroButton: {
-    backgroundColor: '#2AC2D2',
-    borderRadius: 14,
+  heroFeatures: {
+    gap: 10,
+    alignSelf: 'stretch',
+    marginBottom: 22,
+  },
+  heroFeature: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    alignSelf: 'center',
+    gap: 8,
+  },
+  heroFeatureText: {
+    color: '#E2F3FF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  heroButton: {
+    backgroundColor: '#35D0D9',
+    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 20,
+    minHeight: 54,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    alignSelf: 'stretch',
+    shadowColor: '#2AC2D2',
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
   heroButtonText: {
     color: '#052659',

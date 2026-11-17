@@ -54,71 +54,110 @@ export function DestinationsPage() {
   });
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div className="destinations-page">
       <Header />
       <main>
-        <section style={{ background: 'white', padding: '56px 0 40px' }}>
+        <section className="destinations-hero">
           <div className="container">
-            <p style={{ color: '#2AC2D2', fontWeight: 700, marginBottom: 8 }}>DESCUBRA NOVOS LUGARES</p>
-            <h1 style={{ color: '#052659', fontSize: 40, lineHeight: 1.2, marginBottom: 12 }}>
-              Destinos acessíveis
-            </h1>
-            <p style={{ color: '#64748B', maxWidth: 640 }}>
-              Encontre hotéis, restaurantes e atrações com informações de acessibilidade para planejar sua próxima viagem.
-            </p>
+            <div className="destinations-hero-copy">
+              <p className="destinations-eyebrow"><span /> DESCUBRA NOVOS LUGARES</p>
+              <h1>Destinos que combinam <span>com você.</span></h1>
+              <p className="destinations-intro">
+                Encontre hotéis, restaurantes e atrações com informações de acessibilidade para planejar sua próxima viagem com mais confiança.
+              </p>
+              <div className="destinations-traits" aria-label="Benefícios da busca">
+                <span><IconRamp width={17} height={17} /> Recursos de acesso</span>
+                <span><IconMapPin width={17} height={17} /> Lugares para explorar</span>
+              </div>
+            </div>
+            <div className="destinations-hero-art" aria-hidden="true">
+              <span className="destinations-art-orbit orbit-a" />
+              <span className="destinations-art-orbit orbit-b" />
+              <div className="destinations-art-pin"><IconMapPin width={42} height={42} /></div>
+              <span className="destinations-art-dot dot-a" />
+              <span className="destinations-art-dot dot-b" />
+            </div>
           </div>
         </section>
 
-        <section className="destinations-section">
+        <section className="destinations-section destinations-discovery">
           <div className="container">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 28 }}>
-              <input
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar por local, cidade ou descrição"
-                aria-label="Buscar locais"
-                style={{ flex: '1 1 280px', minWidth: 0, padding: '13px 16px', border: '1px solid #CBD5E1', borderRadius: 8, font: 'inherit' }}
-              />
-              <select
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-                aria-label="Filtrar por categoria"
-                style={{ flex: '0 1 220px', padding: '13px 16px', border: '1px solid #CBD5E1', borderRadius: 8, background: 'white', font: 'inherit' }}
-              >
-                <option value="">Todas as categorias</option>
-                {placeCategories.map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
-                ))}
-              </select>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 8px', color: '#334155', fontSize: 14 }}>
+            <div className="destination-controls">
+              <label className="destination-search">
+                <span className="destination-search-icon"><IconMapPin width={19} height={19} /></span>
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Buscar por local, cidade ou descrição"
+                  aria-label="Buscar locais"
+                />
+              </label>
+              <label className={`accessibility-toggle${accessibleOnly ? ' is-active' : ''}`}>
                 <input
                   type="checkbox"
                   checked={accessibleOnly}
                   onChange={(event) => setAccessibleOnly(event.target.checked)}
                 />
-                Com recursos de acessibilidade
+                <span className="accessibility-toggle-icon"><IconRamp width={20} height={20} /></span>
+                <span className="accessibility-toggle-copy">
+                  <strong>Recursos de acessibilidade</strong>
+                  <small>Mostrar locais com recursos informados</small>
+                </span>
+                <span className="toggle-track" aria-hidden="true"><span /></span>
               </label>
             </div>
 
+            <div className="destination-category-row">
+              <div>
+                <h2>Explore por categoria</h2>
+                <p>Encontre o tipo de experiência que procura</p>
+              </div>
+              <div className="destination-categories" aria-label="Categorias de destinos">
+                <button
+                  type="button"
+                  className={`category-chip${category === '' ? ' is-active' : ''}`}
+                  aria-pressed={category === ''}
+                  onClick={() => setCategory('')}
+                >
+                  Todas
+                </button>
+                {placeCategories.map((item, index) => (
+                  <button
+                    type="button"
+                    key={item.value}
+                    className={`category-chip category-chip-${index}${category === item.value ? ' is-active' : ''}`}
+                    aria-pressed={category === item.value}
+                    onClick={() => setCategory(category === item.value ? '' : item.value)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {loading ? (
-              <p role="status" style={{ textAlign: 'center', padding: 48, color: '#64748B' }}>Carregando locais...</p>
+              <p role="status" className="destinations-message">Carregando locais...</p>
             ) : error ? (
-              <div role="alert" style={{ textAlign: 'center', padding: 48 }}>
-                <p style={{ color: '#991B1B', marginBottom: 16 }}>{error}</p>
-                <button onClick={() => void loadPlaces()} style={{ padding: '10px 18px', border: 0, borderRadius: 8, background: '#052659', color: 'white', fontWeight: 600, cursor: 'pointer' }}>
+              <div role="alert" className="destinations-message">
+                <p>{error}</p>
+                <button onClick={() => void loadPlaces()} className="destinations-retry">
                   Tentar novamente
                 </button>
               </div>
             ) : filteredPlaces.length === 0 ? (
-              <p style={{ textAlign: 'center', padding: 48, color: '#64748B' }}>
+              <p className="destinations-message">
                 {places.length ? 'Nenhum local encontrado com esses filtros.' : 'Ainda não há locais cadastrados.'}
               </p>
             ) : (
               <>
-                <p style={{ color: '#64748B', marginBottom: 20 }}>
-                  {filteredPlaces.length} {filteredPlaces.length === 1 ? 'local encontrado' : 'locais encontrados'}
-                </p>
+                <div className="destinations-results-heading">
+                  <div>
+                    <h2>Lugares para sua próxima viagem</h2>
+                    <p>{filteredPlaces.length} {filteredPlaces.length === 1 ? 'local encontrado' : 'locais encontrados'}</p>
+                  </div>
+                  <span className="results-mark"><IconMapPin width={18} height={18} /> Atualizados pela comunidade</span>
+                </div>
                 <div className="destinations-grid">
                   {filteredPlaces.map((place) => (
                     <Link to={`/local/${place.id}`} key={place.id} className="destination-card">
@@ -135,11 +174,11 @@ export function DestinationsPage() {
                           {place.has_asd_friendly_space && <span className="badge-access"><IconBrain width={16} height={16} /> Espaço TEA</span>}
                         </div>
                         <div className="destination-title">{place.establishment_name}</div>
-                        <p style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#64748B', fontSize: 13, marginTop: 8 }}>
+                        <p className="destination-location">
                           <IconMapPin width={16} height={16} /> {place.city}, {place.state}
                         </p>
                         {place.description && (
-                          <p style={{ color: '#64748B', fontSize: 13, marginTop: 8, lineHeight: 1.5 }}>
+                          <p className="destination-description">
                             {place.description}
                           </p>
                         )}

@@ -46,15 +46,106 @@ export function AboutPage() {
       <main className="about-page">
         <section className="about-hero">
           <div className="about-hero-content">
-            <p className="eyebrow">SOBRE A TRUACESS</p>
-            <h1>Descubra lugares que respeitam o seu ritmo e apoiam sua próxima viagem.</h1>
-            <p>
-              A TruAcess nasceu para conectar pessoas a lugares que respeitam diferentes ritmos,
-              mobilidades e necessidades. Somos uma plataforma que transforma a experiência de viajar
-              em uma jornada mais autônoma, respeitosa e emocionante.
-            </p>
-            <div className="about-hero-actions">
-              <Link to="/destinos" className="btn-explore">Ver destinos acessíveis</Link>
+            <div className="about-hero-copy">
+              <p className="eyebrow">SOBRE A TRUACESS</p>
+              <h1>Descubra lugares que respeitam o seu ritmo e apoiam sua próxima viagem.</h1>
+              <p>
+                A TruAcess nasceu para conectar pessoas a lugares que respeitam diferentes ritmos,
+                mobilidades e necessidades. Somos uma plataforma que transforma a experiência de viajar
+                em uma jornada mais autônoma, respeitosa e emocionante.
+              </p>
+              <div className="about-hero-actions">
+                <Link to="/destinos" className="btn-explore about-primary-action">
+                  <span className="action-copy">
+                    <strong>Encontrar meu próximo destino</strong>
+                    <small>Explore lugares com mais autonomia</small>
+                  </span>
+                  <span className="action-arrow" aria-hidden="true">→</span>
+                </Link>
+                <a href="#missao" className="about-mission-action">Conheça nossa missão <span aria-hidden="true">↓</span></a>
+              </div>
+              <div className="about-hero-highlights" aria-label="Recursos da TruAcess">
+                <span><i aria-hidden="true">✓</i> Filtros de acessibilidade</span>
+                <span><i aria-hidden="true">✓</i> Informações para planejar</span>
+                <span><i aria-hidden="true">✓</i> Experiências da comunidade</span>
+              </div>
+            </div>
+
+            <div className="about-hero-visual" aria-label="Demonstração do app mobile">
+              <div className="phone-orbit orbit-one" />
+              <div className="phone-orbit orbit-two" />
+
+              <div className="floating-card card-top">
+                <span className="card-dot" />
+                <div>
+                  <strong>+500</strong>
+                  <small>locais</small>
+                </div>
+              </div>
+
+              <div className="floating-card card-bottom">
+                <span className="card-badge">Acessível</span>
+                <div>
+                  <strong>98%</strong>
+                  <small>satisfação</small>
+                </div>
+              </div>
+
+              <div className="phone-mockup">
+                <div className="phone-speaker" />
+                <div className="phone-screen">
+                  <div className="screen-header">
+                    <span className="screen-brand">TruAcess</span>
+                    <span className="screen-status">9:41</span>
+                  </div>
+
+                  <div className="screen-search">
+                    <span className="search-glass" aria-hidden="true" />
+                    <span>Buscar destino ou cidade</span>
+                  </div>
+
+                  <div className="screen-section-heading">
+                    <div>
+                      <small>SELEÇÃO TRUACESS</small>
+                      <h3>Para sua próxima viagem</h3>
+                    </div>
+                    <span className="screen-more">Ver todos</span>
+                  </div>
+
+                  <div className="screen-place-card">
+                    <div className="place-image">
+                      <span className="place-image-sun" />
+                      <span className="place-image-hill hill-back" />
+                      <span className="place-image-hill hill-front" />
+                      <span className="place-image-label">DESTAQUE</span>
+                    </div>
+                    <div className="place-card-content">
+                      <span className="place-location"><IconMapPin width={12} height={12} /> Bahia, Brasil</span>
+                      <strong>Praia do Forte</strong>
+                      <div className="place-rating"><span>★</span> 4,9 <small>· 28 avaliações</small></div>
+                    </div>
+                  </div>
+
+                  <div className="screen-accessibility">
+                    <div className="accessibility-heading">
+                      <strong>Recursos de acesso</strong>
+                      <span>3 disponíveis</span>
+                    </div>
+                    <div className="accessibility-chips">
+                      <span><i>✓</i> Rampa</span>
+                      <span><i>✓</i> Banheiro</span>
+                      <span><i>✓</i> Libras</span>
+                    </div>
+                  </div>
+
+                  <div className="screen-bottom-nav">
+                    <span className="nav-item active"><i>⌂</i>Início</span>
+                    <span className="nav-item"><i>⌕</i>Explorar</span>
+                    <span className="nav-item"><i>♡</i>Salvos</span>
+                    <span className="nav-item"><i>○</i>Perfil</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -74,7 +165,7 @@ export function AboutPage() {
           </div>
         </section>
 
-        <section className="about-content-grid">
+        <section className="about-content-grid" id="missao">
           <div className="about-section-card about-detail-card">
             <p className="eyebrow">Nossa missão</p>
             <h2>Mais do que informações, um guia para viver melhor cada jornada.</h2>
