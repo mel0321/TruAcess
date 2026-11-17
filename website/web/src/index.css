@@ -68,6 +68,10 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
   min-height: 100vh;
   background: #f3f8fc;
 }
+.destinations-page .container {
+  width: min(100%, 1248px);
+  padding-inline: clamp(14px, 4vw, 24px);
+}
 .destinations-hero {
   position: relative;
   isolation: isolate;
@@ -1159,6 +1163,31 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
 @media (max-width: 1024px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 768px) {
   .hero h1 { font-size: 36px; }
+  .header-inner:not(.header-inner-authenticated) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+  }
+  .header-inner:not(.header-inner-authenticated) > .logo {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    font-size: clamp(21px, 6vw, 26px);
+  }
+  .header-inner:not(.header-inner-authenticated) > .mobile-menu-toggle {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .header-inner:not(.header-inner-authenticated) > div {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+  .header-auth-actions { gap: 8px; }
+  .header-auth-actions .btn-plan,
+  .header-auth-actions .btn-register {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
   .header-inner-authenticated { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
   .header-inner-authenticated .mobile-menu-toggle { grid-column: 2; grid-row: 1; }
   .header-inner-authenticated > .header-user-actions { grid-column: 1 / -1; grid-row: 2; justify-content: flex-end; gap: 12px; }
@@ -1167,37 +1196,53 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
   .nav.nav-open { display: flex; position: absolute; top: 100%; left: 0; right: 0; padding: 16px 24px; flex-direction: column; align-items: flex-start; gap: 16px; background: white; box-shadow: 0 8px 16px rgba(0,0,0,0.08); }
   .mobile-menu-toggle { display: inline-flex; align-items: center; justify-content: center; padding: 8px 12px; border: 1px solid #052659; border-radius: 6px; background: white; color: #052659; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
   .features-grid { grid-template-columns: repeat(3, 1fr); }
-  .destinations-hero { padding: 46px 0 64px; }
+  .destinations-hero { padding: clamp(30px, 8vw, 46px) 0 clamp(48px, 12vw, 64px); }
   .destinations-hero > .container { gap: 0; }
   .destinations-hero-art { display: none; }
-  .destinations-hero h1 { font-size: clamp(2.35rem, 9vw, 3.3rem); }
-  .destinations-intro { font-size: 14px; }
-  .destinations-traits { gap: 10px 16px; }
+  .destinations-hero h1 {
+    font-size: clamp(2rem, 8.5vw, 3.3rem);
+    overflow-wrap: anywhere;
+  }
+  .destinations-intro { font-size: clamp(13px, 3.7vw, 15px); }
+  .destinations-traits { gap: 10px clamp(12px, 4vw, 16px); }
   .destination-controls {
     grid-template-columns: 1fr;
-    margin-top: -28px;
-    padding: 12px;
+    min-width: 0;
+    margin-top: clamp(-28px, -6vw, -18px);
+    padding: clamp(10px, 3vw, 12px);
     border-radius: 17px;
   }
-  .destination-search { min-height: 56px; padding: 0 13px; }
+  .destination-search { min-width: 0; min-height: 56px; padding: 0 clamp(10px, 3vw, 13px); }
   .accessibility-toggle { min-height: 58px; }
   .destination-category-row {
     grid-template-columns: 1fr;
-    gap: 14px;
-    margin: 28px 0 24px;
+    min-width: 0;
+    gap: 12px;
+    margin: clamp(24px, 7vw, 32px) 0 22px;
   }
   .destination-categories {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    margin-right: -24px;
-    padding: 2px 24px 10px 0;
-    scrollbar-width: thin;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
   }
-  .category-chip { flex: 0 0 auto; }
-  .destinations-results-heading { align-items: flex-start; }
+  .category-chip {
+    flex: 0 1 auto;
+    max-width: 100%;
+    min-height: 38px;
+    padding-inline: clamp(11px, 3.4vw, 16px);
+    font-size: clamp(11px, 3.2vw, 12px);
+  }
+  .destinations-results-heading { align-items: flex-start; min-width: 0; }
+  .destinations-results-heading h2 { font-size: clamp(17px, 5vw, 20px); }
   .results-mark { display: none; }
-  .destinations-grid { grid-template-columns: 1fr; }
-  .destinations-grid .destination-img { height: 220px; }
+  .destinations-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: clamp(14px, 4vw, 20px);
+  }
+  .destinations-grid .destination-img { height: clamp(170px, 58vw, 230px); }
+  .destination-content { padding: clamp(14px, 4vw, 20px); }
+  .destination-description { font-size: clamp(12px, 3.5vw, 13px); }
   .about-content h2 { font-size: 28px; }
   .about-stats { grid-template-columns: 1fr; gap: 24px; }
   .about-icons { gap: 24px; }
@@ -1206,12 +1251,23 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
 }
 
 @media (max-width: 380px) {
+  .header-auth-actions { gap: 5px; }
+  .header-auth-actions .btn-plan,
+  .header-auth-actions .btn-register { padding: 7px 10px; }
   .header-inner-authenticated > .header-user-actions { gap: 8px; }
   .header-inner-authenticated .header-profile-name { max-width: 90px; }
   .header-inner-authenticated .header-logout-button { padding: 7px 10px; }
-  .destinations-hero { padding-top: 36px; }
-  .destinations-eyebrow { font-size: 10px; }
-  .destinations-hero h1 { font-size: 2.25rem; }
-  .accessibility-toggle-copy strong { font-size: 11px; }
-  .accessibility-toggle-copy small { font-size: 9px; }
+  .destinations-hero { padding-top: clamp(26px, 8vw, 34px); }
+  .destinations-eyebrow { font-size: clamp(9px, 2.8vw, 10px); }
+  .destinations-hero h1 { font-size: clamp(1.9rem, 9vw, 2.25rem); }
+  .accessibility-toggle { gap: 8px; padding-inline: 9px; }
+  .accessibility-toggle-icon { width: 34px; height: 34px; flex-basis: 34px; }
+  .accessibility-toggle-copy strong { font-size: clamp(10px, 3vw, 11px); }
+  .accessibility-toggle-copy small { font-size: clamp(8px, 2.5vw, 9px); }
+  .toggle-track { width: 34px; flex-basis: 34px; }
+  .accessibility-toggle input:checked + .accessibility-toggle-icon + .accessibility-toggle-copy + .toggle-track span {
+    transform: translateX(12px);
+  }
+  .destinations-traits span { font-size: 11px; }
+  .destinations-results-heading { margin-bottom: 14px; }
 }
