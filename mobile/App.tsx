@@ -1146,34 +1146,80 @@ export default function App() {
           {notice && <View style={styles.noticeBox}><Text style={styles.noticeText}>{notice}</Text></View>}
           {error && <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>}
 
-          <View style={styles.searchWrap}>
-            <Ionicons name="search" size={20} color="#94A3B8" />
-            <TextInput value={search} onChangeText={setSearch} placeholder="Buscar local ou cidade" style={styles.searchInput} />
-          </View>
+          <View style={activeTab === 'explore' ? styles.exploreFilterPanel : undefined}>
+            <View style={styles.searchWrap}>
+              <Ionicons name="search" size={19} color="#087F8C" />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Buscar local ou cidade"
+                placeholderTextColor="#94A3B8"
+                style={styles.searchInput}
+                returnKeyType="search"
+                accessibilityLabel="Buscar local ou cidade"
+              />
+              {search ? (
+                <Pressable onPress={() => setSearch('')} accessibilityRole="button" accessibilityLabel="Limpar busca" style={styles.clearSearchButton}>
+                  <Ionicons name="close-circle" size={19} color="#94A3B8" />
+                </Pressable>
+              ) : null}
+            </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-            {categories.map((item) => (
-              <Pressable key={item.value} onPress={() => { setCategory(item.value); setCategoryDetail(''); setShowFavorites(false); }} style={[styles.filterBtn, category === item.value && !showFavorites && styles.filterActive]}>
-                <Text style={[styles.filterText, category === item.value && !showFavorites && styles.filterTextActive]}>{item.label}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-
-          {category && categoryDetails[category]?.length ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-              {categoryDetails[category].map((item) => (
-                <Pressable key={item.value} onPress={() => setCategoryDetail(categoryDetail === item.value ? '' : item.value)} style={[styles.filterBtn, categoryDetail === item.value && styles.filterActive]}>
-                  <Text style={[styles.filterText, categoryDetail === item.value && styles.filterTextActive]}>{item.label}</Text>
+            <View style={styles.filterGroupHeader}>
+              <Text style={styles.filterGroupTitle}>Categorias</Text>
+              <Text style={styles.filterGroupHint}>Escolha o tipo de lugar</Text>
+            </View>
+            <ScrollView horizontal style={styles.horizontalFilters} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+              {categories.map((item) => (
+                <Pressable
+                  key={item.value}
+                  onPress={() => { setCategory(item.value); setCategoryDetail(''); setShowFavorites(false); }}
+                  style={[styles.filterBtn, category === item.value && !showFavorites && styles.filterActive]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: category === item.value && !showFavorites }}
+                >
+                  <Text style={[styles.filterText, category === item.value && !showFavorites && styles.filterTextActive]}>{item.label}</Text>
                 </Pressable>
               ))}
             </ScrollView>
-          ) : null}
+
+            {category && categoryDetails[category]?.length ? (
+              <View style={styles.subcategoryGroup}>
+                <View style={styles.filterGroupHeader}>
+                  <Text style={styles.filterGroupTitle}>Tipo de local</Text>
+                  {categoryDetail ? (
+                    <Pressable onPress={() => setCategoryDetail('')} accessibilityRole="button" accessibilityLabel="Limpar tipo de local">
+                      <Text style={styles.clearSubcategoryText}>Limpar</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+                <ScrollView horizontal style={styles.horizontalFilters} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.subcategoryFilters}>
+                  {categoryDetails[category].map((item) => (
+                    <Pressable
+                      key={item.value}
+                      onPress={() => setCategoryDetail(categoryDetail === item.value ? '' : item.value)}
+                      style={[styles.filterBtn, styles.subcategoryFilterBtn, categoryDetail === item.value && styles.subcategoryFilterActive]}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: categoryDetail === item.value }}
+                    >
+                      <Text style={[styles.filterText, categoryDetail === item.value && styles.subcategoryFilterTextActive]}>{item.label}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            ) : null}
+          </View>
 
           {placesLoading ? (
             <ActivityIndicator color="#2AC2D2" size="large" style={styles.spinner} />
           ) : filteredPlaces.length > 0 ? (
             <>
-              <Text style={styles.exploreResultsCount}>{filteredPlaces.length} {filteredPlaces.length === 1 ? 'local encontrado' : 'locais encontrados'}</Text>
+              <View style={styles.exploreResultsHeader}>
+                <View style={styles.exploreResultsIcon}><Ionicons name="location-outline" size={16} color="#087F8C" /></View>
+                <Text style={styles.exploreResultsCount}>
+                  {filteredPlaces.length} {filteredPlaces.length === 1 ? 'local encontrado' : 'locais encontrados'}
+                </Text>
+              </View>
               {filteredPlaces.map(renderPlaceCard)}
             </>
           ) : (
@@ -1219,7 +1265,7 @@ const styles = StyleSheet.create({
   headerLinkText: { color: '#052659', fontWeight: '600', fontSize: 14 },
   headerSignup: { backgroundColor: '#052659', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
   headerSignupText: { color: '#FFF', fontWeight: '700', fontSize: 13 },
-  content: { padding: 20, paddingBottom: 28, flexGrow: 1 },
+  content: { width: '100%', alignItems: 'stretch', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 28, flexGrow: 1 },
   bottomNav: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1369,7 +1415,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  hero: { marginBottom: 20 },
+  hero: { width: '100%', marginBottom: 16 },
   heroPanel: {
     backgroundColor: '#052659',
     borderRadius: 28,
@@ -1457,8 +1503,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   eyebrow: { color: '#2AC2D2', fontSize: 12, fontWeight: '800', letterSpacing: 1.2, marginBottom: 6 },
-  heroTitle: { color: '#052659', fontSize: 28, fontWeight: '800' },
-  heroSubtitle: { color: '#64748B', fontSize: 13, lineHeight: 19, marginTop: 6 },
+  heroTitle: { color: '#052659', fontSize: 26, lineHeight: 32, fontWeight: '800', flexShrink: 1 },
+  heroSubtitle: { color: '#64748B', fontSize: 13, lineHeight: 19, marginTop: 5 },
   heroAccent: { color: '#2AC2D2' },
   homeLandingHero: { backgroundColor: '#052659', borderRadius: 24, padding: 20, marginBottom: 28, overflow: 'hidden' },
   homeLandingEyebrow: { color: '#7DE4E0', fontSize: 11, fontWeight: '800', letterSpacing: 1.2, marginBottom: 12 },
@@ -1491,7 +1537,15 @@ const styles = StyleSheet.create({
   homeEmptyText: { color: '#64748B', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 6 },
   homeEmptyButton: { backgroundColor: '#E6F7F7', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginTop: 14 },
   homeEmptyButtonText: { color: '#087F8C', fontSize: 13, fontWeight: '800' },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, paddingHorizontal: 14, marginBottom: 16 },
+  exploreFilterPanel: { width: '100%', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 18, padding: 13, marginBottom: 18, shadowColor: '#052659', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 1 },
+  searchWrap: { minHeight: 48, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#DCE5EF', borderRadius: 12, paddingHorizontal: 12, marginBottom: 14 },
+  clearSearchButton: { width: 30, height: 36, alignItems: 'center', justifyContent: 'center' },
+  filterGroupHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 7 },
+  filterGroupTitle: { color: '#052659', fontSize: 12, fontWeight: '800' },
+  filterGroupHint: { color: '#94A3B8', fontSize: 10, fontWeight: '600' },
+  horizontalFilters: { height: 42, flexGrow: 0, flexShrink: 0, alignSelf: 'stretch' },
+  subcategoryGroup: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E2E8F0', marginTop: 8, paddingTop: 10 },
+  clearSubcategoryText: { color: '#087F8C', fontSize: 11, fontWeight: '700' },
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1525,21 +1579,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
-  searchInput: { flex: 1, paddingVertical: 14, fontSize: 15, color: '#0F172A', marginLeft: 10 },
-  filters: { alignItems: 'center', gap: 8, marginBottom: 16, paddingVertical: 4 },
-  filterBtn: { borderRadius: 20, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: '#F1F5F9' },
-  filterActive: { backgroundColor: '#052659' },
-  filterText: { color: '#475569', fontWeight: '600', fontSize: 13 },
+  searchInput: { flex: 1, minWidth: 0, paddingVertical: 10, fontSize: 14, color: '#0F172A', marginLeft: 9 },
+  filters: { alignItems: 'center', gap: 7, paddingRight: 4 },
+  subcategoryFilters: { alignItems: 'center', gap: 7, paddingRight: 4 },
+  filterBtn: { minHeight: 34, borderRadius: 18, paddingVertical: 8, paddingHorizontal: 13, backgroundColor: '#F1F5F9', justifyContent: 'center', borderWidth: 1, borderColor: '#F1F5F9' },
+  filterActive: { backgroundColor: '#052659', borderColor: '#052659' },
+  subcategoryFilterBtn: { backgroundColor: '#FFFFFF', borderColor: '#DCE5EF' },
+  subcategoryFilterActive: { backgroundColor: '#E6F7F7', borderColor: '#8DD9D7' },
+  filterText: { color: '#475569', fontWeight: '700', fontSize: 12 },
   filterTextActive: { color: '#FFF' },
+  subcategoryFilterTextActive: { color: '#087F8C' },
   favToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#F0F9FF', borderRadius: 10, paddingVertical: 12, marginBottom: 16, borderWidth: 1, borderColor: '#BAE6FD' },
   favToggleActive: { backgroundColor: '#052659', borderColor: '#052659' },
   favToggleText: { color: '#052659', fontWeight: '700', fontSize: 14 },
   favToggleTextActive: { color: '#FFF' },
-  exploreResultsCount: { color: '#64748B', fontSize: 12, fontWeight: '700', marginBottom: 10 },
+  exploreResultsHeader: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 },
+  exploreResultsIcon: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#E6F7F7', alignItems: 'center', justifyContent: 'center' },
+  exploreResultsCount: { color: '#475569', fontSize: 12, fontWeight: '800' },
 
   // Card
-  card: { backgroundColor: '#FFF', borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden' },
-  cardImageContainer: { width: '100%', height: 160, backgroundColor: '#E2E8F0', overflow: 'hidden', position: 'relative' },
+  card: { width: '100%', backgroundColor: '#FFF', borderRadius: 18, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden', shadowColor: '#052659', shadowOpacity: 0.05, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 2 },
+  cardImageContainer: { width: '100%', height: 170, backgroundColor: '#E2E8F0', overflow: 'hidden', position: 'relative' },
   cardImage: { width: '100%', height: '100%' },
   cardImagePlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },
   cardImagePlaceholderText: { color: '#94A3B8', fontSize: 14, fontWeight: '600' },
@@ -1548,7 +1608,7 @@ const styles = StyleSheet.create({
   cardBadgeFreeText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
   cardBadgePublic: { backgroundColor: '#0284C7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   cardBadgePublicText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
-  cardBody: { padding: 16 },
+  cardBody: { padding: 14 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   cardCat: { color: '#087F8C', textTransform: 'uppercase', fontSize: 11, fontWeight: '800' },
   cardName: { color: '#052659', fontWeight: '700', fontSize: 17, marginBottom: 6 },
