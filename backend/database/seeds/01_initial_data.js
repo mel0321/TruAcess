@@ -46,6 +46,7 @@ export async function seed(knex) {
       business_owner_id: 1,
       establishment_name: 'Hotel Unique',
       category: 'ACCOMMODATION',
+      category_detail: 'HOTEL',
       full_address: 'Avenida Brigadeiro Luís Antônio 4700 - Jardim Paulista',
       city: 'São Paulo',
       state: 'SP',
@@ -65,6 +66,7 @@ export async function seed(knex) {
       business_owner_id: 1,
       establishment_name: 'Restaurante A Figueira Rubaiyat',
       category: 'GASTRONOMY',
+      category_detail: 'RESTAURANT',
       full_address: 'Rua Haddock Lobo 1738 - Jardim Paulista',
       city: 'São Paulo',
       state: 'SP',
@@ -84,6 +86,7 @@ export async function seed(knex) {
       business_owner_id: 1,
       establishment_name: 'MASP - Museu de Arte de São Paulo',
       category: 'TOURIST_ATTRACTION',
+      category_detail: 'MUSEUM',
       full_address: 'Avenida Paulista 1578 - Bela Vista',
       city: 'São Paulo',
       state: 'SP',
@@ -103,6 +106,7 @@ export async function seed(knex) {
       business_owner_id: 1,
       establishment_name: 'Parque Ibirapuera',
       category: 'TOURIST_ATTRACTION',
+      category_detail: 'PARK',
       full_address: 'Avenida Pedro Álvares Cabral - Vila Mariana',
       city: 'São Paulo',
       state: 'SP',
@@ -122,6 +126,7 @@ export async function seed(knex) {
       business_owner_id: 1,
       establishment_name: 'Pinacoteca de São Paulo',
       category: 'TOURIST_ATTRACTION',
+      category_detail: 'MUSEUM',
       full_address: 'Praça da Luz 2 - Luz',
       city: 'São Paulo',
       state: 'SP',
@@ -135,6 +140,25 @@ export async function seed(knex) {
       has_braille_signage: 1,
       has_sign_language_interpreter: 1,
       has_asd_friendly_space: 1
+    },
+    {
+      id: 6,
+      business_owner_id: 1,
+      establishment_name: 'Pátio do Colégio',
+      category: 'TOURIST_ATTRACTION',
+      category_detail: 'HISTORIC_SITE',
+      full_address: 'Praça Pátio do Colégio, 2 - Centro Histórico',
+      city: 'São Paulo',
+      state: 'SP',
+      description:
+        'Local histórico ligado à fundação da cidade de São Paulo, com museu e espaços de visitação.',
+      price: 0,
+      has_access_ramp: 1,
+      has_adapted_bathroom: 1,
+      allows_guide_dog: 1,
+      has_braille_signage: 0,
+      has_sign_language_interpreter: 0,
+      has_asd_friendly_space: 0
     }
   ]);
 

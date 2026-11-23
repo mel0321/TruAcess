@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import db from '../../database/connection.js';
+import { AppError } from './error.middleware.js';
 
 /**
  * Middleware para autenticação via JWT
@@ -44,7 +45,7 @@ export async function authenticateToken(req, res, next) {
     // Buscar usuário no banco
     const user = await db('users')
       .where({ id: decoded.id })
-      .select('id', 'full_name', 'email', 'user_type', 'email_verified', 'profile_picture')
+      .select('id', 'full_name', 'email', 'user_type', 'email_verified', 'profile_picture', 'profile_data')
       .first();
 
     if (!user) {
@@ -62,7 +63,16 @@ export async function authenticateToken(req, res, next) {
       });
     }
 
-    req.user = user;
+    let profile = null;
+    if (user.user_type === 'TRAVELER' && user.profile_data) {
+      try {
+        profile = JSON.parse(user.profile_data);
+      } catch {
+        throw new AppError('Não foi possível ler o perfil do viajante.', 500);
+      }
+    }
+    const { profile_data: _profileData, ...safeUser } = user;
+    req.user = { ...safeUser, profile };
     next();
   } catch (error) {
     next(error);

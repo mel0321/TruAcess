@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import * as ImagePicker from 'expo-image-picker';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -23,9 +24,22 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ||
   (Platform.OS === 'android' ? 'http://10.0.2.2:3000/api' : 'http://localhost:3000/api');
 const api = axios.create({ baseURL: API_URL, timeout: 10000 });
 
-type User = { id: number; email: string; full_name: string; user_type: string };
+type UserProfile = {
+  gender?: string;
+  ageRange?: string;
+  travelFrequency?: string;
+  companionType?: string;
+  disabilities?: string[];
+  interests?: string[];
+  accessibilityPreferences?: string[];
+  profileCompleted?: boolean;
+  onboardingStep?: number;
+};
+type User = { id: number; email: string; full_name: string; user_type: 'TRAVELER' | 'BUSINESS'; profile?: UserProfile | null };
 type AccessibilityAnswer = 'yes' | 'no' | 'unsure';
 type AccessibilityAssessment = Record<string, AccessibilityAnswer>;
+type ReviewAccessibilityAnswer = 'yes' | 'partially' | 'no' | 'not_applicable';
+type ReviewAccessibilityDetails = Record<string, ReviewAccessibilityAnswer>;
 type PlaceReview = {
   id: number;
   traveler_name: string;
@@ -33,6 +47,7 @@ type PlaceReview = {
   experience_rating: number;
   accessibility_level: 'POOR' | 'GOOD' | 'EXCELLENT';
   comment_text?: string | null;
+  accessibility_details?: ReviewAccessibilityDetails | null;
   created_at: string;
 };
 type Place = {
@@ -41,7 +56,9 @@ type Place = {
   category: string;
   category_detail?: string | null;
   city: string;
-  state: string;
+  state: string | null;
+  district?: string | null;
+  country?: string;
   description?: string;
   full_address?: string;
   price: number;
@@ -50,6 +67,7 @@ type Place = {
   website?: string | null;
   opening_hours?: string | null;
   accessibility_assessment?: AccessibilityAssessment | null;
+  photos?: PlacePhoto[];
   average_rating?: number | null;
   total_reviews?: number;
   accessibility_score?: number | null;
@@ -63,6 +81,20 @@ type Place = {
   has_braille_signage: boolean;
   has_sign_language_interpreter: boolean;
   has_asd_friendly_space: boolean;
+};
+type PlacePhoto = {
+  id: number;
+  photo_url: string;
+  photo_type: 'PLACE' | 'ACCESSIBILITY';
+  accessibility_category: string | null;
+};
+type PendingPhoto = {
+  id: string;
+  uri: string;
+  name: string;
+  mimeType: string;
+  photo_type: 'PLACE' | 'ACCESSIBILITY';
+  accessibility_category: string;
 };
 type PlaceDetailsResponse = {
   place: Place & {
@@ -80,7 +112,9 @@ type PlaceDraft = {
   category_detail: string;
   full_address: string;
   city: string;
+  district: string;
   state: string;
+  country: string;
   description: string;
   price: string;
   main_image: string;
@@ -94,38 +128,83 @@ const categories = [
   { value: 'ACCOMMODATION', label: 'Hospedagem' },
   { value: 'GASTRONOMY', label: 'Gastronomia' },
   { value: 'TOURIST_ATTRACTION', label: 'Atrações turísticas' },
+  { value: 'SHOPPING', label: 'Compras' },
+  { value: 'HEALTH', label: 'Saúde e bem-estar' },
+  { value: 'TRANSPORT', label: 'Transporte' },
+  { value: 'EDUCATION', label: 'Educação' },
+  { value: 'ENTERTAINMENT', label: 'Entretenimento' },
+  { value: 'SPORTS', label: 'Esportes e lazer' },
+  { value: 'RELIGIOUS_SITE', label: 'Espaços religiosos' },
+  { value: 'PUBLIC_SERVICE', label: 'Serviços públicos' },
   { value: 'OTHERS', label: 'Outros' },
 ];
 const categoryDetails: Record<string, Array<{ value: string; label: string }>> = {
-  ACCOMMODATION: [{ value: 'HOTEL', label: 'Hotel' }, { value: 'HOSTEL', label: 'Hostel' }, { value: 'INN', label: 'Pousada' }, { value: 'RESORT', label: 'Resort' }, { value: 'CAMPING', label: 'Camping' }],
+  ACCOMMODATION: [{ value: 'HOTEL', label: 'Hotel' }, { value: 'HOSTEL', label: 'Hostel' }, { value: 'INN', label: 'Pousada' }, { value: 'RESORT', label: 'Resort' }, { value: 'CAMPING', label: 'Camping' }, { value: 'VACATION_RENTAL', label: 'Aluguel por temporada' }],
   GASTRONOMY: [{ value: 'RESTAURANT', label: 'Restaurante' }, { value: 'CAFE', label: 'Café' }, { value: 'BAR', label: 'Bar' }, { value: 'BAKERY', label: 'Padaria' }, { value: 'FOOD_TRUCK', label: 'Food truck' }],
-  TOURIST_ATTRACTION: [{ value: 'MUSEUM', label: 'Museu' }, { value: 'PARK', label: 'Parque' }, { value: 'BEACH', label: 'Praia' }, { value: 'TRAIL', label: 'Trilha' }, { value: 'CULTURAL_SITE', label: 'Espaço cultural' }, { value: 'EVENT_VENUE', label: 'Eventos' }],
-  OTHERS: [{ value: 'SHOPPING', label: 'Compras' }, { value: 'HEALTH', label: 'Saúde' }, { value: 'TRANSPORT', label: 'Transporte' }, { value: 'PUBLIC_SERVICE', label: 'Serviço público' }],
+  TOURIST_ATTRACTION: [{ value: 'MUSEUM', label: 'Museu' }, { value: 'PARK', label: 'Parque' }, { value: 'BEACH', label: 'Praia' }, { value: 'TRAIL', label: 'Trilha' }, { value: 'CULTURAL_SITE', label: 'Espaço cultural' }, { value: 'EVENT_VENUE', label: 'Eventos' }, { value: 'HISTORIC_SITE', label: 'Ponto histórico' }],
+  SHOPPING: [{ value: 'SHOPPING_MALL', label: 'Shopping center' }, { value: 'STORE', label: 'Loja' }, { value: 'MARKET', label: 'Mercado' }, { value: 'FAIR', label: 'Feira' }],
+  HEALTH: [{ value: 'CLINIC', label: 'Clínica' }, { value: 'HOSPITAL', label: 'Hospital' }, { value: 'PHARMACY', label: 'Farmácia' }, { value: 'WELLNESS', label: 'Bem-estar' }],
+  TRANSPORT: [{ value: 'AIRPORT', label: 'Aeroporto' }, { value: 'BUS_STATION', label: 'Terminal rodoviário' }, { value: 'TRAIN_STATION', label: 'Estação de trem/metrô' }, { value: 'PORT', label: 'Porto' }],
+  EDUCATION: [{ value: 'SCHOOL', label: 'Escola' }, { value: 'UNIVERSITY', label: 'Universidade' }, { value: 'LIBRARY', label: 'Biblioteca' }],
+  ENTERTAINMENT: [{ value: 'CINEMA', label: 'Cinema' }, { value: 'THEATER', label: 'Teatro' }, { value: 'CONCERT_HALL', label: 'Casa de shows' }, { value: 'EVENT_VENUE', label: 'Espaço de eventos' }],
+  SPORTS: [{ value: 'STADIUM', label: 'Estádio' }, { value: 'GYM', label: 'Academia' }, { value: 'SPORTS_CENTER', label: 'Centro esportivo' }],
+  RELIGIOUS_SITE: [{ value: 'CHURCH', label: 'Igreja' }, { value: 'TEMPLE', label: 'Templo' }, { value: 'OTHER_RELIGIOUS_SITE', label: 'Outro espaço religioso' }],
+  PUBLIC_SERVICE: [{ value: 'GOVERNMENT_OFFICE', label: 'Órgão público' }, { value: 'POST_OFFICE', label: 'Correios' }, { value: 'CITIZEN_SERVICE', label: 'Atendimento ao cidadão' }],
+  OTHERS: [{ value: 'OTHER_SERVICE', label: 'Outro serviço' }],
 };
+const photoAccessibilityCategories = [
+  ['ACCESS_ROUTE', 'Rota acessível'],
+  ['RAMP', 'Rampa'],
+  ['ENTRANCE', 'Entrada'],
+  ['ADAPTED_BATHROOM', 'Banheiro adaptado'],
+  ['PARKING', 'Vaga acessível'],
+  ['BRAILLE', 'Braille'],
+  ['SIGN_LANGUAGE', 'Libras'],
+  ['GUIDE_DOG', 'Cão-guia'],
+  ['SENSORY_SPACE', 'Espaço sensorial'],
+  ['OTHER', 'Outro recurso'],
+] as const;
 const accessibilityQuestions = [
-  { key: 'step_free_route', label: 'Rota acessível sem degraus até as áreas públicas?' },
-  { key: 'accessible_entrance', label: 'Entrada utilizável por pessoas com mobilidade reduzida?' },
-  { key: 'access_ramp', label: 'Há rampa de acesso onde existe desnível no percurso?' },
-  { key: 'adapted_restroom', label: 'Há banheiro acessível para visitantes?' },
-  { key: 'accessible_parking', label: 'Há vaga reservada com rota acessível até a entrada?' },
-  { key: 'guide_dog', label: 'É permitida a entrada de cão-guia?' },
-  { key: 'tactile_signage', label: 'Há sinalização tátil ou orientação acessível?' },
-  { key: 'braille_information', label: 'Informações importantes estão disponíveis em Braille ou formato tátil?' },
-  { key: 'libras_support', label: 'Há atendimento em Libras ou recurso equivalente?' },
-  { key: 'accessible_website', label: 'Os canais digitais trazem informações acessíveis sobre a visita?' },
-  { key: 'accessible_service', label: 'A equipe está preparada para atendimento inclusivo?' },
-  { key: 'quiet_space', label: 'Há espaço tranquilo para reduzir estímulos?' },
-  { key: 'asd_friendly_space', label: 'Há recursos ou espaços adequados para acolher pessoas autistas?' },
-  { key: 'sensory_support', label: 'São informados ruídos, iluminação ou estímulos sensoriais?' },
-  { key: 'staff_training', label: 'A equipe recebe orientação sobre acessibilidade?' },
+  { key: 'step_free_route', label: 'Há um caminho contínuo, sem degraus, da calçada ou vaga até a entrada e as áreas abertas aos visitantes?' },
+  { key: 'accessible_entrance', label: 'A entrada permite a passagem de cadeira de rodas e de pessoas com mobilidade reduzida, sem barreiras difíceis de transpor?' },
+  { key: 'access_ramp', label: 'Nos desníveis do percurso, há rampa firme e segura para chegar às áreas de atendimento e visita?' },
+  { key: 'adapted_restroom', label: 'Há banheiro acessível aos visitantes, com espaço de circulação e apoios necessários?' },
+  { key: 'accessible_parking', label: 'Há vaga reservada e sinalizada, ligada à entrada por uma rota acessível?' },
+  { key: 'guide_dog', label: 'A pessoa pode permanecer com seu cão-guia nas áreas abertas ao público?' },
+  { key: 'tactile_signage', label: 'Há sinalização tátil ou piso tátil que ajude pessoas cegas ou com baixa visão a se orientar?' },
+  { key: 'braille_information', label: 'Informações importantes, como cardápio, orientações e avisos, estão disponíveis em Braille ou formato tátil?' },
+  { key: 'libras_support', label: 'É possível receber atendimento em Libras ou por outro recurso de comunicação acessível?' },
+  { key: 'accessible_website', label: 'Os canais digitais informam como chegar, quais recursos de acessibilidade existem e como pedir apoio?' },
+  { key: 'accessible_service', label: 'A equipe oferece ajuda respeitando a autonomia e as preferências de cada visitante?' },
+  { key: 'quiet_space', label: 'Há um local tranquilo onde visitantes possam fazer uma pausa quando precisarem?' },
+  { key: 'asd_friendly_space', label: 'Há recursos ou um espaço preparado para acolher pessoas autistas?' },
+  { key: 'sensory_support', label: 'Antes da visita, é possível saber sobre ruídos, iluminação, lotação ou outros estímulos sensoriais?' },
+  { key: 'staff_training', label: 'A equipe recebe orientação para atender pessoas com diferentes deficiências e necessidades de acesso?' },
+];
+const reviewAccessibilityQuestions = [
+  { key: 'access_route', label: 'Na sua visita, você conseguiu sair da calçada ou vaga, entrar e chegar aos espaços que precisava?' },
+  { key: 'entrance_access', label: 'A porta, os desníveis e a entrada permitiram que você entrasse e saísse com autonomia?' },
+  { key: 'accessible_facilities', label: 'Você conseguiu usar as áreas e instalações de que precisava, como balcão, mesas ou assentos?' },
+  { key: 'restroom_access', label: 'Se precisou usar o banheiro, conseguiu chegar e utilizá-lo com segurança e autonomia?' },
+  { key: 'communication', label: 'Você conseguiu acessar as informações e se comunicar da forma necessária durante a visita?' },
+  { key: 'staff_support', label: 'Quando precisou de apoio, a equipe ouviu você, respeitou sua autonomia e ajudou adequadamente?' },
+  { key: 'guide_dog_access', label: 'Se estava com cão-guia, ele pôde acompanhar você nas áreas abertas ao público?' },
+  { key: 'sensory_comfort', label: 'Ruídos, iluminação, cheiros e lotação foram confortáveis para você durante a visita?' },
+];
+const reviewAnswerOptions: Array<[ReviewAccessibilityAnswer, string]> = [
+  ['yes', 'Sim'],
+  ['partially', 'Em parte'],
+  ['no', 'Não'],
+  ['not_applicable', 'Não se aplica / não consegui avaliar'],
 ];
 const emptyPlaceDraft: PlaceDraft = {
   establishment_name: '', category: 'ACCOMMODATION', category_detail: '',
-  full_address: '', city: '', state: '', description: '', price: '',
+  full_address: '', city: '', district: '', state: '', country: 'Brasil', description: '', price: '',
   main_image: '', phone: '', website: '', opening_hours: '',
 };
 
 const favoriteStorageKey = (userId: number) => `TruAcessFavoritos${userId}`;
+const emailPattern = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*$/;
 
 // ✅ FORMATAÇÃO DE PREÇO CORRIGIDA
 const formatPrice = (price: number | null | undefined): string => {
@@ -153,6 +232,7 @@ export default function App() {
   const [experienceRating, setExperienceRating] = useState(5);
   const [accessibilityRating, setAccessibilityRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
+  const [reviewAccessibilityDetails, setReviewAccessibilityDetails] = useState<ReviewAccessibilityDetails>({});
   const [favorites, setFavorites] = useState<number[]>([]);
   const [showFavorites, setShowFavorites] = useState(false);
   const [category, setCategory] = useState('');
@@ -163,8 +243,21 @@ export default function App() {
   const [fullName, setFullName] = useState('');
   const [accountType, setAccountType] = useState<'TRAVELER' | 'BUSINESS'>('TRAVELER');
   const [myPlaces, setMyPlaces] = useState<Place[]>([]);
+  const [linkedAccount, setLinkedAccount] = useState<Pick<User, 'id' | 'email' | 'full_name' | 'user_type'> | null>(null);
+  const [linkMode, setLinkMode] = useState<'connect' | 'create' | null>(null);
+  const [linkedFullName, setLinkedFullName] = useState('');
+  const [linkedEmail, setLinkedEmail] = useState('');
+  const [linkedPassword, setLinkedPassword] = useState('');
+  const [linkedError, setLinkedError] = useState('');
+  const [linkedNotice, setLinkedNotice] = useState('');
+  const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [travelerDraft, setTravelerDraft] = useState<UserProfile>({});
   const [placeDraft, setPlaceDraft] = useState<PlaceDraft>(emptyPlaceDraft);
+  const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
   const [placeAssessment, setPlaceAssessment] = useState<AccessibilityAssessment>({});
+  const [assessmentSaveStatus, setAssessmentSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const assessmentSaveQueue = useRef<Promise<void>>(Promise.resolve());
+  const assessmentSaveVersion = useRef(0);
   const [editingPlaceId, setEditingPlaceId] = useState<number | null>(null);
   const [confirmDeletePlaceId, setConfirmDeletePlaceId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -210,6 +303,20 @@ export default function App() {
   }, [selectedPlace?.id]);
 
   useEffect(() => {
+    const placeId = selectedPlace?.id;
+    if (!placeId) return;
+    let active = true;
+    void api.get<PlaceDetailsResponse>(`/places/${placeId}`)
+      .then(({ data }) => {
+        if (active) setSelectedPlace((current) => current?.id === placeId ? data.place : current);
+      })
+      .catch((loadError: unknown) => {
+        console.error('Erro ao carregar fotos e detalhes do local:', loadError);
+      });
+    return () => { active = false; };
+  }, [selectedPlace?.id]);
+
+  useEffect(() => {
     if (user?.user_type !== 'BUSINESS') {
       setMyPlaces([]);
       return;
@@ -229,6 +336,31 @@ export default function App() {
     });
     return () => { active = false; };
   }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setLinkedAccount(null);
+      setTravelerDraft({});
+      return;
+    }
+    setTravelerDraft(user.profile || {});
+    let active = true;
+    void SecureStore.getItemAsync('TruAcessToken').then((token) => {
+      if (!token) throw new Error('Sessão expirada.');
+      return api.get<{ account: typeof linkedAccount }>('/users/linked-account', {
+        headers: { Authorization: 'Bearer ' + token },
+      });
+    }).then(({ data }) => {
+      if (active) {
+        setLinkedAccount(data.account);
+        setLinkedError('');
+      }
+    }).catch((loadError: unknown) => {
+      console.error('Erro ao carregar conta conectada:', loadError);
+      if (active) setLinkedError('Não foi possível verificar se há outro perfil conectado.');
+    });
+    return () => { active = false; };
+  }, [user?.id]);
 
   const loadPlaces = async () => {
     setPlacesLoading(true);
@@ -275,7 +407,7 @@ export default function App() {
     return places.filter((p) => {
       const matchCat = !category || p.category === category;
       const matchDetail = !categoryDetail || p.category_detail === categoryDetail;
-      const matchSearch = !q || [p.establishment_name, p.city, p.state, p.category_detail || ''].some(v => v.toLowerCase().includes(q));
+      const matchSearch = !q || [p.establishment_name, p.city, p.district || '', p.state || '', p.country || '', p.category_detail || ''].some(v => v.toLowerCase().includes(q));
       const matchFav = !showFavorites || favorites.includes(p.id);
       return matchCat && matchDetail && matchSearch && matchFav;
     });
@@ -303,11 +435,13 @@ export default function App() {
       const response = await api.post<{ review: PlaceReview }>(`/places/${selectedPlace.id}/reviews`, {
         experience_rating: experienceRating,
         accessibility_level: accessibilityRating >= 5 ? 'EXCELLENT' : accessibilityRating >= 3 ? 'GOOD' : 'POOR',
+        accessibility_details: reviewAccessibilityDetails,
         comment_text: reviewComment.trim(),
       }, { headers: { Authorization: `Bearer ${token}` } });
 
       setPlaceReviews((current) => [response.data.review, ...current]);
       setReviewComment('');
+      setReviewAccessibilityDetails({});
       setExperienceRating(5);
       setAccessibilityRating(5);
       setReviewFormOpen(false);
@@ -336,6 +470,10 @@ export default function App() {
   };
 
   const handleLogin = async () => {
+    if (!email.trim()) { setError('Informe seu e-mail.'); return; }
+    if (!emailPattern.test(email.trim())) { setError('Informe um e-mail válido.'); return; }
+    if (!password) { setError('Informe sua senha.'); return; }
+
     setLoading(true); setError(''); setNotice('');
     try {
       const res = await api.post<any>('/auth/login', { email, password });
@@ -369,6 +507,111 @@ export default function App() {
     setUser(null); setFavorites([]); setShowFavorites(false); setSelectedPlace(null);
     setActiveTab('home');
     setNotice('Você saiu da conta.');
+  };
+
+  const submitLinkedAccount = async () => {
+    if (!linkedEmail.trim() || !linkedPassword) {
+      setLinkedError('Informe e-mail e senha do perfil.');
+      return;
+    }
+    if (linkMode === 'create' && !linkedFullName.trim()) {
+      setLinkedError('Informe o nome para criar o outro perfil.');
+      return;
+    }
+    setLoading(true);
+    setLinkedError('');
+    setLinkedNotice('');
+    try {
+      const token = await SecureStore.getItemAsync('TruAcessToken');
+      if (!token) throw new Error('Sua sessão expirou. Entre novamente.');
+      const response = linkMode === 'connect'
+        ? await api.post<{ account: NonNullable<typeof linkedAccount>; message: string }>('/users/linked-account/connect', {
+            email: linkedEmail, password: linkedPassword,
+          }, { headers: { Authorization: 'Bearer ' + token } })
+        : await api.post<{ account: NonNullable<typeof linkedAccount>; message: string }>('/users/linked-account/create', {
+            full_name: linkedFullName.trim(), email: linkedEmail, password: linkedPassword,
+          }, { headers: { Authorization: 'Bearer ' + token } });
+      setLinkedAccount(response.data.account);
+      setLinkedNotice(response.data.message);
+      setLinkMode(null);
+      setLinkedFullName('');
+      setLinkedEmail('');
+      setLinkedPassword('');
+    } catch (linkError: unknown) {
+      console.error('Erro ao conectar perfis:', linkError);
+      setLinkedError(axios.isAxiosError(linkError)
+        ? linkError.response?.data?.message || linkError.response?.data?.error || 'Não foi possível conectar os perfis.'
+        : linkError instanceof Error ? linkError.message : 'Não foi possível conectar os perfis.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchLinkedAccount = async () => {
+    setLoading(true);
+    setLinkedError('');
+    try {
+      const token = await SecureStore.getItemAsync('TruAcessToken');
+      if (!token) throw new Error('Sua sessão expirou. Entre novamente.');
+      const response = await api.post<{ token: string; user: User }>('/users/linked-account/switch', {}, {
+        headers: { Authorization: 'Bearer ' + token },
+      });
+      await SecureStore.setItemAsync('TruAcessToken', response.data.token);
+      await SecureStore.setItemAsync('TruAcessUser', JSON.stringify(response.data.user));
+      setUser(response.data.user);
+      setActiveTab('profile');
+      setNotice(`Perfil alterado para ${response.data.user.user_type === 'BUSINESS' ? 'estabelecimento' : 'viajante'}.`);
+    } catch (switchError: unknown) {
+      console.error('Erro ao alternar perfil:', switchError);
+      setLinkedError(axios.isAxiosError(switchError)
+        ? switchError.response?.data?.message || 'Não foi possível alternar o perfil.'
+        : switchError instanceof Error ? switchError.message : 'Não foi possível alternar o perfil.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const unlinkAccount = async () => {
+    setLoading(true);
+    setLinkedError('');
+    try {
+      const token = await SecureStore.getItemAsync('TruAcessToken');
+      if (!token) throw new Error('Sua sessão expirou. Entre novamente.');
+      await api.delete('/users/linked-account', { headers: { Authorization: 'Bearer ' + token } });
+      setLinkedAccount(null);
+      setLinkedNotice('Os perfis foram desconectados.');
+    } catch (unlinkError: unknown) {
+      console.error('Erro ao desconectar perfis:', unlinkError);
+      setLinkedError(axios.isAxiosError(unlinkError)
+        ? unlinkError.response?.data?.message || 'Não foi possível desconectar os perfis.'
+        : unlinkError instanceof Error ? unlinkError.message : 'Não foi possível desconectar os perfis.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveTravelerProfile = async () => {
+    setLoading(true);
+    setLinkedError('');
+    try {
+      const token = await SecureStore.getItemAsync('TruAcessToken');
+      if (!token) throw new Error('Sua sessão expirou. Entre novamente.');
+      const profile = { ...user?.profile, ...travelerDraft };
+      const response = await api.put<{ user: User }>('/users/profile', { profile }, {
+        headers: { Authorization: 'Bearer ' + token },
+      });
+      setUser(response.data.user);
+      await SecureStore.setItemAsync('TruAcessUser', JSON.stringify(response.data.user));
+      setProfileEditOpen(false);
+      setNotice('Perfil do viajante atualizado.');
+    } catch (profileError: unknown) {
+      console.error('Erro ao salvar perfil do viajante:', profileError);
+      setLinkedError(axios.isAxiosError(profileError)
+        ? profileError.response?.data?.message || 'Não foi possível salvar as informações do viajante.'
+        : profileError instanceof Error ? profileError.message : 'Não foi possível salvar as informações do viajante.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const openExplore = (selectedCategory = '') => {
@@ -411,7 +654,9 @@ export default function App() {
   const startNewPlace = () => {
     setEditingPlaceId(null);
     setPlaceDraft(emptyPlaceDraft);
+    setPendingPhotos([]);
     setPlaceAssessment({});
+    setAssessmentSaveStatus('idle');
     setError('');
     setScreen('placeForm');
   };
@@ -424,7 +669,9 @@ export default function App() {
       category_detail: place.category_detail || '',
       full_address: place.full_address || '',
       city: place.city,
-      state: place.state,
+      district: place.district || '',
+      state: place.state || '',
+      country: place.country || 'Brasil',
       description: place.description || '',
       price: place.price ? (place.price / 100).toFixed(2) : '',
       main_image: place.main_image || '',
@@ -432,14 +679,71 @@ export default function App() {
       website: place.website || '',
       opening_hours: place.opening_hours || '',
     });
+    setPendingPhotos([]);
     setPlaceAssessment(place.accessibility_assessment || {});
+    setAssessmentSaveStatus('idle');
     setError('');
     setScreen('placeForm');
   };
 
+  const pickPlacePhotos = async (photoType: PendingPhoto['photo_type']) => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setError('Permita o acesso às fotos para selecionar imagens.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.85,
+    });
+    if (result.canceled) return;
+    const selected = result.assets.map((asset, index): PendingPhoto => ({
+      id: `${Date.now()}-${index}-${asset.uri}`,
+      uri: asset.uri,
+      name: asset.fileName || `foto-${Date.now()}-${index}.jpg`,
+      mimeType: asset.mimeType || 'image/jpeg',
+      photo_type: photoType,
+      accessibility_category: 'RAMP',
+    }));
+    setPendingPhotos((current) => [...current, ...selected]);
+    setError('');
+  };
+
+  const updatePlaceAssessment = (key: string, answer: AccessibilityAnswer) => {
+    const nextAssessment = { ...placeAssessment, [key]: answer };
+    setPlaceAssessment(nextAssessment);
+    if (!editingPlaceId) return;
+
+    const version = ++assessmentSaveVersion.current;
+    setAssessmentSaveStatus('saving');
+    const saveRequest = assessmentSaveQueue.current.then(async () => {
+      const token = await SecureStore.getItemAsync('TruAcessToken');
+      if (!token) throw new Error('Sua sessão expirou. Entre novamente para salvar as respostas.');
+      await api.put(`/places/${editingPlaceId}`, { accessibility_assessment: nextAssessment }, {
+        headers: { Authorization: 'Bearer ' + token },
+      });
+    });
+    assessmentSaveQueue.current = saveRequest.then(() => undefined, () => undefined);
+    void saveRequest.then(() => {
+      if (version === assessmentSaveVersion.current) {
+        setAssessmentSaveStatus('saved');
+        setError('');
+      }
+    }).catch((saveError: unknown) => {
+      console.error('Erro ao salvar resposta do questionário:', saveError);
+      if (version === assessmentSaveVersion.current) {
+        setAssessmentSaveStatus('error');
+        setError(axios.isAxiosError(saveError)
+          ? saveError.response?.data?.message || 'Não foi possível salvar a resposta automaticamente.'
+          : saveError instanceof Error ? saveError.message : 'Não foi possível salvar a resposta automaticamente.');
+      }
+    });
+  };
+
   const savePlace = async () => {
-    if (!placeDraft.establishment_name.trim() || !placeDraft.full_address.trim() || !placeDraft.city.trim() || !placeDraft.state.trim()) {
-      setError('Preencha nome, endereço, cidade e estado.');
+    if (!placeDraft.establishment_name.trim() || !placeDraft.full_address.trim() || !placeDraft.city.trim() || !placeDraft.country.trim()) {
+      setError('Preencha nome, endereço, cidade e país.');
       return;
     }
     const price = placeDraft.price.trim() ? Number(placeDraft.price.replace(',', '.')) : null;
@@ -457,13 +761,29 @@ export default function App() {
         establishment_name: placeDraft.establishment_name.trim(),
         full_address: placeDraft.full_address.trim(),
         city: placeDraft.city.trim(),
-        state: placeDraft.state.trim().toUpperCase(),
+        district: placeDraft.district.trim(),
+        state: placeDraft.state.trim() || null,
+        country: placeDraft.country.trim(),
         price: price === null ? null : Math.round(price * 100),
         accessibility_assessment: placeAssessment,
       };
       const config = { headers: { Authorization: 'Bearer ' + token } };
-      if (editingPlaceId) await api.put(`/places/${editingPlaceId}`, payload, config);
-      else await api.post('/places', payload, config);
+      const saved = editingPlaceId
+        ? await api.put<{ place: Place }>(`/places/${editingPlaceId}`, payload, config)
+        : await api.post<{ place: Place }>('/places', payload, config);
+      const savedPlaceId = saved.data.place.id;
+      setEditingPlaceId(savedPlaceId);
+      for (const photo of pendingPhotos) {
+        const formData = new FormData();
+        const imageBlob = await (await fetch(photo.uri)).blob();
+        formData.append('photo', imageBlob, photo.name);
+        formData.append('photo_type', photo.photo_type);
+        if (photo.photo_type === 'ACCESSIBILITY') {
+          formData.append('accessibility_category', photo.accessibility_category);
+        }
+        await api.post(`/places/${savedPlaceId}/photos`, formData, config);
+        setPendingPhotos((current) => current.filter((item) => item.id !== photo.id));
+      }
       const response = await api.get<{ places: Place[] }>('/business/places', config);
       setMyPlaces(response.data.places);
       setScreen('home');
@@ -527,7 +847,7 @@ export default function App() {
           </Text>
           <View style={styles.locRow}>
             <Ionicons name="location" size={14} color="#64748B" />
-            <Text style={styles.locText}>{place.city}, {place.state}</Text>
+            <Text style={styles.locText}>{[place.district, place.city, place.state, place.country].filter(Boolean).join(', ')}</Text>
           </View>
           <Text style={[styles.cardPrice, free && styles.cardPriceFree]}>{formatPrice(place.price)}</Text>
           {place.description ? <Text numberOfLines={2} style={styles.desc}>{place.description}</Text> : null}
@@ -568,12 +888,29 @@ export default function App() {
 
             <View style={styles.inputWrap}>
               <Ionicons name="mail" size={20} color="#94A3B8" />
-              <TextInput value={email} onChangeText={setEmail} placeholder="E-mail" style={styles.input} keyboardType="email-address" autoCapitalize="none" />
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                placeholder="E-mail"
+                style={styles.input}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                textContentType="emailAddress"
+              />
             </View>
 
             <View style={styles.inputWrap}>
               <Ionicons name="lock-closed" size={20} color="#94A3B8" />
-              <TextInput value={password} onChangeText={setPassword} placeholder="Senha (mín. 6)" style={styles.input} secureTextEntry />
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder={screen === 'login' ? 'Senha' : 'Senha (mín. 6)'}
+                style={styles.input}
+                secureTextEntry
+                autoComplete={screen === 'login' ? 'current-password' : 'new-password'}
+                textContentType={screen === 'login' ? 'password' : 'newPassword'}
+              />
             </View>
 
             <Pressable onPress={() => screen === 'login' ? handleLogin() : handleRegister()} disabled={loading} style={[styles.primaryBtn, loading && styles.disabledBtn]}>
@@ -584,9 +921,14 @@ export default function App() {
               <Text style={styles.switchBtnText}>{screen === 'login' ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Faça login'}</Text>
             </Pressable>
 
-            <Pressable onPress={() => { setScreen('home'); setError(''); setNotice(''); }} style={styles.backBtn}>
-              <Ionicons name="arrow-back" size={16} color="#64748B" />
-              <Text style={styles.backBtnText}>Voltar</Text>
+            <Pressable
+              onPress={() => { setScreen('home'); setError(''); setNotice(''); }}
+              accessibilityRole="button"
+              accessibilityLabel="Voltar para o início"
+              style={({ pressed }) => [styles.authBackBtn, pressed && styles.authBackBtnPressed]}
+            >
+              <Ionicons name="arrow-back" size={18} color="#052659" />
+              <Text style={styles.authBackBtnText}>Voltar para o início</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -629,7 +971,9 @@ export default function App() {
           {([
             ['full_address', 'Endereço completo *'],
             ['city', 'Cidade *'],
-            ['state', 'Estado (UF) *'],
+            ['district', 'Bairro / distrito'],
+            ['state', 'Estado / província / região'],
+            ['country', 'País *'],
             ['phone', 'Telefone'],
             ['website', 'Site'],
             ['opening_hours', 'Horário de funcionamento'],
@@ -640,7 +984,7 @@ export default function App() {
               <Text style={styles.formLabel}>{label}</Text>
               <TextInput
                 value={placeDraft[field]}
-                onChangeText={(value) => setPlaceDraft((current) => ({ ...current, [field]: field === 'state' ? value.toUpperCase() : value }))}
+                onChangeText={(value) => setPlaceDraft((current) => ({ ...current, [field]: value }))}
                 placeholder={field === 'website' || field === 'main_image' ? 'https://' : ''}
                 keyboardType={field === 'phone' ? 'phone-pad' : field === 'price' ? 'decimal-pad' : 'default'}
                 autoCapitalize={field === 'website' || field === 'main_image' ? 'none' : 'sentences'}
@@ -652,8 +996,52 @@ export default function App() {
           <TextInput value={placeDraft.description} onChangeText={(value) => setPlaceDraft((current) => ({ ...current, description: value }))} placeholder="Conte o que visitantes precisam saber" multiline style={[styles.formInput, styles.formTextArea]} />
 
           <View style={styles.questionnaireCard}>
-            <Text style={styles.sectionTitle}>Questionário de acessibilidade</Text>
-            <Text style={styles.questionnaireNotice}>Autoavaliação informativa inspirada nos princípios de acessibilidade e remoção de barreiras da Lei Brasileira de Inclusão (Lei nº 13.146/2015). Não é auditoria nem certificação. “Não sei / não se aplica” não reduz a pontuação.</Text>
+            <Text style={styles.sectionTitle}>Fotos do local e de acessibilidade</Text>
+            <Text style={styles.questionnaireNotice}>Envie quantas fotos precisar. Para cada evidência, escolha o recurso que ela mostra. Fotos não alteram a pontuação automaticamente.</Text>
+            <View style={styles.formChoiceWrap}>
+              <Pressable onPress={() => void pickPlacePhotos('PLACE')} style={styles.formChoice}>
+                <Text style={styles.formChoiceText}>Adicionar fotos do local</Text>
+              </Pressable>
+              <Pressable onPress={() => void pickPlacePhotos('ACCESSIBILITY')} style={styles.formChoice}>
+                <Text style={styles.formChoiceText}>Adicionar evidências</Text>
+              </Pressable>
+            </View>
+            {pendingPhotos.map((photo) => (
+              <View key={photo.id} style={styles.pendingPhoto}>
+                <Image source={{ uri: photo.uri }} style={styles.pendingPhotoImage} />
+                <View style={styles.pendingPhotoInfo}>
+                  <Text style={styles.pendingPhotoName} numberOfLines={1}>{photo.name}</Text>
+                  {photo.photo_type === 'ACCESSIBILITY' ? (
+                    <View style={styles.formChoiceWrap}>
+                      {photoAccessibilityCategories.map(([value, label]) => (
+                        <Pressable key={value} onPress={() => setPendingPhotos((current) => current.map((item) => item.id === photo.id ? { ...item, accessibility_category: value } : item))} style={[styles.formChoice, photo.accessibility_category === value && styles.formChoiceActive]}>
+                          <Text style={[styles.formChoiceText, photo.accessibility_category === value && styles.formChoiceTextActive]}>{label}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  ) : <Text style={styles.questionnaireNotice}>Foto geral do local</Text>}
+                  <Pressable onPress={() => setPendingPhotos((current) => current.filter((item) => item.id !== photo.id))}>
+                    <Text style={styles.removePhotoText}>Remover foto</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.questionnaireCard}>
+            <Text style={styles.sectionTitle}>Autoavaliação do estabelecimento</Text>
+            <Text style={styles.questionnaireNotice}>Este questionário é uma autodeclaração do estabelecimento: informe as condições atuais do local, não uma intenção futura. As respostas ajudam visitantes a planejar a visita e não são auditoria nem certificação.</Text>
+            <Text style={styles.questionnaireNotice}>
+              {editingPlaceId
+                ? assessmentSaveStatus === 'saving'
+                  ? 'Salvando resposta...'
+                  : assessmentSaveStatus === 'saved'
+                    ? 'Respostas salvas automaticamente. Os recursos informados também foram atualizados.'
+                    : assessmentSaveStatus === 'error'
+                      ? 'Não foi possível salvar automaticamente. Tente novamente ou toque em “Salvar alterações”.'
+                      : 'Cada resposta é salva automaticamente.'
+                : 'As respostas serão registradas e aplicadas aos recursos do local ao publicar o estabelecimento.'}
+            </Text>
             {accessibilityQuestions.map((question) => (
               <View key={question.key} style={styles.mobileQuestion}>
                 <Text style={styles.mobileQuestionText}>{question.label}</Text>
@@ -663,7 +1051,7 @@ export default function App() {
                     ['no', 'Não'],
                     ['unsure', 'Não sei / N/A'],
                   ] as Array<[AccessibilityAnswer, string]>).map(([answer, label]) => (
-                    <Pressable key={answer} onPress={() => setPlaceAssessment((current) => ({ ...current, [question.key]: answer }))} style={[styles.formChoice, placeAssessment[question.key] === answer && styles.formChoiceActive]}>
+                    <Pressable key={answer} onPress={() => updatePlaceAssessment(question.key, answer)} style={[styles.formChoice, placeAssessment[question.key] === answer && styles.formChoiceActive]}>
                       <Text style={[styles.formChoiceText, placeAssessment[question.key] === answer && styles.formChoiceTextActive]}>{label}</Text>
                     </Pressable>
                   ))}
@@ -737,7 +1125,7 @@ export default function App() {
             <Text style={styles.detailsTitle}>{selectedPlace.establishment_name}</Text>
             <View style={styles.locRow}>
               <Ionicons name="location" size={16} color="#64748B" />
-              <Text style={styles.locText}>{selectedPlace.full_address || `${selectedPlace.city}, ${selectedPlace.state}`}</Text>
+              <Text style={styles.locText}>{selectedPlace.full_address || [selectedPlace.district, selectedPlace.city, selectedPlace.state, selectedPlace.country].filter(Boolean).join(', ')}</Text>
             </View>
 
             {/* ✅ BADGES: GRATUITO E PÚBLICO */}
@@ -866,17 +1254,26 @@ export default function App() {
                   <Text style={styles.noInfoText}>Nenhum recurso de acessibilidade informado.</Text>
                 )}
               </View>
-              {selectedPlace.accessibility_assessment ? (
-                <View style={styles.assessmentSummary}>
-                  <Text style={styles.sectionTitle}>Autoavaliação do estabelecimento</Text>
-                  <Text style={styles.questionnaireNotice}>Informação autodeclarada; não é certificação.</Text>
-                  {accessibilityQuestions.map((question) => {
-                    const answer = selectedPlace.accessibility_assessment?.[question.key];
-                    if (!answer) return null;
-                    return <Text key={question.key} style={styles.detailInfo}>{question.label} {answer === 'yes' ? '— Sim' : answer === 'no' ? '— Não' : '— Não sei / N/A'}</Text>;
-                  })}
+              {(selectedPlace.photos || []).filter((photo) => photo.photo_type === 'ACCESSIBILITY').length > 0 && (
+                <View style={styles.photoGallery}>
+                  <Text style={styles.sectionTitle}>Fotos de acessibilidade</Text>
+                  <Text style={styles.questionnaireNotice}>Evidências enviadas pelo estabelecimento; não representam certificação.</Text>
+                  {(selectedPlace.photos || []).filter((photo) => photo.photo_type === 'ACCESSIBILITY').map((photo) => (
+                    <View key={photo.id} style={styles.galleryPhoto}>
+                      <Image source={{ uri: photo.photo_url }} style={styles.galleryPhotoImage} />
+                      <Text style={styles.tagText}>{photoAccessibilityCategories.find(([value]) => value === photo.accessibility_category)?.[1] || 'Acessibilidade'}</Text>
+                    </View>
+                  ))}
                 </View>
-              ) : null}
+              )}
+              {(selectedPlace.photos || []).filter((photo) => photo.photo_type === 'PLACE').length > 0 && (
+                <View style={styles.photoGallery}>
+                  <Text style={styles.sectionTitle}>Fotos do local</Text>
+                  {(selectedPlace.photos || []).filter((photo) => photo.photo_type === 'PLACE').map((photo) => (
+                    <Image key={photo.id} source={{ uri: photo.photo_url }} style={styles.galleryPhotoImage} />
+                  ))}
+                </View>
+              )}
             </View>
 
             <View style={styles.reviewSection}>
@@ -895,6 +1292,7 @@ export default function App() {
                       setReviewError('Somente contas de viajante podem avaliar locais.');
                     } else {
                       setReviewError('');
+                      if (reviewFormOpen) setReviewAccessibilityDetails({});
                       setReviewFormOpen((open) => !open);
                     }
                   }}
@@ -923,6 +1321,24 @@ export default function App() {
                       </Pressable>
                     ))}
                   </View>
+                  <Text style={styles.reviewFormLabel}>Conte como foi a acessibilidade na prática</Text>
+                  <Text style={styles.reviewAccessibilityHelp}>Este questionário é diferente da autodeclaração do estabelecimento: avalie somente o que você vivenciou nesta visita. Se não souber ou não se aplicar, deixe sem resposta.</Text>
+                  {reviewAccessibilityQuestions.map((question) => (
+                    <View key={question.key} style={styles.mobileQuestion}>
+                      <Text style={styles.mobileQuestionText}>{question.label}</Text>
+                      <View style={styles.formChoiceWrap}>
+                        {reviewAnswerOptions.map(([answer, label]) => (
+                          <Pressable
+                            key={answer}
+                            onPress={() => setReviewAccessibilityDetails((current) => ({ ...current, [question.key]: answer }))}
+                            style={[styles.formChoice, reviewAccessibilityDetails[question.key] === answer && styles.formChoiceActive]}
+                          >
+                            <Text style={[styles.formChoiceText, reviewAccessibilityDetails[question.key] === answer && styles.formChoiceTextActive]}>{label}</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    </View>
+                  ))}
                   <TextInput
                     value={reviewComment}
                     onChangeText={setReviewComment}
@@ -959,6 +1375,17 @@ export default function App() {
                     <Text style={styles.reviewStarsText}>{'★'.repeat(review.accessibility_level === 'EXCELLENT' ? 5 : review.accessibility_level === 'GOOD' ? 3 : 1)}</Text>
                   </View>
                   {review.comment_text ? <Text style={styles.reviewComment}>{review.comment_text}</Text> : <Text style={styles.reviewNoComment}>Sem comentário escrito.</Text>}
+                  {review.accessibility_details && reviewAccessibilityQuestions.some((question) => review.accessibility_details?.[question.key]) ? (
+                    <View style={styles.reviewAccessibilitySummary}>
+                      <Text style={styles.reviewFormLabel}>Acessibilidade na prática</Text>
+                      {reviewAccessibilityQuestions.map((question) => {
+                        const answer = review.accessibility_details?.[question.key];
+                        if (!answer) return null;
+                        const answerLabel = reviewAnswerOptions.find(([value]) => value === answer)?.[1] || answer;
+                        return <Text key={question.key} style={styles.reviewComment}>{question.label} — {answerLabel}</Text>;
+                      })}
+                    </View>
+                  ) : null}
                 </View>
               )) : (
                 <View style={styles.reviewEmpty}>
@@ -1004,6 +1431,91 @@ export default function App() {
                 <Text style={styles.profileInfoLabel}>Tipo de conta</Text>
                 <Text style={styles.profileInfoValue}>{user.user_type === 'BUSINESS' ? 'Empresa' : 'Viajante'}</Text>
               </View>
+              {user.user_type === 'TRAVELER' && (() => {
+                const requiredProfileFields = [
+                  { key: 'gender', label: 'Gênero', options: [['FEMALE', 'Mulher'], ['MALE', 'Homem'], ['OTHER', 'Outro'], ['PREFER_NOT_SAY', 'Prefiro não dizer']] },
+                  { key: 'ageRange', label: 'Faixa etária', options: [['18-24', '18–24'], ['25-34', '25–34'], ['35-44', '35–44'], ['45-54', '45–54'], ['55+', '55+'], ['PREFER_NOT_SAY', 'Prefiro não informar']] },
+                  { key: 'travelFrequency', label: 'Frequência de viagem', options: [['RARELY', 'Raramente'], ['SOMETIMES', 'Às vezes'], ['OFTEN', 'Frequentemente'], ['ALWAYS', 'Sempre']] },
+                  { key: 'companionType', label: 'Com quem costuma viajar', options: [['ALONE', 'Sozinho(a)'], ['COUPLE', 'Com parceiro(a)'], ['FAMILY', 'Com família'], ['FRIENDS', 'Com amigos'], ['GROUP', 'Em grupo']] },
+                ] as const;
+                const missingFields = requiredProfileFields.filter((field) => !user.profile?.[field.key as keyof UserProfile]);
+                return (
+                  <View style={styles.profileCompletionCard}>
+                    <Text style={styles.sectionTitle}>{missingFields.length ? 'Perfil incompleto' : 'Perfil completo'}</Text>
+                    {missingFields.length > 0 ? (
+                      <>
+                        <Text style={styles.questionnaireNotice}>Falta preencher: {missingFields.map((field) => field.label).join(', ')}.</Text>
+                        <Pressable onPress={() => setProfileEditOpen((open) => !open)} style={styles.profileActionButton}>
+                          <Text style={styles.profileActionButtonText}>{profileEditOpen ? 'Fechar preenchimento' : 'Completar perfil'}</Text>
+                        </Pressable>
+                      </>
+                    ) : (
+                      <Text style={styles.questionnaireNotice}>As informações essenciais do viajante estão preenchidas.</Text>
+                    )}
+                    {profileEditOpen && (
+                      <View style={{ marginTop: 12 }}>
+                        {requiredProfileFields.map((field) => (
+                          <View key={field.key} style={styles.mobileQuestion}>
+                            <Text style={styles.mobileQuestionText}>{field.label}{missingFields.some((item) => item.key === field.key) ? ' · incompleto' : ''}</Text>
+                            <View style={styles.formChoiceWrap}>
+                              {field.options.map(([value, label]) => (
+                                <Pressable key={value} onPress={() => setTravelerDraft((current) => ({ ...current, [field.key]: value }))} style={[styles.formChoice, travelerDraft[field.key as keyof UserProfile] === value && styles.formChoiceActive]}>
+                                  <Text style={[styles.formChoiceText, travelerDraft[field.key as keyof UserProfile] === value && styles.formChoiceTextActive]}>{label}</Text>
+                                </Pressable>
+                              ))}
+                            </View>
+                          </View>
+                        ))}
+                        <Pressable onPress={() => void saveTravelerProfile()} disabled={loading} style={[styles.profileActionButton, loading && styles.disabledBtn]}>
+                          <Text style={styles.profileActionButtonText}>{loading ? 'Salvando...' : 'Salvar informações'}</Text>
+                        </Pressable>
+                      </View>
+                    )}
+                  </View>
+                );
+              })()}
+              {linkedError ? <View style={styles.errorBox}><Text style={styles.errorText}>{linkedError}</Text></View> : null}
+              {linkedNotice ? <View style={styles.noticeBox}><Text style={styles.noticeText}>{linkedNotice}</Text></View> : null}
+              <View style={styles.profileCompletionCard}>
+                <Text style={styles.sectionTitle}>Perfis conectados</Text>
+                <Text style={styles.questionnaireNotice}>Viajante e estabelecimento mantêm e-mails, senhas e informações separadas.</Text>
+                {linkedAccount ? (
+                  <>
+                    <Text style={styles.profileInfoValue}>{linkedAccount.user_type === 'BUSINESS' ? 'Estabelecimento' : 'Viajante'} · {linkedAccount.full_name || linkedAccount.email}</Text>
+                    <Pressable onPress={() => void switchLinkedAccount()} disabled={loading} style={styles.profileActionButton}>
+                      <Text style={styles.profileActionButtonText}>{loading ? 'Alternando...' : `Mudar para ${linkedAccount.user_type === 'BUSINESS' ? 'estabelecimento' : 'viajante'}`}</Text>
+                    </Pressable>
+                    <Pressable onPress={() => void unlinkAccount()} disabled={loading} style={styles.unlinkAccountButton}>
+                      <Text style={styles.unlinkAccountText}>Desconectar perfis</Text>
+                    </Pressable>
+                  </>
+                ) : linkMode ? (
+                  <View>
+                    {linkMode === 'create' && (
+                      <TextInput value={linkedFullName} onChangeText={setLinkedFullName} placeholder="Nome do outro perfil" style={styles.formInput} />
+                    )}
+                    <TextInput value={linkedEmail} onChangeText={setLinkedEmail} placeholder={linkMode === 'connect' ? 'E-mail da conta existente' : 'Novo e-mail'} keyboardType="email-address" autoCapitalize="none" style={styles.formInput} />
+                    <TextInput value={linkedPassword} onChangeText={setLinkedPassword} placeholder={linkMode === 'connect' ? 'Senha da conta existente' : 'Nova senha (mín. 6 caracteres)'} secureTextEntry style={styles.formInput} />
+                    <View style={styles.formChoiceWrap}>
+                      <Pressable onPress={() => void submitLinkedAccount()} disabled={loading} style={styles.profileActionButton}>
+                        <Text style={styles.profileActionButtonText}>{loading ? 'Salvando...' : linkMode === 'connect' ? 'Conectar conta' : 'Criar e conectar'}</Text>
+                      </Pressable>
+                      <Pressable onPress={() => { setLinkMode(null); setLinkedError(''); }} style={styles.formChoice}>
+                        <Text style={styles.formChoiceText}>Cancelar</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.formChoiceWrap}>
+                    <Pressable onPress={() => setLinkMode('connect')} style={styles.formChoice}>
+                      <Text style={styles.formChoiceText}>Conectar conta de {user.user_type === 'BUSINESS' ? 'viajante' : 'estabelecimento'}</Text>
+                    </Pressable>
+                    <Pressable onPress={() => setLinkMode('create')} style={styles.formChoice}>
+                      <Text style={styles.formChoiceText}>Criar perfil de {user.user_type === 'BUSINESS' ? 'viajante' : 'estabelecimento'}</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
               {user.user_type === 'BUSINESS' && (
                 <View style={styles.businessManagement}>
                   <View style={styles.businessManagementHeader}>
@@ -1017,12 +1529,34 @@ export default function App() {
                     </Pressable>
                   </View>
                   {myPlaces.length === 0 ? (
-                    <Text style={styles.emptyBusinessText}>Cadastre seu primeiro local com endereço, contatos e informações de acessibilidade.</Text>
+                    <View>
+                      <Text style={styles.emptyBusinessText}>Perfil do estabelecimento incompleto: cadastre seu primeiro local com nome, categoria, endereço e país.</Text>
+                      <Pressable onPress={startNewPlace} style={styles.profileActionButton}>
+                        <Text style={styles.profileActionButtonText}>Completar perfil do estabelecimento</Text>
+                      </Pressable>
+                    </View>
                   ) : myPlaces.map((place) => (
                     <View key={place.id} style={styles.businessPlaceRow}>
                       <View style={styles.businessPlaceSummary}>
                         <Text style={styles.businessPlaceName}>{place.establishment_name}</Text>
                         <Text style={styles.businessPlaceLocation}>{place.city}, {place.state} · {place.total_reviews || 0} avaliação(ões)</Text>
+                        {[
+                          !place.establishment_name?.trim() && 'Nome',
+                          !place.category?.trim() && 'Categoria',
+                          !place.full_address?.trim() && 'Endereço',
+                          !place.city?.trim() && 'Cidade',
+                          !place.country?.trim() && 'País',
+                        ].filter(Boolean).length > 0 && (
+                          <Text style={styles.incompletePlaceText}>
+                            Incompleto: {[
+                              !place.establishment_name?.trim() && 'Nome',
+                              !place.category?.trim() && 'Categoria',
+                              !place.full_address?.trim() && 'Endereço',
+                              !place.city?.trim() && 'Cidade',
+                              !place.country?.trim() && 'País',
+                            ].filter(Boolean).join(', ')}
+                          </Text>
+                        )}
                         <Text style={styles.businessPlaceLocation}>
                           {place.accessibility_score == null ? 'Acessibilidade sem dados' : `${place.accessibility_score}% · ${place.accessibility_level === 'ADVANCED' ? 'Avançado' : place.accessibility_level === 'INTERMEDIATE' ? 'Intermediário' : 'Inicial'}`}
                         </Text>
@@ -1349,6 +1883,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  profileCompletionCard: {
+    width: '100%',
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#DCE5EF',
+  },
+  profileActionButton: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: '#087F8C',
+  },
+  profileActionButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
+  incompletePlaceText: { color: '#B54708', fontSize: 11, fontWeight: '700', marginTop: 4 },
+  unlinkAccountButton: { alignSelf: 'flex-start', paddingVertical: 10, paddingHorizontal: 4 },
+  unlinkAccountText: { color: '#B42318', fontSize: 12, fontWeight: '700' },
   businessManagement: {
     width: '100%',
     marginTop: 24,
@@ -1680,6 +2235,8 @@ const styles = StyleSheet.create({
   reviewError: { color: '#B42318', fontSize: 12, lineHeight: 18, marginBottom: 10 },
   reviewForm: { backgroundColor: '#FFFFFF', padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#DCE5EF', marginBottom: 12 },
   reviewFormLabel: { color: '#334155', fontSize: 12, fontWeight: '700', marginBottom: 7 },
+  reviewAccessibilityHelp: { color: '#64748B', fontSize: 11, lineHeight: 16, marginBottom: 6 },
+  reviewAccessibilitySummary: { marginTop: 12, padding: 11, borderRadius: 10, backgroundColor: '#F0F9FA' },
   reviewStars: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12 },
   reviewInput: { minHeight: 82, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 10, padding: 11, color: '#0F172A', fontSize: 13, textAlignVertical: 'top', marginBottom: 10 },
   reviewSubmitButton: { minHeight: 42, borderRadius: 10, backgroundColor: '#052659', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
@@ -1739,6 +2296,14 @@ const styles = StyleSheet.create({
   roleChoiceTextActive: { color: '#FFF' },
   questionnaireCard: { marginTop: 18, padding: 14, borderRadius: 14, backgroundColor: '#F2FAFC', borderWidth: 1, borderColor: '#D5EEF1' },
   questionnaireNotice: { color: '#475569', fontSize: 12, lineHeight: 18, marginBottom: 10 },
+  pendingPhoto: { flexDirection: 'row', gap: 12, paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#D5EEF1' },
+  pendingPhotoImage: { width: 76, height: 76, borderRadius: 10, backgroundColor: '#E2E8F0' },
+  pendingPhotoInfo: { flex: 1, gap: 8 },
+  pendingPhotoName: { color: '#052659', fontSize: 13, fontWeight: '700' },
+  removePhotoText: { color: '#B42318', fontSize: 13, fontWeight: '700', paddingVertical: 6 },
+  photoGallery: { marginTop: 16, gap: 10 },
+  galleryPhoto: { gap: 8, padding: 10, backgroundColor: '#F8FAFC', borderRadius: 12 },
+  galleryPhotoImage: { width: '100%', height: 190, borderRadius: 10, backgroundColor: '#E2E8F0' },
   mobileQuestion: { paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#DCE5EF' },
   mobileQuestionText: { color: '#1E293B', fontSize: 13, lineHeight: 19, fontWeight: '700', marginBottom: 8 },
   authCard: { backgroundColor: '#FFF', borderRadius: 24, padding: 28, borderWidth: 1, borderColor: '#E2E8F0' },
@@ -1752,6 +2317,9 @@ const styles = StyleSheet.create({
   disabledBtn: { opacity: 0.6 },
   switchBtn: { alignItems: 'center', marginTop: 16, padding: 12 },
   switchBtnText: { color: '#052659', fontWeight: '600', fontSize: 14 },
+  authBackBtn: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 8, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: '#DCE5EF', backgroundColor: '#F8FAFC' },
+  authBackBtnPressed: { backgroundColor: '#EAF3FA', opacity: 0.8 },
+  authBackBtnText: { color: '#052659', fontSize: 14, fontWeight: '700' },
   backBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 8, padding: 12 },
   backBtnText: { color: '#64748B', fontSize: 14 },
   noticeBox: { backgroundColor: '#E0F2FE', padding: 14, borderRadius: 10, marginBottom: 16 },

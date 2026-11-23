@@ -7,6 +7,7 @@ import {
   deletePlace
 } from '../controllers/place.controller.js';
 import { createReview, listReviews } from '../controllers/review.controller.js';
+import { addPlacePhoto } from '../controllers/placePhoto.controller.js';
 import { authenticateToken, requireRole, optionalAuth } from '../middlewares/auth.middleware.js';
 import { placeImageUpload } from '../config/upload.js';
 
@@ -19,6 +20,7 @@ router.get('/:id', optionalAuth, getPlaceById);
 // Rotas exclusivas de gerenciamento de locais para BUSINESS
 router.post('/', authenticateToken, requireRole('BUSINESS'), placeImageUpload.single('image'), createPlace);
 router.put('/:id', authenticateToken, requireRole('BUSINESS'), placeImageUpload.single('image'), updatePlace);
+router.post('/:id/photos', authenticateToken, requireRole('BUSINESS'), placeImageUpload.single('photo'), addPlacePhoto);
 router.delete('/:id', authenticateToken, requireRole('BUSINESS'), deletePlace);
 
 // Subrotas de avaliações vinculadas ao local

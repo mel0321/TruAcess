@@ -1,26 +1,9 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { randomInt } from 'node:crypto';
 import db from '../../database/connection.js';
 import { AppError } from '../middlewares/error.middleware.js';
 import { sendVerificationCodeEmail } from '../services/email.service.js';
-
-/**
- * Gera token JWT
- */
-function generateToken(user) {
-  const secret = process.env.JWT_SECRET || 'secret';
-  const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
-  return jwt.sign(
-    {
-      id: user.id,
-      email: user.email,
-      user_type: user.user_type
-    },
-    secret,
-    { expiresIn }
-  );
-}
+import { generateAuthToken } from '../utils/authToken.js';
 
 /**
  * Gera código de verificação numérico de 4 dígitos
@@ -77,7 +60,7 @@ export async function register(req, res, next) {
 
     return res.status(201).json({
       message: 'Cadastro realizado com sucesso!',
-      token: generateToken(user),
+      token: generateAuthToken(user),
       user
     });
   } catch (error) {
@@ -141,7 +124,7 @@ export async function verifyEmail(req, res, next) {
       email_verified: 1
     };
 
-    const token = generateToken(updatedUser);
+    const token = generateAuthToken(updatedUser);
 
     return res.status(200).json({
       message: 'E-mail verificado com sucesso! Seu acesso foi liberado.',
@@ -299,7 +282,7 @@ export async function login(req, res, next) {
       user.email_verified = 1;
     }
 
-    const token = generateToken(user);
+    const token = generateAuthToken(user);
 
     return res.status(200).json({
       message: 'Login realizado com sucesso!',

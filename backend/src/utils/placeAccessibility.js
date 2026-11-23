@@ -18,6 +18,17 @@ export const ACCESSIBILITY_QUESTION_KEYS = [
   'staff_training'
 ];
 
+export const REVIEW_ACCESSIBILITY_QUESTION_KEYS = [
+  'access_route',
+  'entrance_access',
+  'accessible_facilities',
+  'restroom_access',
+  'communication',
+  'staff_support',
+  'guide_dog_access',
+  'sensory_comfort'
+];
+
 const LEGACY_ACCESSIBILITY_FIELDS = {
   has_access_ramp: 'access_ramp',
   has_adapted_bathroom: 'adapted_restroom',

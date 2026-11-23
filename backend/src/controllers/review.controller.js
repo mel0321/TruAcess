@@ -1,5 +1,6 @@
 import db from '../../database/connection.js';
 import { AppError } from '../middlewares/error.middleware.js';
+import { formatReviewAccessibilityDetails, parseReviewAccessibilityDetails } from '../utils/reviewAccessibility.js';
 
 const VALID_ACCESSIBILITY_LEVELS = ['POOR', 'GOOD', 'EXCELLENT'];
 
@@ -9,7 +10,7 @@ const VALID_ACCESSIBILITY_LEVELS = ['POOR', 'GOOD', 'EXCELLENT'];
 export async function createReview(req, res, next) {
   try {
     const { placeId } = req.params;
-    const { experience_rating, accessibility_level, comment_text } = req.body;
+    const { experience_rating, accessibility_level, comment_text, accessibility_details } = req.body;
 
     if (!experience_rating || !accessibility_level) {
       throw new AppError('Nota da experiência (1 a 5) e nível de acessibilidade são obrigatórios.', 400);
@@ -27,6 +28,7 @@ export async function createReview(req, res, next) {
         400
       );
     }
+    const details = parseReviewAccessibilityDetails(accessibility_details);
 
     // Verificar se o local existe
     const place = await db('places').where({ id: placeId }).first();
@@ -39,6 +41,7 @@ export async function createReview(req, res, next) {
       traveler_id: req.user.id,
       experience_rating: ratingNum,
       accessibility_level: levelUpper,
+      accessibility_details: details ? JSON.stringify(details) : null,
       comment_text: comment_text?.trim() || null,
       owner_reply_text: null
     });
@@ -55,7 +58,10 @@ export async function createReview(req, res, next) {
 
     return res.status(201).json({
       message: 'Avaliação enviada com sucesso!',
-      review: createdReview
+      review: {
+        ...createdReview,
+        accessibility_details: formatReviewAccessibilityDetails(createdReview.accessibility_details)
+      }
     });
   } catch (error) {
     next(error);
@@ -81,7 +87,10 @@ export async function listReviews(req, res, next) {
 
     return res.status(200).json({
       total: reviews.length,
-      reviews
+      reviews: reviews.map((review) => ({
+        ...review,
+        accessibility_details: formatReviewAccessibilityDetails(review.accessibility_details)
+      }))
     });
   } catch (error) {
     next(error);
@@ -94,7 +103,7 @@ export async function listReviews(req, res, next) {
 export async function updateReview(req, res, next) {
   try {
     const { id } = req.params;
-    const { experience_rating, accessibility_level, comment_text } = req.body;
+    const { experience_rating, accessibility_level, comment_text, accessibility_details } = req.body;
 
     const review = await db('reviews').where({ id }).first();
     if (!review) {
@@ -126,13 +135,21 @@ export async function updateReview(req, res, next) {
       updateData.comment_text = comment_text.trim() || null;
     }
 
+    if (accessibility_details !== undefined) {
+      const details = parseReviewAccessibilityDetails(accessibility_details);
+      updateData.accessibility_details = details ? JSON.stringify(details) : null;
+    }
+
     await db('reviews').where({ id }).update(updateData);
 
     const updated = await db('reviews').where({ id }).first();
 
     return res.status(200).json({
       message: 'Avaliação atualizada com sucesso!',
-      review: updated
+      review: {
+        ...updated,
+        accessibility_details: formatReviewAccessibilityDetails(updated.accessibility_details)
+      }
     });
   } catch (error) {
     next(error);

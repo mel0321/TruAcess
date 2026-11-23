@@ -1,5 +1,6 @@
 import db from '../../database/connection.js';
 import { AppError } from '../middlewares/error.middleware.js';
+import { formatReviewAccessibilityDetails } from '../utils/reviewAccessibility.js';
 
 /**
  * Obter todos os estabelecimentos do usuário Business autenticado
@@ -91,6 +92,7 @@ export async function getDashboardStats(req, res, next) {
         'reviews.experience_rating',
         'reviews.accessibility_level',
         'reviews.comment_text',
+        'reviews.accessibility_details',
         'reviews.owner_reply_text',
         'reviews.created_at',
         'users.full_name as traveler_name',
@@ -105,7 +107,10 @@ export async function getDashboardStats(req, res, next) {
       average_rating: reviewStats?.average_rating ? parseFloat(reviewStats.average_rating) : null,
       pending_replies_count: parseInt(reviewStats?.pending_replies_count || 0, 10),
       category_distribution: categoryDistribution,
-      recent_reviews: recentReviews
+      recent_reviews: recentReviews.map((review) => ({
+        ...review,
+        accessibility_details: formatReviewAccessibilityDetails(review.accessibility_details)
+      }))
     });
   } catch (error) {
     next(error);

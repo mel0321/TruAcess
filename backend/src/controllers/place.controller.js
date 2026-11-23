@@ -7,7 +7,11 @@ import {
   parseAccessibilityAssessment
 } from '../utils/placeAccessibility.js';
 
-const VALID_CATEGORIES = ['ACCOMMODATION', 'GASTRONOMY', 'TOURIST_ATTRACTION', 'OTHERS'];
+const VALID_CATEGORIES = [
+  'ACCOMMODATION', 'GASTRONOMY', 'TOURIST_ATTRACTION', 'SHOPPING', 'HEALTH',
+  'TRANSPORT', 'EDUCATION', 'ENTERTAINMENT', 'SPORTS', 'RELIGIOUS_SITE',
+  'PUBLIC_SERVICE', 'OTHERS'
+];
 
 /**
  * Listagem pública / para viajantes com filtros avançados e métricas agregadas
@@ -20,6 +24,8 @@ export async function listPlaces(req, res, next) {
       category_detail,
       city,
       state,
+      district,
+      country,
       min_price,
       max_price,
       has_access_ramp,
@@ -54,6 +60,9 @@ export async function listPlaces(req, res, next) {
           .where('places.establishment_name', 'like', searchTerm)
           .orWhere('places.description', 'like', searchTerm)
           .orWhere('places.city', 'like', searchTerm)
+          .orWhere('places.district', 'like', searchTerm)
+          .orWhere('places.state', 'like', searchTerm)
+          .orWhere('places.country', 'like', searchTerm)
           .orWhere('places.full_address', 'like', searchTerm);
       });
     }
@@ -74,7 +83,13 @@ export async function listPlaces(req, res, next) {
       query = query.where('places.city', 'like', `%${city.trim()}%`);
     }
     if (state) {
-      query = query.where('places.state', 'like', `%${state.trim().toUpperCase()}%`);
+      query = query.where('places.state', 'like', `%${state.trim()}%`);
+    }
+    if (district) {
+      query = query.where('places.district', 'like', `%${district.trim()}%`);
+    }
+    if (country) {
+      query = query.where('places.country', 'like', `%${country.trim()}%`);
     }
 
     // Filtros de preço
@@ -141,10 +156,11 @@ export async function listPlaces(req, res, next) {
       const assessment = formatAccessibilityAssessment(place.accessibility_assessment);
       return {
         ...place,
-        accessibility_assessment: assessment,
+        accessibility_assessment: undefined,
         average_rating: place.average_rating ? parseFloat(place.average_rating) : null,
         total_reviews: totalReviews,
         ...accessibilitySummary(assessment, place.average_accessibility_rating, totalReviews),
+        questionnaire_score: undefined,
         has_access_ramp: Boolean(place.has_access_ramp),
         has_adapted_bathroom: Boolean(place.has_adapted_bathroom),
         allows_guide_dog: Boolean(place.allows_guide_dog),
@@ -220,10 +236,14 @@ export async function getPlaceById(req, res, next) {
 
     const assessment = formatAccessibilityAssessment(place.accessibility_assessment);
     const reviewCount = parseInt(stats?.total_reviews || 0, 10);
+    const photos = await db('place_photos').where({ place_id: id }).orderBy('created_at', 'asc');
+    const isOwner = req.user?.user_type === 'BUSINESS' && req.user.id === place.business_owner_id;
     const formattedPlace = {
       ...place,
-      accessibility_assessment: assessment,
+      accessibility_assessment: isOwner ? assessment : undefined,
+      photos,
       ...accessibilitySummary(assessment, stats?.average_accessibility_rating, reviewCount),
+      questionnaire_score: undefined,
       has_access_ramp: Boolean(place.has_access_ramp),
       has_adapted_bathroom: Boolean(place.has_adapted_bathroom),
       allows_guide_dog: Boolean(place.allows_guide_dog),
@@ -259,6 +279,8 @@ export async function createPlace(req, res, next) {
       full_address,
       city,
       state,
+      district,
+      country = 'Brasil',
       description,
       price,
       main_image: imageUrl,
@@ -275,9 +297,9 @@ export async function createPlace(req, res, next) {
       has_asd_friendly_space
     } = req.body;
 
-    if (!establishment_name || !category || !full_address || !city || !state) {
+    if (!establishment_name || !category || !full_address || !city || !country?.trim()) {
       throw new AppError(
-        'Campos obrigatórios: establishment_name, category, full_address, city, state.',
+        'Campos obrigatórios: establishment_name, category, full_address, city, country.',
         400
       );
     }
@@ -315,7 +337,9 @@ export async function createPlace(req, res, next) {
       category: catUpper,
       full_address: full_address.trim(),
       city: city.trim(),
-      state: state.trim().toUpperCase(),
+      state: state?.trim() || null,
+      district: district?.trim() || null,
+      country: country.trim(),
       description: description?.trim() || null,
       price: price !== undefined && price !== null ? Number(price) : null,
       main_image,
@@ -350,6 +374,8 @@ export async function updatePlace(req, res, next) {
       full_address,
       city,
       state,
+      district,
+      country,
       description,
       price,
       main_image: imageUrl,
@@ -386,7 +412,9 @@ export async function updatePlace(req, res, next) {
     }
     if (full_address !== undefined) updateData.full_address = full_address.trim();
     if (city !== undefined) updateData.city = city.trim();
-    if (state !== undefined) updateData.state = state.trim().toUpperCase();
+    if (state !== undefined) updateData.state = state?.trim() || null;
+    if (district !== undefined) updateData.district = district.trim() || null;
+    if (country !== undefined) updateData.country = country.trim();
     if (description !== undefined) updateData.description = description.trim();
     if (price !== undefined) updateData.price = Number(price);
     if (category_detail !== undefined) updateData.category_detail = category_detail.trim() || null;
