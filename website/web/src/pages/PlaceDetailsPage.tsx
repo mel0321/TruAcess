@@ -254,7 +254,7 @@ export function PlaceDetailsPage() {
                 {place.website && <span><strong>Site:</strong> <a href={place.website} target="_blank" rel="noreferrer">{place.website}</a></span>}
                 {place.opening_hours && <span><strong>Funcionamento:</strong> {place.opening_hours}</span>}
               </div>
-              <div style={{display: 'flex', alignItems: 'baseline', gap: '8px'}}>
+              <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '8px'}}>
                 <span style={{fontSize: '36px', fontWeight: 800, color: '#052659'}}>
                   {formatPrice(place.price)}
                 </span>
@@ -417,7 +417,7 @@ export function PlaceDetailsPage() {
               <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
                 {reviews.map(review => (
                   <div key={review.id} style={{padding: '24px', background: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0'}}>
-                    <div style={{display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'center'}}>
+                    <div style={{display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '16px', alignItems: 'center'}}>
                       <img src={review.traveler_avatar || 'https://i.pravatar.cc/150?img=12'} alt={review.traveler_name} style={{width: '52px', height: '52px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #2AC2D2'}} />
                       <div style={{flex: 1}}>
                         <div style={{fontWeight: 700, color: '#0F172A', fontSize: '16px'}}>{review.traveler_name}</div>

@@ -142,7 +142,7 @@ export function ProfilePage() {
   return (
     <div style={{background: '#F8FAFC', minHeight: '100vh'}}>
       <Header />
-      <div style={{maxWidth: '1000px', margin: '0 auto', padding: '40px 24px'}}>
+      <div className="container" style={{paddingBlock: 40}}>
         
         <div style={{background: 'linear-gradient(135deg, #052659 0%, #0a3d7a 100%)', padding: '40px', borderRadius: '20px', color: 'white', marginBottom: '32px', position: 'relative', overflow: 'hidden'}}>
           <div style={{position: 'absolute', top: '-50px', right: '-50px', width: '200px', height: '200px', background: 'rgba(42, 194, 210, 0.2)', borderRadius: '50%'}} />

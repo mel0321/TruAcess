@@ -100,7 +100,7 @@ export function DashboardPage() {
   return (
     <div style={{ background: '#F8FAFC', minHeight: '100vh' }}>
       <Header />
-      <main className="container business-dashboard" style={{ padding: '40px 24px', maxWidth: '1200px' }}>
+      <main className="container business-dashboard" style={{ paddingBlock: 40 }}>
         <div className="business-dashboard-heading">
           <div>
             <p style={{ color: '#0B8794', fontWeight: 700, letterSpacing: '.12em', fontSize: 12 }}>ÁREA DO ESTABELECIMENTO</p>

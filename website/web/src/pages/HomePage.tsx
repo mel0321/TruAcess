@@ -9,11 +9,15 @@ import { getPlaceCategoryLabel } from '../utils/placeCategories';
 export function HomePage() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('todos');
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     api.get('/places')
       .then(res => setPlaces(res.data.places || res.data || []))
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error('Erro ao carregar locais:', err);
+        setLoadError('Não foi possível carregar os locais. Verifique se o servidor está funcionando.');
+      });
   }, []);
 
   const uniqueCategories = Array.from(new Set(places.map(p => p.category))).filter(Boolean);
@@ -64,6 +68,7 @@ export function HomePage() {
       <section className="destinations-section">
         <div className="container">
           <div className="section-header"><h2>Principais Destinos</h2></div>
+          {loadError && <p role="alert">{loadError}</p>}
           <div className="destinations-grid">
             {filteredPlaces.slice(0, 5).map((place) => (
               <Link to={`/local/${place.id}`} key={place.id} className="destination-card">
@@ -87,6 +92,9 @@ export function HomePage() {
                 </div>
               </Link>
             ))}
+          </div>
+          <div className="home-destinations-action">
+            <Link to="/destinos" className="btn-explore">Ver destinos e filtros</Link>
           </div>
         </div>
       </section>
