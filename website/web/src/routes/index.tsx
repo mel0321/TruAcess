@@ -1,0 +1,61 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from '../context/AuthContext';
+import { FavoritesProvider } from '../context/FavoritesContext';
+import { HomePage } from '../pages/HomePage';
+import { LoginPage } from '../pages/LoginPage';
+import { RegisterPage } from '../pages/RegisterPage';
+import { RecoverPage } from '../pages/RecoverPage';
+import { PlaceDetailsPage } from '../pages/PlaceDetailsPage';
+import { DashboardPage } from '../pages/DashboardPage';
+import { ProfilePage } from '../pages/ProfilePage';
+import { OnboardingPage } from '../pages/OnboardingPage';
+import { DestinationsPage } from '../pages/DestinationsPage';
+import { AboutPage } from '../pages/AboutPage';
+import { PlaceManagementPage } from '../pages/PlaceManagementPage';
+import type { ReactNode } from 'react';
+
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div style={{padding: '100px', textAlign: 'center'}}>Carregando...</div>;
+  }
+  
+  if (!user) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
+export function AppRoutes() {
+  return (
+    <AuthProvider>
+      <FavoritesProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/recover-password" element={<RecoverPage />} />
+            <Route path="/onboarding" element={
+              <ProtectedRoute><OnboardingPage /></ProtectedRoute>
+            } />
+            <Route path="/local/:id" element={<PlaceDetailsPage />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute><DashboardPage /></ProtectedRoute>
+            } />
+            <Route path="/register-place" element={
+              <ProtectedRoute><PlaceManagementPage /></ProtectedRoute>
+            } />
+            <Route path="/edit-place/:id" element={
+              <ProtectedRoute><PlaceManagementPage /></ProtectedRoute>
+            } />
+            <Route path="/perfil" element={
+              <ProtectedRoute><ProfilePage /></ProtectedRoute>
+            } />
+            <Route path="/destinos" element={<DestinationsPage />} />
+            <Route path="/sobre" element={<AboutPage />} />
+          </Routes>
+        </BrowserRouter>
+      </FavoritesProvider>
+    </AuthProvider>
+  );
+}

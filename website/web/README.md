@@ -1,4 +1,18 @@
-# React + TypeScript + Vite
+# TruAcess Web
+
+## Iniciar o site no Chrome
+
+No terminal, acesse `website/web` e execute:
+
+```sh
+npm run dev
+```
+
+O comando inicia o frontend a partir dos arquivos em `src` e abre o Google Chrome em
+`http://localhost:5173`. Também pode ser iniciado com `npm start`. Deixe o terminal
+aberto enquanto usa o site. O backend precisa estar rodando na porta 3000.
+
+## Ferramentas
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
