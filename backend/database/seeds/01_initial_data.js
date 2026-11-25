@@ -276,6 +276,63 @@ export async function seed(knex) {
     }
   ]);
 
+  const categoryTemplates = [
+    ['ACCOMMODATION', 'HOTEL', 'Hotel'], ['ACCOMMODATION', 'INN', 'Pousada'],
+    ['GASTRONOMY', 'RESTAURANT', 'Restaurante'], ['GASTRONOMY', 'CAFE', 'Café'],
+    ['TOURIST_ATTRACTION', 'MUSEUM', 'Museu'], ['TOURIST_ATTRACTION', 'PARK', 'Parque'],
+    ['TOURIST_ATTRACTION', 'BEACH', 'Praia'], ['TOURIST_ATTRACTION', 'CULTURAL_SITE', 'Espaço cultural'],
+    ['SHOPPING', 'SHOPPING_MALL', 'Shopping'], ['SHOPPING', 'MARKET', 'Mercado'],
+    ['HEALTH', 'CLINIC', 'Clínica'], ['HEALTH', 'PHARMACY', 'Farmácia'],
+    ['TRANSPORT', 'BUS_STATION', 'Terminal'], ['EDUCATION', 'LIBRARY', 'Biblioteca'],
+    ['ENTERTAINMENT', 'THEATER', 'Teatro'], ['SPORTS', 'GYM', 'Academia'],
+    ['RELIGIOUS_SITE', 'CHURCH', 'Igreja'], ['PUBLIC_SERVICE', 'CITIZEN_SERVICE', 'Serviço público'],
+  ];
+  const cities = [
+    ['São Paulo', 'SP'], ['Rio de Janeiro', 'RJ'], ['Belo Horizonte', 'MG'], ['Brasília', 'DF'],
+    ['Salvador', 'BA'], ['Recife', 'PE'], ['Fortaleza', 'CE'], ['Curitiba', 'PR'],
+    ['Porto Alegre', 'RS'], ['Manaus', 'AM'], ['Belém', 'PA'], ['Florianópolis', 'SC']
+  ];
+  const extraPlaceNames = ['Central', 'Universo', 'Esperança', 'Horizonte', 'Brasil', 'Conquista', 'Moderno', 'Tranquilo', 'Jardins', 'Vila'];
+  const extraPlaces = Array.from({ length: 200 }, (_, index) => {
+    const [category, detail, kind] = categoryTemplates[index % categoryTemplates.length];
+    const [city, state] = cities[index % cities.length];
+    const ramp = index % 4 !== 2;
+    const bathroom = index % 5 !== 3;
+    const braille = index % 3 !== 1;
+    const libras = index % 6 === 0;
+    const dog = index % 5 !== 4;
+    const calm = index % 4 === 0;
+    const yesAnswers = [ramp, bathroom, braille, libras, dog, calm].filter(Boolean).length;
+    return {
+      id: 13 + index,
+      business_owner_id: 1,
+      establishment_name: `${kind} ${extraPlaceNames[index % extraPlaceNames.length]} ${index + 1}`,
+      category,
+      category_detail: detail,
+      full_address: `Rua da Acessibilidade, ${100 + index} - Centro`,
+      city,
+      state,
+      description: `${kind} localizado em ${city}, preparado para receber visitantes com informações claras sobre localização e recursos de acessibilidade.`,
+      price: (index % 12) * 2500,
+      main_image: `https://images.unsplash.com/photo-${1566073771259 + (index % 50)}?w=1080&q=80`,
+      has_access_ramp: ramp ? 1 : 0,
+      has_adapted_bathroom: bathroom ? 1 : 0,
+      allows_guide_dog: dog ? 1 : 0,
+      has_braille_signage: braille ? 1 : 0,
+      has_sign_language_interpreter: libras ? 1 : 0,
+      has_asd_friendly_space: calm ? 1 : 0,
+      accessibility_assessment: JSON.stringify({
+        step_free_route: ramp ? 'yes' : 'no', accessible_entrance: ramp ? 'yes' : 'unsure',
+        access_ramp: ramp ? 'yes' : 'no', adapted_restroom: bathroom ? 'yes' : 'no',
+        tactile_signage: braille ? 'yes' : 'no', libras_support: libras ? 'yes' : 'no',
+        quiet_space: calm ? 'yes' : 'no', accessible_service: 'yes'
+      }),
+      questionnaire_score: Math.round((yesAnswers / 6) * 100),
+      accessibility_level: yesAnswers >= 5 ? 'ADVANCED' : yesAnswers >= 3 ? 'INTERMEDIATE' : 'INITIAL'
+    };
+  });
+  await knex('places').insert(extraPlaces);
+
   // Insert sample reviews
   await knex('reviews').insert([
     {

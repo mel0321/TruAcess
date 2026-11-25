@@ -23,6 +23,7 @@ export function Header() {
         <nav className={`nav${menuOpen ? ' nav-open' : ''}`}>
           <NavLink to="/" end className="nav-link" onClick={() => setMenuOpen(false)}>Início</NavLink>
           <NavLink to="/destinos" className="nav-link" onClick={() => setMenuOpen(false)}>Destinos</NavLink>
+          {user && <NavLink to="/comunidade" className="nav-link" onClick={() => setMenuOpen(false)}>Comunidade</NavLink>}
           {user?.user_type === 'BUSINESS' && (
             <NavLink to="/dashboard" className="nav-link" onClick={() => setMenuOpen(false)}>Painel</NavLink>
           )}

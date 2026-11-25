@@ -219,6 +219,22 @@ export function DestinationsPage() {
                   </select>
                 </label>
               )}
+              <label>
+                Cidade
+                <select value={cityFilter} onChange={(event) => setCityFilter(event.target.value)}>
+                  <option value="">Todas as cidades</option>
+                  {cityOptions.map((city) => <option key={city} value={city}>{city}</option>)}
+                </select>
+              </label>
+              <label>
+                Nível de acessibilidade
+                <select value={accessibilityLevelFilter} onChange={(event) => setAccessibilityLevelFilter(event.target.value)}>
+                  <option value="">Todos os níveis</option>
+                  <option value="ADVANCED">Avançado</option>
+                  <option value="INTERMEDIATE">Intermediário</option>
+                  <option value="INITIAL">Inicial</option>
+                </select>
+              </label>
               <div className="destination-rating-filter" role="group" aria-labelledby="destination-rating-title">
                 <span id="destination-rating-title" className="destination-rating-filter-title">Nota dos viajantes</span>
                 <span className="destination-rating-filter-help">Média da experiência geral. Sem avaliações aparece em “Qualquer nota”.</span>

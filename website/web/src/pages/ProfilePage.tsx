@@ -17,7 +17,7 @@ interface Comment {
 }
 
 export function ProfilePage() {
-  const { user, logout, deleteAccount, updateUser, refreshUser } = useAuth();
+  const { user, logout, deleteAccount, updateUser, refreshUser, updateUserProfile } = useAuth();
   const { favorites } = useFavorites();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'info' | 'edit' | 'comments' | 'favorites' | 'settings'>('info');
@@ -340,6 +340,12 @@ export function ProfilePage() {
               
               <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
                 <SettingsButton 
+                  icon={<IconCamera width={20} height={20} />} 
+                  label="Comunidade e fotos" 
+                  description="Ver fotos públicas, contas seguidas e visão geral do perfil"
+                  onClick={() => navigate('/comunidade')} 
+                />
+                <SettingsButton 
                   icon={<IconEdit3 width={20} height={20} />} 
                   label="Editar perfil" 
                   description="Modificar informações pessoais"
@@ -351,12 +357,24 @@ export function ProfilePage() {
                   description="Adicionar, trocar ou remover foto de perfil"
                   onClick={() => { setActiveTab('edit'); setTimeout(() => fileInputRef.current?.click(), 100); }} 
                 />
-                <SettingsButton 
-                  icon={<IconSettings width={20} height={20} />} 
-                  label="Configurações de acessibilidade" 
-                  description="Personalizar opções de acessibilidade"
-                  onClick={() => !profile.profileCompleted && navigate('/onboarding')} 
-                />
+                <div style={{padding: '18px', border: '1px solid #DDE8F0', borderRadius: '14px', background: profile.accessibilityMode ? '#ECFEFF' : '#F8FAFC', display: 'grid', gap: 12}}>
+                  <div>
+                    <strong style={{color: '#052659', display: 'block'}}>Modo de acessibilidade do site</strong>
+                    <small style={{color: '#64748B'}}>{profile.accessibilityMode ? 'Ativado: o layout usa recursos de leitura, contraste e interação ampliada.' : 'Desativado: layout padrão da plataforma.'}</small>
+                  </div>
+                  <div style={{display: 'flex', gap: 8, flexWrap: 'wrap'}}>
+                    <button type="button" onClick={() => void updateUserProfile({...profile, accessibilityMode: true})} style={{border: 0, borderRadius: 8, padding: '10px 18px', background: '#087F8C', color: 'white', fontWeight: 700}}>Sim, ativar</button>
+                    <button type="button" onClick={() => void updateUserProfile({...profile, accessibilityMode: false})} style={{border: '1px solid #CBD5E1', borderRadius: 8, padding: '10px 18px', background: 'white', color: '#052659', fontWeight: 700}}>Não, desativar</button>
+                  </div>
+                </div>
+                {user.user_type === 'TRAVELER' && (
+                  <SettingsButton 
+                    icon={<IconSettings width={20} height={20} />} 
+                    label="Questionário de necessidades" 
+                    description="Personalizar deficiência, preferências e recursos prioritários"
+                    onClick={() => navigate('/onboarding')} 
+                  />
+                )}
                 <SettingsButton 
                   icon={<IconMessageCircle width={20} height={20} />} 
                   label="Meus comentários" 

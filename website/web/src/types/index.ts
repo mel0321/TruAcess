@@ -14,6 +14,11 @@ export interface UserProfile {
   accessibilityPreferences?: string[];
   profileCompleted?: boolean;
   onboardingStep?: number;
+  accessibilityMode?: boolean;
+  disabilityDeclared?: boolean;
+  businessCategory?: string;
+  businessCity?: string;
+  businessPhone?: string;
 }
 
 export interface User {

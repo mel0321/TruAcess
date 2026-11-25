@@ -42,18 +42,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement;
-    const disabilities = user?.user_type === 'TRAVELER' ? user.profile?.disabilities || [] : [];
-    root.classList.toggle('a11y-visual', disabilities.includes('VISUAL'));
-    root.classList.toggle('a11y-motor', disabilities.includes('PHYSICAL'));
-    root.classList.toggle('a11y-hearing', disabilities.includes('HEARING'));
-    root.classList.toggle('a11y-calm', disabilities.includes('COGNITIVE') || disabilities.includes('NEURODIVERGENT'));
+    const disabilities = user?.profile?.disabilities || [];
+    const accessibilityMode = user?.profile?.accessibilityMode === true;
+    root.classList.toggle('a11y-enabled', accessibilityMode);
+    root.classList.toggle('a11y-visual', accessibilityMode && disabilities.includes('VISUAL'));
+    root.classList.toggle('a11y-motor', accessibilityMode && disabilities.includes('PHYSICAL'));
+    root.classList.toggle('a11y-hearing', accessibilityMode && disabilities.includes('HEARING'));
+    root.classList.toggle('a11y-calm', accessibilityMode && (disabilities.includes('COGNITIVE') || disabilities.includes('NEURODIVERGENT')));
     root.dataset.accessibilityProfile = disabilities.join(',');
 
     return () => {
-      root.classList.remove('a11y-visual', 'a11y-motor', 'a11y-hearing', 'a11y-calm');
+      root.classList.remove('a11y-enabled', 'a11y-visual', 'a11y-motor', 'a11y-hearing', 'a11y-calm');
       delete root.dataset.accessibilityProfile;
     };
-  }, [user?.id, user?.user_type, user?.profile?.disabilities]);
+  }, [user?.id, user?.user_type, user?.profile?.disabilities, user?.profile?.accessibilityMode]);
 
   const loadUser = async () => {
     try {
@@ -191,9 +193,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateUserProfile = async (profile: Partial<UserProfile>) => {
     if (!user) return;
-    if (user.user_type !== 'TRAVELER') {
-      throw new Error('Informações de viajante não podem ser salvas em uma conta de estabelecimento.');
-    }
     const updatedProfile = { ...user.profile, ...profile };
     const response = await api.put<{ user: User }>('/users/profile', { profile: updatedProfile });
     const userData = { ...response.data.user, profile: updatedProfile };

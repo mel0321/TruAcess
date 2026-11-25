@@ -9,7 +9,8 @@ export function RegisterPage() {
     full_name: '', email: '', password: '', confirmPassword: '', user_type: 'TRAVELER' as UserType,
     disabilityDeclared: false,
     disabilities: [] as DisabilityType[],
-    businessCategory: '', businessCity: '', businessPhone: ''
+    businessCategory: '', businessCity: '', businessPhone: '',
+    accessibilityMode: false
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,8 +39,8 @@ export function RegisterPage() {
       password: form.password,
       user_type: form.user_type,
       profile: form.user_type === 'TRAVELER'
-        ? { disabilityDeclared: form.disabilityDeclared, disabilities: form.disabilities }
-        : { businessCategory: form.businessCategory, businessCity: form.businessCity, businessPhone: form.businessPhone }
+        ? { disabilityDeclared: form.disabilityDeclared, disabilities: form.disabilities, accessibilityMode: form.accessibilityMode }
+        : { businessCategory: form.businessCategory, businessCity: form.businessCity, businessPhone: form.businessPhone, accessibilityMode: form.accessibilityMode }
     });
     
     if (result.success) {
@@ -98,6 +99,10 @@ export function RegisterPage() {
                   </label>
                 ))}
               </div>
+              <label style={{display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginTop: 12, padding: '12px', borderRadius: '10px', background: form.accessibilityMode ? '#DDF7F7' : '#F1F5F9', fontWeight: 700, color: '#052659'}}>
+                Ativar modo de acessibilidade no site
+                <input type="checkbox" checked={form.accessibilityMode} onChange={(e) => setForm({...form, accessibilityMode: e.target.checked})} />
+              </label>
             </fieldset>
           ) : (
             <fieldset style={{margin: '0 0 20px', padding: '16px', border: '1px solid #DDE8F0', borderRadius: '12px'}}>
@@ -114,6 +119,13 @@ export function RegisterPage() {
                 <label style={{display: 'grid', gap: '6px', color: '#334155', fontSize: '13px', fontWeight: 600}}>Telefone
                   <input value={form.businessPhone} onChange={e => setForm({...form, businessPhone: e.target.value})} placeholder="(00) 00000-0000" style={{padding: '12px', border: '1px solid #CBD5E1', borderRadius: '8px'}} />
                 </label>
+              </div>
+              <div style={{marginTop: 14, padding: '14px', borderRadius: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0'}}>
+                <strong style={{display: 'block', color: '#052659', marginBottom: 10}}>Como empresa, deseja ativar o modo de acessibilidade?</strong>
+                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8}}>
+                  <button type="button" onClick={() => setForm({...form, accessibilityMode: true})} style={{padding: '12px', border: `2px solid ${form.accessibilityMode ? '#087F8C' : '#CBD5E1'}`, borderRadius: '8px', background: form.accessibilityMode ? '#DDF7F7' : 'white', color: '#052659', fontWeight: 700}}>Sim</button>
+                  <button type="button" onClick={() => setForm({...form, accessibilityMode: false})} style={{padding: '12px', border: `2px solid ${!form.accessibilityMode ? '#052659' : '#CBD5E1'}`, borderRadius: '8px', background: !form.accessibilityMode ? '#EFF6FF' : 'white', color: '#052659', fontWeight: 700}}>Não</button>
+                </div>
               </div>
             </fieldset>
           )}

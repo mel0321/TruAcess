@@ -1806,8 +1806,47 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
 .place-assessment-score-grid strong { color: #052659; }
 .place-assessment-answers { display: grid; gap: 8px; margin: 15px 0 0; padding: 0; list-style: none; }
 .place-assessment-answers li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid #dcecef; color: #475569; font-size: 12px; }
-.place-assessment-answers li strong { color: #087f8c; white-space: nowrap; }
+ .place-assessment-answers li strong { color: #087f8c; white-space: nowrap; }
+.place-accessibility-score progress { width: 100%; height: 14px; accent-color: #087f8c; }
+.social-page { min-height: 100vh; background: #f4f7fb; }
+.social-shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 64px; }
+.social-profile { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: center; gap: 28px; padding: 28px; background: white; border: 1px solid #dbe7ef; border-radius: 22px; box-shadow: 0 16px 45px rgba(5,38,89,.08); }
+.social-avatar { width: 150px; height: 150px; display: grid; place-items: center; border-radius: 50%; color: white; font-size: 42px; font-weight: 900; background: linear-gradient(135deg,#052659,#087f8c,#2ac2d2); box-shadow: 0 12px 30px rgba(8,127,140,.22); }
+.social-eyebrow, .social-section-heading p { margin: 0 0 5px; color: #087f8c; font-size: 11px; font-weight: 900; letter-spacing: .14em; }
+.social-profile h1 { margin: 0 0 16px; color: #052659; }
+.social-stats { display: flex; gap: 28px; flex-wrap: wrap; color: #64748b; }
+.social-stats strong { color: #052659; font-size: 18px; }
+.social-featured, .social-gallery { margin-top: 28px; }
+.social-section-heading { margin-bottom: 14px; }
+.social-section-heading h2 { margin: 0; color: #052659; }
+.social-accounts { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; }
+.social-account { display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 12px; align-items: center; background: white; border: 1px solid #dbe7ef; border-radius: 16px; padding: 14px; }
+.social-account-avatar { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; color: white; font-weight: 900; grid-row: span 2; }
+.social-account strong, .social-account span { display: block; }
+.social-account strong { color: #052659; font-size: 13px; }
+.social-account span { color: #64748b; font-size: 12px; }
+.social-account button { grid-column: 2; justify-self: start; border: 0; border-radius: 999px; padding: 8px 14px; background: #087f8c; color: white; font-weight: 800; cursor: pointer; }
+.social-photo-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+.social-photo { height: 230px; position: relative; overflow: hidden; border-radius: 16px; text-decoration: none; background: #dbe7ef; }
+.social-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
+.social-photo:hover img { transform: scale(1.04); }
+.social-photo div { position: absolute; inset: auto 0 0; display: grid; padding: 28px 12px 12px; color: white; background: linear-gradient(transparent,rgba(5,38,89,.88)); }
+.social-photo strong { font-size: 13px; }.social-photo span { font-size: 11px; opacity: .9; }
+.social-empty { text-align: center; padding: 44px 20px; border: 1px dashed #94b5c3; border-radius: 16px; background: white; color: #052659; }
+.social-empty p { color: #64748b; }
+@media (max-width: 900px) { .social-accounts { grid-template-columns: repeat(2,minmax(0,1fr)); }.social-photo-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 @media (max-width: 640px) {
+  .social-shell { width: min(100% - 24px, 1180px); padding: 18px 0 44px; }
+  .social-profile { grid-template-columns: 88px minmax(0,1fr); gap: 14px; padding: 16px; }
+  .social-avatar { width: 88px; height: 88px; font-size: 24px; }
+  .social-profile h1 { font-size: 21px; }
+  .social-stats { gap: 10px 16px; font-size: 12px; }
+  .social-stats strong { display: block; font-size: 15px; }
+  .social-accounts { grid-template-columns: 1fr; }
+  .social-photo-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  .social-photo { height: 180px; }
+  .social-photo div { padding: 22px 8px 8px; }
+  .social-photo strong { font-size: 11px; }
   .destination-extra-filters { justify-content: flex-start; align-items: stretch; }
   .destination-extra-filters label { flex: 1; min-width: 0; }
   .destination-extra-filters select { min-width: 0; width: 100%; }
@@ -1840,6 +1879,15 @@ html.a11y-motor .nav-link, html.a11y-motor button { padding-block: 12px; }
 html.a11y-hearing .field-error, html.a11y-hearing [role="alert"], html.a11y-hearing [role="status"] { border-left: 5px solid currentColor; }
 html.a11y-calm *, html.a11y-calm *::before, html.a11y-calm *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.001ms !important; }
 html.a11y-calm main { letter-spacing: 0.01em; }
+html.a11y-enabled { font-size: 17px; }
+html.a11y-enabled body { line-height: 1.6; }
+html.a11y-enabled :is(a, button, input, select, textarea) { min-height: 44px; }
+html.a11y-enabled :is(.header, .destinations-section, .social-shell, .place-details-page, .profile-page) { font-size: 1rem; }
+html.a11y-enabled :is(.nav-link, .category-chip, .rating-filter-chip) { padding: 12px 14px; border: 1px solid #075985; }
+html.a11y-enabled .container { max-width: 1180px; }
+html.a11y-enabled .destination-card { border: 2px solid #052659; }
+html.a11y-enabled .destination-grid, html.a11y-enabled .destination-categories { gap: 16px; }
+html.a11y-enabled img { filter: contrast(1.08); }
 html.a11y-calm .about-hero::before, html.a11y-calm .destinations-hero::before { opacity: 0.08; }
 
 .business-welcome-card { margin-bottom: 28px; padding: 24px; border: 1px solid #99f6e4; border-radius: 18px; background: linear-gradient(135deg, #ecfeff, #f0fdf4); color: #164e63; }

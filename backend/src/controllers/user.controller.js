@@ -60,7 +60,7 @@ export async function getProfile(req, res, next) {
     return res.status(200).json({
       user: {
         ...safeUser,
-        profile: user.user_type === 'TRAVELER' && user.profile_data ? JSON.parse(user.profile_data) : null
+        profile: user.profile_data ? JSON.parse(user.profile_data) : null
       }
     });
   } catch (error) {
@@ -104,11 +104,8 @@ export async function updateProfile(req, res, next) {
     if (full_name !== undefined) updateData.full_name = full_name?.trim() || null;
     if (profile_picture !== undefined) updateData.profile_picture = profile_picture?.trim() || null;
     if (profile !== undefined) {
-      if (req.user.user_type !== 'TRAVELER') {
-        throw new AppError('Dados de viajante não podem ser salvos no perfil de estabelecimento.', 403);
-      }
       if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
-        throw new AppError('As informações do viajante são inválidas.', 400);
+        throw new AppError('As informações do perfil são inválidas.', 400);
       }
       updateData.profile_data = JSON.stringify(profile);
     }
@@ -129,7 +126,7 @@ export async function updateProfile(req, res, next) {
       message: 'Perfil atualizado com sucesso!',
       user: {
         ...safeUser,
-        profile: safeUser.user_type === 'TRAVELER' && _profileData ? JSON.parse(_profileData) : null
+        profile: _profileData ? JSON.parse(_profileData) : null
       }
     });
   } catch (error) {
