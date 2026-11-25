@@ -4,7 +4,7 @@ import { Header } from '../components/Header';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { accessibilityQuestions, type AccessibilityAnswer, type AccessibilityAssessment } from '../utils/accessibilityQuestionnaire';
-import { placeCategories, placeCategoryDetails } from '../utils/placeCategories';
+import { getPlaceCategoryDetailLabel, getPlaceCategoryLabel, placeCategories, placeCategoryDetails } from '../utils/placeCategories';
 import type { Place, PlacePhoto } from '../types';
 
 type PhotoCategory = NonNullable<PlacePhoto['accessibility_category']>;
@@ -385,9 +385,10 @@ export function PlaceManagementPage() {
                       : 'Cada resposta é salva automaticamente.'
                 : 'As respostas serão registradas e aplicadas aos recursos do local ao publicar o estabelecimento.'}
             </p>
+            <p className="place-question-progress"><strong>{answeredQuestionCount} de {accessibilityQuestions.length}</strong> perguntas respondidas. Os primeiros itens foram priorizados para {getPlaceCategoryDetailLabel(form.category_detail) || getPlaceCategoryLabel(form.category)}.</p>
             <div className="place-question-list">
-              {accessibilityQuestions.map((question) => (
-                <fieldset className="place-question" key={question.key}>
+              {orderedAccessibilityQuestions.map((question) => (
+                <fieldset className={`place-question${priorityKeys.includes(question.key) ? ' is-priority' : ''}`} key={question.key}>
                   <legend>{question.label}</legend>
                   <div className="place-question-options">
                     {answerOptions.map((option) => (
