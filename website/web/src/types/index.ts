@@ -96,6 +96,13 @@ export interface RegisterRequest {
   email: string;
   password: string;
   user_type: UserType;
+  profile?: Partial<UserProfile> | {
+    disabilityDeclared?: boolean;
+    disabilities?: DisabilityType[];
+    businessCategory?: string;
+    businessCity?: string;
+    businessPhone?: string;
+  };
 }
 
 export interface AuthResponse {

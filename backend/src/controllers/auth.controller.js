@@ -17,7 +17,7 @@ function generate4DigitCode() {
  */
 export async function register(req, res, next) {
   try {
-    const { email, password, full_name, user_type } = req.body;
+    const { email, password, full_name, user_type, profile } = req.body;
 
     if (!email || !password || !user_type) {
       throw new AppError('E-mail, senha e tipo de usuário (user_type) são obrigatórios.', 400);
@@ -46,7 +46,8 @@ export async function register(req, res, next) {
       user_type: normalizedUserType,
       email_verified: 1,
       email_code: null,
-      profile_picture: null
+      profile_picture: null,
+      profile_data: profile && typeof profile === 'object' ? JSON.stringify(profile) : null
     });
 
     const user = {
@@ -55,7 +56,8 @@ export async function register(req, res, next) {
       full_name: full_name?.trim() || null,
       user_type: normalizedUserType,
       profile_picture: null,
-      email_verified: 1
+      email_verified: 1,
+      profile: profile && typeof profile === 'object' ? profile : null
     };
 
     return res.status(201).json({
