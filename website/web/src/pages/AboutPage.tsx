@@ -200,6 +200,26 @@ export function AboutPage() {
 
         <section className="about-values-section">
           <div className="section-header">
+            <p className="eyebrow">Como a TruAcess funciona</p>
+            <h2>Informação confiável para cada etapa da visita</h2>
+          </div>
+          <div className="about-process-grid">
+            <article><span>01</span><h3>Conte sobre suas necessidades</h3><p>O questionário do viajante identifica preferências de mobilidade, comunicação e ambiente. Você controla quais informações deseja compartilhar.</p></article>
+            <article><span>02</span><h3>Receba uma experiência adaptada</h3><p>O site ajusta contraste, controles, movimento e priorização dos resultados de acordo com as necessidades informadas no perfil.</p></article>
+            <article><span>03</span><h3>Planeje com contexto</h3><p>Estabelecimentos informam recursos reais e viajantes compartilham experiências, ajudando a comparar diferentes opções antes de sair.</p></article>
+          </div>
+        </section>
+
+        <section className="about-commitment-section">
+          <div>
+            <p className="eyebrow">Nosso compromisso</p>
+            <h2>Transparência sem prometer uma experiência igual para todo mundo.</h2>
+          </div>
+          <p>Acessibilidade é específica para cada pessoa e pode mudar. Por isso, mostramos quem informou cada recurso, separamos autodeclarações de avaliações de visitantes e incentivamos empresas a manterem os dados atualizados. A TruAcess não substitui o contato prévio com o local nem uma vistoria técnica.</p>
+        </section>
+
+        <section className="about-values-section">
+          <div className="section-header">
             <p className="eyebrow">O que nos move</p>
             <h2>Valores que guiam cada experiência</h2>
           </div>
