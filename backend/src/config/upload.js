@@ -46,6 +46,18 @@ export const avatarUpload = multer({
   fileFilter
 });
 
+export const socialPhotoUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, PLACES_FOLDER),
+    filename: (req, file, cb) => {
+      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      cb(null, `social-${uniqueSuffix}${path.extname(file.originalname).toLowerCase()}`);
+    }
+  }),
+  limits: { fileSize: maxFileSize },
+  fileFilter
+}).array('photos', 10);
+
 export const placeImageUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {

@@ -326,9 +326,7 @@ export async function seed(knex) {
         access_ramp: ramp ? 'yes' : 'no', adapted_restroom: bathroom ? 'yes' : 'no',
         tactile_signage: braille ? 'yes' : 'no', libras_support: libras ? 'yes' : 'no',
         quiet_space: calm ? 'yes' : 'no', accessible_service: 'yes'
-      }),
-      questionnaire_score: Math.round((yesAnswers / 6) * 100),
-      accessibility_level: yesAnswers >= 5 ? 'ADVANCED' : yesAnswers >= 3 ? 'INTERMEDIATE' : 'INITIAL'
+      })
     };
   });
   await knex('places').insert(extraPlaces);

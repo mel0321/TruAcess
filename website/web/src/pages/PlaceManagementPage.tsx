@@ -308,6 +308,24 @@ export function PlaceManagementPage() {
               <label className="place-form-field place-form-wide">Descrição
                 <textarea rows={4} value={form.description} onChange={(event) => updateForm('description', event.target.value)} />
               </label>
+              <label className="place-form-field">CEP
+                <input inputMode="numeric" placeholder="00000-000" />
+              </label>
+              <label className="place-form-field">Link do mapa
+                <input type="url" placeholder="https://maps.google.com/..." />
+              </label>
+              <label className="place-form-field">Faixa de preço
+                <select><option value="">Selecione</option><option>Gratuito</option><option>Econômico</option><option>Moderado</option><option>Premium</option></select>
+              </label>
+              <label className="place-form-field">Público atendido
+                <select><option value="">Selecione</option><option>Famílias</option><option>Casais</option><option>Grupos</option><option>Individual</option><option>Todos os públicos</option></select>
+              </label>
+              <label className="place-form-field place-form-wide">Serviços e diferenciais
+                <textarea rows={3} placeholder="Ex.: reserva, entrega, estacionamento, tours guiados, pagamento por app..." />
+              </label>
+              <label className="place-form-field place-form-wide">Formas de pagamento
+                <input placeholder="Dinheiro, cartão, Pix, vale-alimentação..." />
+              </label>
             </div>
           </section>
 

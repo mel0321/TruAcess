@@ -24,12 +24,16 @@ export async function listPosts(req, res, next) {
 
 export async function createPost(req, res, next) {
   try {
-    const { caption, place_id, location, hashtags, privacy, photos } = req.body;
-    if (!Array.isArray(photos) || photos.length === 0) throw new AppError('Adicione pelo menos uma fotografia.', 400);
+    const { caption, place_id, location, hashtags, privacy } = req.body;
+    const photos = (req.files || []).map((file) => `/uploads/places/${file.filename}`);
+    if (!photos.length) throw new AppError('Adicione pelo menos uma fotografia.', 400);
     if (photos.length > 10) throw new AppError('Você pode adicionar até 10 fotografias por publicação.', 400);
+    const parsedHashtags = typeof hashtags === 'string'
+      ? hashtags.split(/[\s,#]+/).map((tag) => tag.trim()).filter(Boolean)
+      : (Array.isArray(hashtags) ? hashtags : []);
     const [postId] = await db('social_posts').insert({
       user_id: req.user.id, place_id: place_id || null, caption: caption?.trim() || null,
-      location: location?.trim() || null, hashtags: JSON.stringify(Array.isArray(hashtags) ? hashtags : []),
+      location: location?.trim() || null, hashtags: JSON.stringify(parsedHashtags),
       privacy: ['PUBLIC', 'FOLLOWERS', 'PRIVATE'].includes(privacy) ? privacy : 'PUBLIC'
     });
     await db('social_post_photos').insert(photos.map((photo_url) => ({ post_id: postId, photo_url })));
@@ -53,6 +57,17 @@ export async function addComment(req, res, next) {
     if (!comment) throw new AppError('Escreva um comentário.', 400);
     await db('social_comments').insert({ post_id: Number(req.params.postId), user_id: req.user.id, comment });
     res.status(201).json({ message: 'Comentário publicado!' });
+  } catch (error) { next(error); }
+}
+
+export async function deletePost(req, res, next) {
+  try {
+    const postId = Number(req.params.postId);
+    const post = await db('social_posts').where({ id: postId }).first();
+    if (!post) throw new AppError('Publicação não encontrada.', 404);
+    if (post.user_id !== req.user.id) throw new AppError('Você só pode excluir suas próprias publicações.', 403);
+    await db('social_posts').where({ id: postId }).del();
+    res.json({ message: 'Publicação excluída.' });
   } catch (error) { next(error); }
 }
 

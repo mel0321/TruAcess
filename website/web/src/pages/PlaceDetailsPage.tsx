@@ -324,36 +324,18 @@ export function PlaceDetailsPage() {
 
               {showReviewForm && (
                 <form onSubmit={handleSubmitReview} style={{background: 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)', padding: '28px', borderRadius: '16px', marginBottom: '32px', border: '1px solid #E2E8F0'}}>
-                  <h3 style={{fontFamily: 'Poppins', fontSize: '20px', fontWeight: 700, color: '#052659', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px'}}>
-                    <IconStar width={22} height={22} fill="#2AC2D2" stroke="#2AC2D2" /> Sua Avaliação
-                  </h3>
-                  
-                  <div style={{marginBottom: '20px'}}>
-                    <label style={{display: 'block', marginBottom: '10px', fontWeight: 600, color: '#0F172A', fontSize: '14px'}}>Experiência Geral</label>
-                    <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <button key={star} type="button" onClick={() => setNewReview({...newReview, experience_rating: star})} onMouseEnter={() => setHoveredExp(star)} onMouseLeave={() => setHoveredExp(0)} style={{background: 'none', border: 'none', cursor: 'pointer', padding: '4px', transition: 'transform 0.2s', transform: (hoveredExp || newReview.experience_rating) >= star ? 'scale(1.15)' : 'scale(1)'}}>
-                          <IconStar width={36} height={36} fill={(hoveredExp || newReview.experience_rating) >= star ? '#F59E0B' : 'none'} stroke={(hoveredExp || newReview.experience_rating) >= star ? '#F59E0B' : '#CBD5E1'} strokeWidth={2} />
-                        </button>
-                      ))}
-                      <span style={{marginLeft: '12px', fontSize: '14px', color: '#64748B', fontWeight: 500}}>
-                        {['', 'Péssima', 'Ruim', 'Regular', 'Boa', 'Excelente'][newReview.experience_rating]}
-                      </span>
-                    </div>
+                  <h3 style={{fontFamily:'Poppins',fontSize:'20px',fontWeight:700,color:'#052659',marginBottom:'24px'}}>Sua avaliação por critérios</h3>
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:'12px',marginBottom:'24px'}}>
+                    {Object.entries(newReview.criteria_ratings).map(([criterion, value]) => (
+                      <label key={criterion} style={{display:'grid',gap:'7px',padding:'12px',border:'1px solid #dbe5ed',borderRadius:'10px',background:'white',color:'#334155',fontSize:'13px',fontWeight:700,textTransform:'capitalize'}}>
+                        {criterion.replaceAll('_',' ')} <span style={{color:'#087f8c'}}>{value}/5</span>
+                        <input type="range" min="1" max="5" step="1" value={value} onChange={(event) => setNewReview((current) => ({...current, criteria_ratings:{...current.criteria_ratings,[criterion]:Number(event.target.value)}}))} />
+                      </label>
+                    ))}
                   </div>
-
-                  <div style={{marginBottom: '20px'}}>
-                    <label style={{display: 'block', marginBottom: '10px', fontWeight: 600, color: '#0F172A', fontSize: '14px'}}>Nível de Acessibilidade</label>
-                    <div style={{display: 'flex', gap: '6px', alignItems: 'center'}}>
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <button key={star} type="button" onClick={() => setNewReview({...newReview, accessibility_rating: star})} onMouseEnter={() => setHoveredAcc(star)} onMouseLeave={() => setHoveredAcc(0)} style={{background: 'none', border: 'none', cursor: 'pointer', padding: '4px', transition: 'transform 0.2s', transform: (hoveredAcc || newReview.accessibility_rating) >= star ? 'scale(1.15)' : 'scale(1)'}}>
-                          <IconStar width={36} height={36} fill={(hoveredAcc || newReview.accessibility_rating) >= star ? '#2AC2D2' : 'none'} stroke={(hoveredAcc || newReview.accessibility_rating) >= star ? '#2AC2D2' : '#CBD5E1'} strokeWidth={2} />
-                        </button>
-                      ))}
-                      <span style={{marginLeft: '12px', fontSize: '14px', color: '#64748B', fontWeight: 500}}>
-                        {['', 'Inacessível', 'Difícil', 'Parcial', 'Bom', 'Excelente'][newReview.accessibility_rating]}
-                      </span>
-                    </div>
+                  <div style={{marginBottom:'20px',padding:'14px',borderRadius:'10px',background:'#eafafa'}}>
+                    <strong style={{color:'#052659'}}>Experiência geral:</strong> {newReview.criteria_ratings.qualidade}/5
+                    {' · '}<strong>Acessibilidade:</strong> {newReview.criteria_ratings.estrutura}/5
                   </div>
 
                   <div style={{marginBottom: '20px'}}>
@@ -387,8 +369,8 @@ export function PlaceDetailsPage() {
                     <textarea value={newReview.comment_text} onChange={e => setNewReview({...newReview, comment_text: e.target.value})} placeholder="Conte sobre sua experiência neste local..." required style={{width: '100%', padding: '14px', border: '2px solid #E2E8F0', borderRadius: '10px', minHeight: '110px', fontFamily: 'inherit', resize: 'vertical', fontSize: '14px', outline: 'none', boxSizing: 'border-box'}} />
                   </div>
 
-                  <button type="submit" disabled={submitting} style={{background: 'linear-gradient(135deg, #052659 0%, #0a3d7a 100%)', color: 'white', border: 'none', padding: '14px 32px', borderRadius: '100px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(5, 38, 89, 0.2)', opacity: submitting ? 0.7 : 1}}>
-                    <IconStar width={18} height={18} fill="white" stroke="white" /> {submitting ? 'Publicando...' : 'Publicar Avaliação'}
+                  <button type="submit" disabled={submitting} style={{background: 'linear-gradient(135deg, #052659 0%, #0a3d7a 100%)', color: 'white', border: 'none', padding: '14px 32px', borderRadius: '100px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 15px rgba(5, 38, 89, 0.2)', opacity: submitting ? 0.7 : 1}}>
+                    {submitting ? 'Publicando...' : 'Publicar Avaliação'}
                   </button>
                 </form>
               )}
@@ -427,19 +409,11 @@ export function PlaceDetailsPage() {
                           {review.created_at}
                         </div>
                       </div>
-                      <div style={{display: 'flex', gap: '16px'}}>
-                        <div style={{textAlign: 'center'}}>
-                          <div style={{fontSize: '11px', color: '#64748B', marginBottom: '4px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px'}}>Experiência</div>
-                          <div style={{display: 'flex', gap: '2px'}}>
-                            {[...Array(5)].map((_, i) => <IconStar key={i} width={16} height={16} fill={i < review.experience_rating ? '#F59E0B' : 'none'} stroke={i < review.experience_rating ? '#F59E0B' : '#E2E8F0'} />)}
-                          </div>
-                        </div>
-                        <div style={{textAlign: 'center'}}>
-                          <div style={{fontSize: '11px', color: '#64748B', marginBottom: '4px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px'}}>Acessibilidade</div>
-                          <div style={{display: 'flex', gap: '2px'}}>
-                            {[...Array(5)].map((_, i) => <IconStar key={i} width={16} height={16} fill={i < review.accessibility_rating ? '#2AC2D2' : 'none'} stroke={i < review.accessibility_rating ? '#2AC2D2' : '#E2E8F0'} />)}
-                          </div>
-                        </div>
+                      <div style={{display:'grid',gap:'6px',minWidth:'180px'}}>
+                        <strong style={{color:'#052659',fontSize:'14px'}}>Experiência: {review.experience_rating}/5</strong>
+                        <progress max="5" value={review.experience_rating} aria-label="Nota de experiência" />
+                        <strong style={{color:'#087f8c',fontSize:'14px'}}>Acessibilidade: {review.accessibility_rating}/5</strong>
+                        <progress max="5" value={review.accessibility_rating} aria-label="Nota de acessibilidade" />
                       </div>
                     </div>
                     {review.comment_text && <p style={{color: '#334155', lineHeight: '1.7', fontSize: '15px', margin: 0, paddingLeft: '68px'}}>{review.comment_text}</p>}
