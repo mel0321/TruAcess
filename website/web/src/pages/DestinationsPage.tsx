@@ -2,11 +2,40 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { IconBrain, IconMapPin, IconRamp } from '../components/Icons';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { getPlaceCategoryDetailLabel, getPlaceCategoryLabel, placeCategories, placeCategoryDetails } from '../utils/placeCategories';
-import type { Place } from '../types';
+import type { DisabilityType, Place, UserProfile } from '../types';
+
+const disabilityAssessmentKeys: Partial<Record<DisabilityType, string[]>> = {
+  PHYSICAL: ['step_free_route', 'accessible_entrance', 'access_ramp', 'adapted_restroom'],
+  VISUAL: ['tactile_signage', 'braille_information'],
+  HEARING: ['libras_support'],
+  COGNITIVE: ['accessible_service', 'staff_training'],
+  NEURODIVERGENT: ['quiet_space', 'asd_friendly_space', 'sensory_support'],
+};
+
+const preferenceAssessmentKeys: Record<string, string[]> = {
+  step_free_route: ['step_free_route', 'accessible_entrance', 'access_ramp'],
+  accessible_restroom: ['adapted_restroom'],
+  braille_or_tactile: ['tactile_signage', 'braille_information'],
+  libras_or_captions: ['libras_support'],
+  sensory_information: ['quiet_space', 'sensory_support'],
+  trained_staff: ['accessible_service', 'staff_training'],
+};
+
+function personalizationScore(place: Place, profile: UserProfile | null | undefined) {
+  const disabilities = profile?.disabilities?.filter((item) => item !== 'NONE' && item !== 'PREFER_NOT_SAY') || [];
+  const keys = new Set(disabilities.flatMap((item) => disabilityAssessmentKeys[item] || []));
+  profile?.accessibilityPreferences?.forEach((preference) => preferenceAssessmentKeys[preference]?.forEach((key) => keys.add(key)));
+  if (!keys.size) return { score: 0, matches: 0, total: 0 };
+  const answers = place.accessibility_assessment || {};
+  const matches = [...keys].filter((key) => answers[key] === 'yes').length;
+  return { score: matches / keys.size, matches, total: keys.size };
+}
 
 export function DestinationsPage() {
+  const { user } = useAuth();
   const [places, setPlaces] = useState<Place[]>([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
@@ -55,10 +84,18 @@ export function DestinationsPage() {
 
     return matchesSearch && matchesCategory && matchesCategoryDetail && matchesAccessibility;
   });
-  const filteredPlaces = placesMatchingOtherFilters.filter((place) => (
-    !minimumRating ||
-    (place.average_rating !== null && place.average_rating !== undefined && place.average_rating >= Number(minimumRating))
-  ));
+  const activeAccessibilityNeeds = user?.user_type === 'TRAVELER' && Boolean(
+    user.profile?.disabilities?.some((item) => item !== 'NONE' && item !== 'PREFER_NOT_SAY') ||
+    user.profile?.accessibilityPreferences?.length
+  );
+  const filteredPlaces = placesMatchingOtherFilters
+    .filter((place) => (
+      !minimumRating ||
+      (place.average_rating !== null && place.average_rating !== undefined && place.average_rating >= Number(minimumRating))
+    ))
+    .sort((first, second) => activeAccessibilityNeeds
+      ? personalizationScore(second, user?.profile).score - personalizationScore(first, user?.profile).score
+      : 0);
   const ratingOptions = ['3', '4', '5'] as const;
   const ratingCounts = Object.fromEntries(ratingOptions.map((rating) => [
     rating,

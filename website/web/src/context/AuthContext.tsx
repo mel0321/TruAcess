@@ -40,6 +40,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUser();
   }, []);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    const disabilities = user?.user_type === 'TRAVELER' ? user.profile?.disabilities || [] : [];
+    root.classList.toggle('a11y-visual', disabilities.includes('VISUAL'));
+    root.classList.toggle('a11y-motor', disabilities.includes('PHYSICAL'));
+    root.classList.toggle('a11y-hearing', disabilities.includes('HEARING'));
+    root.classList.toggle('a11y-calm', disabilities.includes('COGNITIVE') || disabilities.includes('NEURODIVERGENT'));
+    root.dataset.accessibilityProfile = disabilities.join(',');
+
+    return () => {
+      root.classList.remove('a11y-visual', 'a11y-motor', 'a11y-hearing', 'a11y-calm');
+      delete root.dataset.accessibilityProfile;
+    };
+  }, [user?.id, user?.user_type, user?.profile?.disabilities]);
+
   const loadUser = async () => {
     try {
       const token = localStorage.getItem('@TruAcess:token');
