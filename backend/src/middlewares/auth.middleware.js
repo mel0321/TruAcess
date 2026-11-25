@@ -64,11 +64,11 @@ export async function authenticateToken(req, res, next) {
     }
 
     let profile = null;
-    if (user.user_type === 'TRAVELER' && user.profile_data) {
+    if (user.profile_data) {
       try {
         profile = JSON.parse(user.profile_data);
       } catch {
-        throw new AppError('Não foi possível ler o perfil do viajante.', 500);
+        throw new AppError('Não foi possível ler os dados do perfil.', 500);
       }
     }
     const { profile_data: _profileData, ...safeUser } = user;
