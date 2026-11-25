@@ -35,7 +35,7 @@ export function RegisterPage() {
     });
     
     if (result.success) {
-      navigate(form.user_type === 'BUSINESS' ? '/dashboard' : '/onboarding');
+      navigate(form.user_type === 'BUSINESS' ? '/register-place?welcome=1' : '/onboarding');
     } else {
       setError(result.message);
     }

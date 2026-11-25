@@ -136,6 +136,15 @@ export function DestinationsPage() {
 
         <section className="destinations-section destinations-discovery">
           <div className="container">
+            {activeAccessibilityNeeds && (
+              <div className="personalized-accessibility-banner" role="status">
+                <span className="personalized-accessibility-icon"><IconRamp width={24} height={24} /></span>
+                <div>
+                  <strong>Resultados adaptados ao seu perfil de acessibilidade</strong>
+                  <p>Priorizamos locais que informaram os recursos relacionados às suas respostas. Você ainda pode alterar os filtros abaixo.</p>
+                </div>
+              </div>
+            )}
             <div className="destination-controls">
               <label className="destination-search">
                 <span className="destination-search-icon"><IconMapPin width={19} height={19} /></span>
@@ -267,6 +276,12 @@ export function DestinationsPage() {
                       </div>
                       <div className="destination-content">
                         <div className="destination-badges">
+                          {activeAccessibilityNeeds && (() => {
+                            const compatibility = personalizationScore(place, user?.profile);
+                            return compatibility.matches > 0 ? (
+                              <span className="badge-access badge-personalized"><IconRamp width={16} height={16} /> {compatibility.matches} de {compatibility.total} recursos para você</span>
+                            ) : null;
+                          })()}
                           {place.has_access_ramp && <span className="badge-access"><IconRamp width={16} height={16} /> Acesso físico</span>}
                           {place.has_asd_friendly_space && <span className="badge-access"><IconBrain width={16} height={16} /> Espaço TEA</span>}
                         </div>

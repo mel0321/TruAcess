@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
@@ -71,6 +71,8 @@ const answerOptions: Array<{ value: AccessibilityAnswer; label: string }> = [
 export function PlaceManagementPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isWelcome = searchParams.get('welcome') === '1';
   const { user } = useAuth();
   const [form, setForm] = useState<PlaceForm>(emptyForm);
   const [assessment, setAssessment] = useState<AccessibilityAssessment>({});

@@ -1732,3 +1732,30 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
   .destination-rating-filter { flex: 1 1 100%; }
   .place-assessment-answers li { flex-direction: column; gap: 3px; }
 }
+
+.personalized-accessibility-banner {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 22px;
+  padding: 18px 20px;
+  border: 1px solid #9ae6e7;
+  border-radius: 14px;
+  background: #eafafa;
+  color: #164e63;
+}
+.personalized-accessibility-icon { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; border-radius: 12px; background: #087f8c; color: white; }
+.personalized-accessibility-banner strong { color: #052659; }
+.personalized-accessibility-banner p { margin-top: 2px; font-size: 13px; }
+.badge-personalized { padding: 4px 7px; border-radius: 999px; background: #e6f7f5; color: #087f8c; }
+
+html.a11y-visual body { font-size: 18px; }
+html.a11y-visual p, html.a11y-visual small, html.a11y-visual label { line-height: 1.75; }
+html.a11y-visual :is(a, button, input, select, textarea):focus-visible { outline: 4px solid #ffbf00; outline-offset: 4px; }
+html.a11y-visual .destination-card, html.a11y-visual .value-card, html.a11y-visual .about-section-card { border: 2px solid #052659; }
+html.a11y-motor :is(button, a, input, select, textarea, summary) { min-height: 44px; }
+html.a11y-motor .nav-link, html.a11y-motor button { padding-block: 12px; }
+html.a11y-hearing .field-error, html.a11y-hearing [role="alert"], html.a11y-hearing [role="status"] { border-left: 5px solid currentColor; }
+html.a11y-calm *, html.a11y-calm *::before, html.a11y-calm *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.001ms !important; }
+html.a11y-calm main { letter-spacing: 0.01em; }
+html.a11y-calm .about-hero::before, html.a11y-calm .destinations-hero::before { opacity: 0.08; }

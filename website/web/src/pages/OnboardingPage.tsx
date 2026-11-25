@@ -228,7 +228,7 @@ export function OnboardingPage() {
           {currentStep === 1 && 'Resposta opcional. Use “Prefiro não informar” se não quiser responder.'}
           {currentStep === 2 && 'Assim podemos sugerir lugares com base nos seus hábitos.'}
           {currentStep === 3 && 'Para recomendar acomodações e atividades ideais.'}
-          {currentStep === 4 && 'Compartilhe somente o que desejar. Selecione as opções que ajudam a encontrar locais adequados.'}
+          {currentStep === 4 && 'Compartilhe somente o que desejar. Ao continuar, a TruAcess adapta contraste, tamanho dos controles e movimento conforme sua resposta.'}
           {currentStep === 5 && 'Escolha os temas que mais te interessam.'}
           {currentStep === 6 && 'Selecione recursos importantes para planejar suas visitas. Você pode alterar essas respostas depois.'}
         </p>
