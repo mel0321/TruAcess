@@ -41,20 +41,48 @@ export function HomePage() {
     <div>
       <Header />
 
-      <section className="hero">
+      <section className="hero home-hero">
         <div className="hero-content">
-          <h1>Explore o Mundo <span>Sem Limites</span></h1>
-          <p>Aventuras acessíveis para todos. Sua próxima jornada começa aqui.</p>
-          <div className="hero-buttons">
-            <Link to="/destinos" className="btn-explore">Explorar Destinos</Link>
-            <Link to="/sobre" className="btn-story">Nossa História</Link>
+          <p className="home-hero-eyebrow"><span aria-hidden="true" /> TURISMO PARA TODAS AS FORMAS DE VIAJAR</p>
+          <h1>Seu próximo destino pode ser <span>para você.</span></h1>
+          <p className="home-hero-description">Descubra hotéis, restaurantes, atrações e serviços com informações de acessibilidade explicadas antes da sua visita.</p>
+          <div className="home-hero-search" role="search">
+            <IconMapPin width={22} height={22} />
+            <Link to="/destinos">Pesquisar destino, cidade ou tipo de local</Link>
+            <Link to="/destinos" className="home-search-button">Explorar agora</Link>
+          </div>
+          <div className="home-hero-benefits" aria-label="Benefícios da TruAcess">
+            <span><IconRamp width={18} height={18} /> Recursos de acesso</span>
+            <span><IconUsers width={18} height={18} /> Experiências de viajantes</span>
+            <span><IconShield width={18} height={18} /> Informações transparentes</span>
           </div>
         </div>
+        <aside className="home-hero-preview" aria-label="Prévia dos recursos de um destino">
+          <div className="home-preview-image">
+            <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=900&q=85" alt="Paisagem natural para inspirar a próxima viagem" />
+            <span>Seleção TruAcess</span>
+          </div>
+          <div className="home-preview-content">
+            <p><IconMapPin width={15} height={15} /> Informações antes de chegar</p>
+            <h2>Planeje com mais tranquilidade.</h2>
+            <div className="home-preview-resources">
+              <span>✓ Rota sem degraus</span><span>✓ Banheiro acessível</span><span>✓ Atendimento inclusivo</span>
+            </div>
+            <Link to="/destinos">Conhecer destinos <span aria-hidden="true">→</span></Link>
+          </div>
+        </aside>
       </section>
 
-      <section style={{ padding: '24px 0', background: 'white', borderBottom: '1px solid #E2E8F0' }}>
+      <section className="home-trust-strip" aria-label="Como a TruAcess ajuda">
+        <div><strong>01</strong><span>Compare recursos de mobilidade, comunicação e conforto.</span></div>
+        <div><strong>02</strong><span>Consulte relatos e avaliações de outros viajantes.</span></div>
+        <div><strong>03</strong><span>Escolha o local que combina com sua forma de viajar.</span></div>
+      </section>
+
+      <section className="home-category-bar">
         <div className="container">
-          <div style={{ display: 'flex', gap: '12px', overflowX: 'auto' }}>
+          <div className="home-category-title"><strong>O que você quer explorar?</strong><span>Escolha uma categoria</span></div>
+          <div className="home-category-list" role="group" aria-label="Filtrar locais por categoria">
             <button onClick={() => setSelectedCategory('todos')} style={{ padding: '8px 20px', borderRadius: '100px', border: 'none', cursor: 'pointer', background: selectedCategory === 'todos' ? '#052659' : '#F1F5F9', color: selectedCategory === 'todos' ? 'white' : '#64748B', fontWeight: 600, fontSize: '14px' }}>Todos</button>
             {uniqueCategories.map((cat, index) => (
               <button key={index} onClick={() => setSelectedCategory(cat)} style={{ padding: '8px 20px', borderRadius: '100px', border: 'none', cursor: 'pointer', background: selectedCategory === cat ? '#052659' : '#F1F5F9', color: selectedCategory === cat ? 'white' : '#64748B', fontWeight: 600, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -67,10 +95,15 @@ export function HomePage() {
 
       <section className="destinations-section">
         <div className="container">
-          <div className="section-header"><h2>Principais Destinos</h2></div>
+          <div className="home-section-heading">
+            <div><p className="eyebrow">LOCAIS PARA CONHECER</p><h2>Mais opções para sua próxima viagem</h2></div>
+            <Link to="/destinos">Ver todos os {places.length || ''} locais <span aria-hidden="true">→</span></Link>
+          </div>
           {loadError && <p role="alert">{loadError}</p>}
-          <div className="destinations-grid">
-            {filteredPlaces.slice(0, 5).map((place) => (
+          <div className="destinations-grid home-destinations-grid">
+            {!loadError && places.length === 0 ? (
+              <p className="home-loading" role="status">Carregando locais para explorar...</p>
+            ) : filteredPlaces.slice(0, 8).map((place) => (
               <Link to={`/local/${place.id}`} key={place.id} className="destination-card">
                 <div className="destination-img">
                   <img src={place.main_image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80'} alt={place.establishment_name} />
@@ -89,6 +122,11 @@ export function HomePage() {
                     </div>
                   )}
                   <div className="destination-title">{place.establishment_name}</div>
+                  <p className="home-place-location"><IconMapPin width={15} height={15} /> {place.city}{place.state ? `, ${place.state}` : ''}</p>
+                  <div className="home-place-footer">
+                    <span>{getPlaceCategoryLabel(place.category)}</span>
+                    <span>{place.average_rating != null ? `★ ${place.average_rating.toFixed(1)}` : 'Conhecer local'}</span>
+                  </div>
                 </div>
               </Link>
             ))}

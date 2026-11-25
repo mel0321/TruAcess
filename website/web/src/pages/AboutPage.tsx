@@ -210,12 +210,51 @@ export function AboutPage() {
           </div>
         </section>
 
+        <section className="about-story-section">
+          <div className="about-story-copy">
+            <p className="eyebrow">Por que existimos</p>
+            <h2>O problema não é viajar. É decidir sem as informações certas.</h2>
+            <p>Muitas vezes, uma viagem é planejada descobrindo tarde demais que a entrada tem degraus, que o banheiro não atende às necessidades da pessoa ou que o ambiente pode gerar desconforto. A TruAcess nasceu para colocar essas informações no começo do planejamento.</p>
+            <p>Reunimos as informações declaradas pelos estabelecimentos com experiências reais da comunidade. Assim, cada visitante pode avaliar quais condições são importantes para sua própria realidade, em vez de depender de um rótulo genérico de “acessível”.</p>
+          </div>
+          <div className="about-audience-grid">
+            <article><strong>Viajantes</strong><p>Encontram locais, salvam opções e identificam recursos compatíveis com suas necessidades.</p></article>
+            <article><strong>Famílias e acompanhantes</strong><p>Planejam deslocamentos e visitas considerando conforto, autonomia e segurança do grupo.</p></article>
+            <article><strong>Estabelecimentos</strong><p>Apresentam seus recursos com clareza e descobrem oportunidades de melhoria pelo contato com viajantes.</p></article>
+          </div>
+        </section>
+
+        <section className="about-method-section">
+          <div className="section-header">
+            <p className="eyebrow">Informação explicada</p>
+            <h2>De onde vêm os dados de acessibilidade</h2>
+          </div>
+          <div className="about-method-grid">
+            <article><span>01</span><h3>Autodeclaração do local</h3><p>O estabelecimento responde perguntas sobre acesso físico, comunicação, atendimento e conforto sensorial. As respostas devem representar a condição atual do espaço.</p></article>
+            <article><span>02</span><h3>Avaliações de visitantes</h3><p>Viajantes relatam sua experiência e a presença dos recursos durante a visita, oferecendo uma perspectiva prática e complementar.</p></article>
+            <article><span>03</span><h3>Compatibilidade com seu perfil</h3><p>Quando você responde ao questionário, os resultados consideram seus recursos prioritários. A plataforma não substitui a confirmação direta com o local.</p></article>
+          </div>
+        </section>
+
         <section className="about-commitment-section">
           <div>
             <p className="eyebrow">Nosso compromisso</p>
             <h2>Transparência sem prometer uma experiência igual para todo mundo.</h2>
           </div>
           <p>Acessibilidade é específica para cada pessoa e pode mudar. Por isso, mostramos quem informou cada recurso, separamos autodeclarações de avaliações de visitantes e incentivamos empresas a manterem os dados atualizados. A TruAcess não substitui o contato prévio com o local nem uma vistoria técnica.</p>
+        </section>
+
+        <section className="about-faq-section">
+          <div>
+            <p className="eyebrow">Dúvidas frequentes</p>
+            <h2>O que você precisa saber antes de usar a plataforma</h2>
+          </div>
+          <div className="about-faq-list">
+            <details><summary>A TruAcess certifica que um local é acessível?</summary><p>Não. As informações são declaradas pelos estabelecimentos e complementadas por avaliações. Elas ajudam no planejamento, mas não representam auditoria ou certificação técnica.</p></details>
+            <details><summary>Por que dois perfis podem receber recomendações diferentes?</summary><p>Porque acessibilidade varia conforme mobilidade, comunicação, sensibilidade sensorial e preferências de cada pessoa.</p></details>
+            <details><summary>Como manter minhas informações pessoais privadas?</summary><p>O questionário permite escolher o que compartilhar e oferece opções de não informar. Suas respostas servem para personalizar a experiência e podem ser alteradas.</p></details>
+            <details><summary>O que fazer se uma informação estiver desatualizada?</summary><p>Consulte diretamente o estabelecimento e deixe uma avaliação detalhada após a visita. Feedbacks ajudam outros viajantes e alertam os responsáveis pelo local.</p></details>
+          </div>
         </section>
 
         <section className="about-values-section">
