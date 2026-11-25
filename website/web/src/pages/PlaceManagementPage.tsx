@@ -241,6 +241,20 @@ export function PlaceManagementPage() {
           <p>Esses dados ajudam viajantes a encontrar e planejar uma visita com mais autonomia.</p>
         </header>
 
+        {isWelcome && !id && (
+          <section className="business-welcome-card" role="status">
+            <div>
+              <strong>Conta criada! Agora vamos enriquecer o perfil da sua empresa.</strong>
+              <p>Preencha os dados comerciais e responda ao questionário. As perguntas mais relevantes para sua categoria aparecem primeiro.</p>
+            </div>
+            <ol>
+              <li><span>1</span> Identifique o tipo de estabelecimento</li>
+              <li><span>2</span> Informe contatos, localização e funcionamento</li>
+              <li><span>3</span> Descreva os recursos reais de acessibilidade</li>
+            </ol>
+          </section>
+        )}
+
         {error && <div role="alert" className="place-form-error">{error}</div>}
 
         <form className="place-form-card" onSubmit={savePlace}>
