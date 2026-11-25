@@ -68,6 +68,18 @@ const answerOptions: Array<{ value: AccessibilityAnswer; label: string }> = [
   { value: 'unsure', label: 'Não sei / não se aplica' },
 ];
 
+const categoryPriorityQuestions: Record<string, string[]> = {
+  ACCOMMODATION: ['step_free_route', 'adapted_restroom', 'accessible_parking', 'quiet_space'],
+  GASTRONOMY: ['accessible_entrance', 'adapted_restroom', 'accessible_service', 'guide_dog'],
+  TOURIST_ATTRACTION: ['step_free_route', 'tactile_signage', 'accessible_website', 'sensory_support'],
+  SHOPPING: ['step_free_route', 'accessible_parking', 'accessible_service', 'libras_support'],
+  HEALTH: ['accessible_entrance', 'adapted_restroom', 'libras_support', 'staff_training'],
+  TRANSPORT: ['step_free_route', 'accessible_parking', 'tactile_signage', 'libras_support'],
+  ENTERTAINMENT: ['accessible_entrance', 'adapted_restroom', 'quiet_space', 'sensory_support'],
+  EDUCATION: ['step_free_route', 'braille_information', 'libras_support', 'staff_training'],
+  SPORTS: ['step_free_route', 'adapted_restroom', 'access_ramp', 'accessible_service'],
+};
+
 export function PlaceManagementPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -211,6 +223,12 @@ export function PlaceManagementPage() {
   }
 
   const categoryDetails = placeCategoryDetails[form.category] || [];
+  const priorityKeys = categoryPriorityQuestions[form.category] || categoryPriorityQuestions.TOURIST_ATTRACTION;
+  const orderedAccessibilityQuestions = [
+    ...accessibilityQuestions.filter((question) => priorityKeys.includes(question.key)),
+    ...accessibilityQuestions.filter((question) => !priorityKeys.includes(question.key)),
+  ];
+  const answeredQuestionCount = Object.values(assessment).filter((answer) => answer === 'yes' || answer === 'no' || answer === 'unsure').length;
 
   return (
     <div className="place-form-page">
