@@ -61,6 +61,15 @@ export function Header() {
           )}
         </div>
       </div>
+      {user && (
+        <nav className="mobile-bottom-nav" aria-label="Navegação principal">
+          <NavLink to="/" end><span aria-hidden="true">⌂</span><b>Início</b></NavLink>
+          <NavLink to="/destinos"><span aria-hidden="true">⌖</span><b>Destinos</b></NavLink>
+          <NavLink to="/onboarding"><span aria-hidden="true">♿</span><b>Viajar</b></NavLink>
+          <NavLink to="/comunidade"><span aria-hidden="true">◎</span><b>Comunidade</b></NavLink>
+          <NavLink to="/perfil"><span aria-hidden="true">◉</span><b>Perfil</b></NavLink>
+        </nav>
+      )}
     </header>
   );
 }

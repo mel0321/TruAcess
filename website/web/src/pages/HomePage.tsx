@@ -12,7 +12,7 @@ export function HomePage() {
   const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
-    api.get('/places')
+    api.get('/places', { params: { limit: 500 } })
       .then(res => setPlaces(res.data.places || res.data || []))
       .catch(err => {
         console.error('Erro ao carregar locais:', err);

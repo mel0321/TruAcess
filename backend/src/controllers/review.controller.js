@@ -10,7 +10,7 @@ const VALID_ACCESSIBILITY_LEVELS = ['POOR', 'GOOD', 'EXCELLENT'];
 export async function createReview(req, res, next) {
   try {
     const { placeId } = req.params;
-    const { experience_rating, accessibility_level, comment_text, accessibility_details } = req.body;
+    const { experience_rating, accessibility_level, comment_text, accessibility_details, criteria_ratings } = req.body;
 
     if (!experience_rating || !accessibility_level) {
       throw new AppError('Nota da experiência (1 a 5) e nível de acessibilidade são obrigatórios.', 400);
@@ -36,6 +36,9 @@ export async function createReview(req, res, next) {
       throw new AppError('Local não encontrado para avaliação.', 404);
     }
 
+    const existingReview = await db('reviews').where({ place_id: placeId, traveler_id: req.user.id }).first();
+    if (existingReview) throw new AppError('Você já publicou uma avaliação para este local.', 409);
+
     const [reviewId] = await db('reviews').insert({
       place_id: placeId,
       traveler_id: req.user.id,
@@ -43,6 +46,7 @@ export async function createReview(req, res, next) {
       accessibility_level: levelUpper,
       accessibility_details: details ? JSON.stringify(details) : null,
       comment_text: comment_text?.trim() || null,
+      criteria_ratings: criteria_ratings && typeof criteria_ratings === 'object' ? JSON.stringify(criteria_ratings) : null,
       owner_reply_text: null
     });
 

@@ -45,7 +45,7 @@ export function PlaceDetailsPage() {
   const [loadError, setLoadError] = useState('');
   const [reviewError, setReviewError] = useState('');
   const [showReviewForm, setShowReviewForm] = useState(false);
-  const [newReview, setNewReview] = useState({ experience_rating: 5, accessibility_rating: 5, comment_text: '', accessibility_details: {} as NonNullable<Review['accessibility_details']> });
+  const [newReview, setNewReview] = useState({ experience_rating: 5, accessibility_rating: 5, comment_text: '', criteria_ratings: { atendimento: 5, limpeza: 5, estrutura: 5, custo_beneficio: 5, localizacao: 5, organizacao: 5, qualidade: 5 } as Record<string, number>, accessibility_details: {} as NonNullable<Review['accessibility_details']> });
   const [hoveredExp, setHoveredExp] = useState(0);
   const [hoveredAcc, setHoveredAcc] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -116,10 +116,11 @@ export function PlaceDetailsPage() {
           : newReview.accessibility_rating >= 3 ? 'GOOD' : 'POOR',
         comment_text: newReview.comment_text,
         accessibility_details: newReview.accessibility_details,
+        criteria_ratings: newReview.criteria_ratings,
       });
 
       setReviews((current) => [normalizeReview(response.data.review), ...current]);
-      setNewReview({ experience_rating: 5, accessibility_rating: 5, comment_text: '', accessibility_details: {} });
+      setNewReview({ experience_rating: 5, accessibility_rating: 5, comment_text: '', criteria_ratings: { atendimento: 5, limpeza: 5, estrutura: 5, custo_beneficio: 5, localizacao: 5, organizacao: 5, qualidade: 5 }, accessibility_details: {} });
       setShowReviewForm(false);
       void loadPlace();
     } catch (error) {

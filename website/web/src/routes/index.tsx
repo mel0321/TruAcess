@@ -13,6 +13,7 @@ import { DestinationsPage } from '../pages/DestinationsPage';
 import { AboutPage } from '../pages/AboutPage';
 import { PlaceManagementPage } from '../pages/PlaceManagementPage';
 import { SocialPage } from '../pages/SocialPage';
+import { AccessibilityPanel } from '../components/AccessibilityPanel';
 import type { ReactNode } from 'react';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -31,6 +32,7 @@ export function AppRoutes() {
     <AuthProvider>
       <FavoritesProvider>
         <BrowserRouter>
+          <AccessibilityPanel />
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />

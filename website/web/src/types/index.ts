@@ -19,6 +19,15 @@ export interface UserProfile {
   businessCategory?: string;
   businessCity?: string;
   businessPhone?: string;
+  accessibilitySettings?: {
+    enabled?: boolean;
+    fontScale?: number;
+    highContrast?: boolean;
+    spacing?: boolean;
+    simple?: boolean;
+    reading?: boolean;
+    reduceMotion?: boolean;
+  };
 }
 
 export interface User {
