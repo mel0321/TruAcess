@@ -17,14 +17,25 @@ export function LinkedAccountPanel({ manage = true }: { manage?: boolean }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<'load' | 'save' | 'switch' | 'unlink' | null>(null);
 
   useEffect(() => {
     let active = true;
+    setError('');
+    setNotice('');
+    setLoadingAction('load');
+    setLoading(true);
     api.get<{ account: typeof linkedAccount }>('/users/linked-account')
       .then(({ data }) => { if (active) setLinkedAccount(data.account); })
       .catch((loadError: unknown) => {
         console.error('Erro ao carregar conta conectada:', loadError);
         if (active) setError('Não foi possível verificar se há outro perfil conectado.');
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+          setLoadingAction(null);
+        }
       });
     return () => { active = false; };
   }, [user?.id]);
@@ -33,6 +44,7 @@ export function LinkedAccountPanel({ manage = true }: { manage?: boolean }) {
     event.preventDefault();
     if (!user || !mode) return;
     setLoading(true);
+    setLoadingAction('save');
     setError('');
     setNotice('');
     try {
@@ -50,25 +62,31 @@ export function LinkedAccountPanel({ manage = true }: { manage?: boolean }) {
       setError(message?.message || message?.error || 'Não foi possível conectar os perfis.');
     } finally {
       setLoading(false);
+      setLoadingAction(null);
     }
   };
 
   const handleSwitch = async () => {
     setLoading(true);
+    setLoadingAction('switch');
     setError('');
     try {
       const switchedUser = await switchLinkedAccount();
-      navigate(switchedUser.user_type === 'BUSINESS' ? '/dashboard' : '/perfil');
+      const travelerNeedsOnboarding = switchedUser.user_type === 'TRAVELER' && !switchedUser.profile?.profileCompleted;
+      navigate(switchedUser.user_type === 'BUSINESS' ? '/dashboard' : travelerNeedsOnboarding ? '/onboarding' : '/perfil');
     } catch (switchError: unknown) {
       console.error('Erro ao alternar perfil:', switchError);
       setError('Não foi possível alternar para o perfil conectado. Tente novamente.');
     } finally {
       setLoading(false);
+      setLoadingAction(null);
     }
   };
 
   const handleUnlink = async () => {
+    if (!window.confirm('Desconectar os perfis? As duas contas continuarão existindo e poderão ser conectadas novamente.')) return;
     setLoading(true);
+    setLoadingAction('unlink');
     setError('');
     try {
       await api.delete('/users/linked-account');
@@ -79,6 +97,7 @@ export function LinkedAccountPanel({ manage = true }: { manage?: boolean }) {
       setError('Não foi possível desconectar os perfis. Tente novamente.');
     } finally {
       setLoading(false);
+      setLoadingAction(null);
     }
   };
 
@@ -101,9 +120,9 @@ export function LinkedAccountPanel({ manage = true }: { manage?: boolean }) {
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             <button type="button" onClick={() => void handleSwitch()} disabled={loading} className="btn-plan" style={{ border: 0, cursor: 'pointer' }}>
-              {loading ? 'Alternando...' : `Mudar para ${linkedAccount.user_type === 'BUSINESS' ? 'estabelecimento' : 'viajante'}`}
+              {loadingAction === 'switch' ? 'Alternando...' : `Mudar para ${linkedAccount.user_type === 'BUSINESS' ? 'estabelecimento' : 'viajante'}`}
             </button>
-            {manage && <button type="button" onClick={() => void handleUnlink()} disabled={loading} style={{ border: '1px solid #CBD5E1', borderRadius: 8, padding: '10px 14px', color: '#334155', background: 'white', cursor: 'pointer' }}>Desconectar</button>}
+            {manage && <button type="button" onClick={() => void handleUnlink()} disabled={loading} style={{ border: '1px solid #CBD5E1', borderRadius: 8, padding: '10px 14px', color: '#334155', background: 'white', cursor: 'pointer' }}>{loadingAction === 'unlink' ? 'Desconectando...' : 'Desconectar'}</button>}
           </div>
         </div>
       ) : manage ? (
@@ -124,7 +143,7 @@ export function LinkedAccountPanel({ manage = true }: { manage?: boolean }) {
               <input required type="password" minLength={6} autoComplete={mode === 'connect' ? 'current-password' : 'new-password'} value={password} onChange={(event) => setPassword(event.target.value)} />
             </label>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <button type="submit" disabled={loading} className="btn-plan" style={{ border: 0, cursor: 'pointer' }}>{loading ? 'Salvando...' : mode === 'connect' ? 'Conectar conta' : 'Criar e conectar'}</button>
+              <button type="submit" disabled={loading} className="btn-plan" style={{ border: 0, cursor: 'pointer' }}>{loadingAction === 'save' ? 'Salvando...' : mode === 'connect' ? 'Conectar conta' : 'Criar e conectar'}</button>
               <button type="button" disabled={loading} onClick={() => setMode(null)} style={{ border: '1px solid #CBD5E1', borderRadius: 8, padding: '10px 14px', background: 'white', cursor: 'pointer' }}>Cancelar</button>
             </div>
           </form>
