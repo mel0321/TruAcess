@@ -50,9 +50,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     root.classList.toggle('a11y-hearing', accessibilityMode && disabilities.includes('HEARING'));
     root.classList.toggle('a11y-calm', accessibilityMode && (disabilities.includes('COGNITIVE') || disabilities.includes('NEURODIVERGENT')));
     root.dataset.accessibilityProfile = disabilities.join(',');
+    const stored = JSON.parse(localStorage.getItem('@TruAcess:a11y') || '{}');
+    root.dataset.fontScale = String(stored.fontScale || 100);
+    root.classList.toggle('a11y-font-large', (stored.fontScale || 100) >= 125);
+    root.classList.toggle('a11y-font-small', (stored.fontScale || 100) <= 85);
+    root.classList.toggle('a11y-contrast', stored.highContrast === true);
+    root.classList.toggle('a11y-spacing', stored.spacing === true);
+    root.classList.toggle('a11y-simple', stored.simple === true);
+    root.classList.toggle('a11y-read', stored.reading === true);
 
     return () => {
-      root.classList.remove('a11y-enabled', 'a11y-visual', 'a11y-motor', 'a11y-hearing', 'a11y-calm');
+      root.classList.remove('a11y-enabled', 'a11y-visual', 'a11y-motor', 'a11y-hearing', 'a11y-calm', 'a11y-font-large', 'a11y-font-small', 'a11y-contrast', 'a11y-spacing', 'a11y-simple', 'a11y-read');
       delete root.dataset.accessibilityProfile;
     };
   }, [user?.id, user?.user_type, user?.profile?.disabilities, user?.profile?.accessibilityMode]);

@@ -4,6 +4,7 @@ import userRoutes from './user.routes.js';
 import placeRoutes from './place.routes.js';
 import reviewRoutes from './review.routes.js';
 import businessRoutes from './business.routes.js';
+import socialRoutes from './social.routes.js';
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use('/users', userRoutes);
 router.use('/places', placeRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/business', businessRoutes);
+router.use('/social', socialRoutes);
 
 export default router;
