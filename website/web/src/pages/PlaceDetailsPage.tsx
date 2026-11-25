@@ -47,6 +47,7 @@ export function PlaceDetailsPage() {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReview, setNewReview] = useState({ experience_rating: 5, accessibility_rating: 5, comment_text: '', criteria_ratings: { atendimento: 5, limpeza: 5, estrutura: 5, custo_beneficio: 5, localizacao: 5, organizacao: 5, qualidade: 5 } as Record<string, number>, accessibility_details: {} as NonNullable<Review['accessibility_details']> });
   const [submitting, setSubmitting] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -148,6 +149,11 @@ export function PlaceDetailsPage() {
   ].filter(x => x.show);
   const accessibilityPhotos = (place.photos || []).filter((photo) => photo.photo_type === 'ACCESSIBILITY');
   const placePhotos = (place.photos || []).filter((photo) => photo.photo_type === 'PLACE');
+  const displayedPlacePhotos = placePhotos.length
+    ? placePhotos
+    : place.main_image
+      ? [{ id: -1, place_id: place.id, photo_url: place.main_image, photo_type: 'PLACE' as const, accessibility_category: null, created_at: '' }]
+      : [];
   const evidenceLabels: Record<string, string> = {
     ACCESS_ROUTE: 'Rota acessível',
     RAMP: 'Rampa',
@@ -295,12 +301,19 @@ export function PlaceDetailsPage() {
                   </div>
               </div>
 
-            {placePhotos.length > 0 && (
-              <section style={{ background: 'white', padding: 32, borderRadius: 16, boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)', marginBottom: 24 }}>
+            {displayedPlacePhotos.length > 0 && (
+              <section className="place-gallery" style={{ background: 'white', padding: 32, borderRadius: 16, boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)', marginBottom: 24 }}>
                 <h2 style={{ color: '#052659', marginBottom: 18 }}>Fotos do local</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }}>
-                  {placePhotos.map((photo, index) => (
-                    <img key={photo.id} src={photo.photo_url} alt={`Foto ${index + 1} de ${place.establishment_name}`} style={{ width: '100%', height: 170, objectFit: 'cover', borderRadius: 12 }} />
+                <div className="place-gallery-main">
+                  <button type="button" aria-label="Foto anterior" onClick={() => setGalleryIndex((galleryIndex - 1 + displayedPlacePhotos.length) % displayedPlacePhotos.length)}>‹</button>
+                  <img src={displayedPlacePhotos[galleryIndex % displayedPlacePhotos.length].photo_url} alt={`Foto ${galleryIndex + 1} de ${place.establishment_name}`} />
+                  <button type="button" aria-label="Próxima foto" onClick={() => setGalleryIndex((galleryIndex + 1) % displayedPlacePhotos.length)}>›</button>
+                </div>
+                <div className="place-gallery-thumbs">
+                  {displayedPlacePhotos.map((photo, index) => (
+                    <button type="button" key={photo.id} className={galleryIndex === index ? 'is-active' : ''} onClick={() => setGalleryIndex(index)} aria-label={`Mostrar foto ${index + 1}`}>
+                      <img src={photo.photo_url} alt="" />
+                    </button>
                   ))}
                 </div>
               </section>

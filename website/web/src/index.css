@@ -1911,11 +1911,24 @@ html:focus-within :focus-visible { outline: 3px solid #ffbf00; outline-offset: 3
 .a11y-master,.a11y-option { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid #e2e8f0 }.a11y-master span { display:grid }.a11y-master small { color:#64748b }.a11y-master input,.a11y-option input { width:20px;height:20px }
 .a11y-control { display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid #e2e8f0 }.a11y-control div { display:flex;align-items:center;gap:8px }.a11y-control button { width:40px;height:40px;border:1px solid #cbd5e1;border-radius:8px;background:white;color:#052659;font-weight:900 }
 html.a11y-panel-enabled { font-size: var(--a11y-font-scale,100%) }
+.place-gallery-main { position:relative; height:420px; overflow:hidden; border-radius:14px; background:#eef3f7 }
+.place-gallery-main img { width:100%; height:100%; object-fit:cover }
+.place-gallery-main button { position:absolute; z-index:2; top:50%; width:44px; height:44px; transform:translateY(-50%); border:1px solid rgba(255,255,255,.8); border-radius:50%; background:rgba(5,38,89,.84); color:white; font-size:28px; line-height:1; cursor:pointer }
+.place-gallery-main button:first-child { left:14px }.place-gallery-main button:last-child { right:14px }
+.place-gallery-thumbs { display:grid; grid-template-columns:repeat(auto-fit,minmax(68px,110px)); gap:8px; margin-top:12px }
+.place-gallery-thumbs button { height:72px; padding:3px; border:2px solid transparent; border-radius:9px; background:white; cursor:pointer }.place-gallery-thumbs button.is-active { border-color:#087f8c }.place-gallery-thumbs img { width:100%; height:100%; object-fit:cover; border-radius:6px }
+@media(max-width:640px){ .place-gallery-main{height:260px}.place-gallery-thumbs{grid-template-columns:repeat(4,1fr)}.place-gallery-thumbs button{height:58px} }
 .a11y-master button[role="switch"] { width:52px; height:30px; padding:3px; border:0; border-radius:999px; background:#cbd5e1; cursor:pointer }.a11y-master button[role="switch"] span { display:block;width:24px;height:24px;border-radius:50%;background:white;box-shadow:0 2px 6px rgba(5,38,89,.18);transition:.2s }.a11y-master button[role="switch"].is-on { background:#087f8c }.a11y-master button[role="switch"].is-on span { transform:translateX(22px) }.a11y-options-grid { display:grid;gap:0 }.a11y-option { min-height:44px }
-html.a11y-high-contrast body { background:#000!important;color:#fff!important } html.a11y-high-contrast :is(.header,header,main,section,article,aside,.card,.destination-card,.social-profile,.social-account) { background:#000!important;color:#fff!important;border-color:#fff!important } html.a11y-high-contrast :is(a,button,input,select,textarea) { border:2px solid #fff!important;color:#fff!important;background:#000!important } html.a11y-high-contrast :is(h1,h2,h3,h4,strong,p,span,small,label) { color:#fff!important }
-html.a11y-expanded-spacing :is(main,section,article,form,.destination-card,.social-profile) { gap:20px!important;padding-block:20px!important } html.a11y-expanded-spacing :is(button,a,input,select,textarea) { min-height:48px!important;margin-block:4px!important }
-html.a11y-simple-layout .destinations-art,.a11y-simple-layout .destinations-hero-art { display:none!important } html.a11y-simple-layout :is(.destination-card,.social-photo,.place-details-page article) { border-radius:6px!important;box-shadow:none!important }
-html.a11y-reading-mode { letter-spacing:.02em!important } html.a11y-reading-mode :is(p,li,label,small) { max-width:70ch!important;line-height:1.9!important }
+html.a11y-high-contrast body { background:#f7fafc!important;color:#0f172a!important }
+html.a11y-high-contrast :is(.header,header,main,section,article,aside,.card,.destination-card,.social-profile,.social-account) { background:#fff!important;color:#0f172a!important;border-color:#94a3b8!important }
+html.a11y-high-contrast :is(a,button,input,select,textarea) { border:2px solid #052659!important;color:#052659!important;background:#fff!important }
+html.a11y-high-contrast :is(h1,h2,h3,h4,strong,p,span,small,label) { color:#0f172a!important }
+html.a11y-expanded-spacing :is(main,section,article,form,.destination-card,.social-profile) { gap:12px!important;padding-block:12px!important }
+html.a11y-expanded-spacing :is(button,a,input,select,textarea) { min-height:48px!important;margin-block:2px!important }
+html.a11y-simple-layout .destinations-art,.a11y-simple-layout .destinations-hero-art { display:none!important }
+html.a11y-simple-layout :is(.destination-card,.social-photo,.place-details-page article) { border-radius:10px!important;box-shadow:0 4px 12px rgba(5,38,89,.08)!important }
+html.a11y-reading-mode { letter-spacing:.01em!important }
+html.a11y-reading-mode :is(p,li,label,small) { max-width:70ch!important;line-height:1.75!important }
 html.a11y-reduced-motion *,html.a11y-reduced-motion *::before,html.a11y-reduced-motion *::after { animation:none!important;transition:none!important;scroll-behavior:auto!important }
 html.a11y-enabled img { filter: contrast(1.08); }
 html.a11y-calm .about-hero::before, html.a11y-calm .destinations-hero::before { opacity: 0.08; }
