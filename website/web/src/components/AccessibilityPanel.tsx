@@ -38,12 +38,14 @@ export function AccessibilityPanel() {
       </button>
       {open && (
         <aside className="a11y-panel" aria-label="Painel de acessibilidade">
-          <div className="a11y-panel-head"><div><span>MODO DE ACESSO</span><h2>Acessibilidade</h2></div><button type="button" aria-label="Fechar painel" onClick={() => setOpen(false)}>×</button></div>
-          <label className="a11y-master"><span><strong>Ativar adaptações</strong><small>Aplicar em todas as páginas</small></span><input type="checkbox" checked={settings.enabled} onChange={() => toggle('enabled')} /></label>
-          <div className="a11y-control"><span>Tamanho da fonte</span><div><button type="button" onClick={() => save({...settings, fontScale: Math.max(85, settings.fontScale - 10)})}>A−</button><strong>{settings.fontScale}%</strong><button type="button" onClick={() => save({...settings, fontScale: Math.min(150, settings.fontScale + 10)})}>A+</button></div></div>
-          {([
-            ['highContrast','Alto contraste'],['spacing','Mais espaçamento'],['simple','Navegação simplificada'],['reading','Modo de leitura'],['reduceMotion','Reduzir animações']
-          ] as const).map(([name,label]) => <label className="a11y-option" key={name}><span>{label}</span><input type="checkbox" checked={settings[name]} onChange={() => toggle(name)} /></label>)}
+          <div className="a11y-panel-head"><div><span>PREFERÊNCIAS</span><h2>Acessibilidade</h2></div><button type="button" aria-label="Fechar painel" onClick={() => setOpen(false)}>×</button></div>
+          <label className="a11y-master"><span><strong>Ativar modo acessível</strong><small>Aplica ajustes em todas as páginas</small></span><button type="button" role="switch" aria-checked={settings.enabled} className={settings.enabled ? 'is-on' : ''} onClick={() => toggle('enabled')}><span /></button></label>
+          <div className="a11y-control"><span>Tamanho do texto</span><div><button type="button" aria-label="Diminuir fonte" onClick={() => save({...settings, fontScale: Math.max(85, settings.fontScale - 10)})}>A−</button><strong>{settings.fontScale}%</strong><button type="button" aria-label="Aumentar fonte" onClick={() => save({...settings, fontScale: Math.min(150, settings.fontScale + 10)})}>A+</button></div></div>
+          <div className="a11y-options-grid">
+            {([
+              ['highContrast','Alto contraste'],['spacing','Mais espaçamento'],['simple','Interface simples'],['reading','Facilidade de leitura'],['reduceMotion','Reduzir movimentos']
+            ] as const).map(([name,label]) => <label className="a11y-option" key={name}><span>{label}</span><input type="checkbox" checked={settings[name]} onChange={() => toggle(name)} /></label>)}
+          </div>
         </aside>
       )}
     </>

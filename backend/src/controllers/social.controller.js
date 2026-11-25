@@ -41,6 +41,41 @@ export async function createPost(req, res, next) {
   } catch (error) { next(error); }
 }
 
+export async function listPostComments(req, res, next) {
+  try {
+    const comments = await db('social_comments as c')
+      .leftJoin('users as u', 'u.id', 'c.user_id')
+      .select('c.id', 'c.comment', 'c.created_at', 'u.full_name as author_name')
+      .where('c.post_id', Number(req.params.postId)).orderBy('c.created_at', 'asc');
+    res.json({ comments });
+  } catch (error) { next(error); }
+}
+
+export async function listRelationships(req, res, next) {
+  try {
+    const userId = Number(req.params.userId);
+    const followers = await db('social_follows as f').leftJoin('users as u', 'u.id', 'f.follower_id')
+      .select('u.id', 'u.full_name', 'u.profile_picture').where('f.following_id', userId);
+    const following = await db('social_follows as f').leftJoin('users as u', 'u.id', 'f.following_id')
+      .select('u.id', 'u.full_name', 'u.profile_picture').where('f.follower_id', userId);
+    res.json({ followers, following });
+  } catch (error) { next(error); }
+}
+
+export async function listUserPosts(req, res, next) {
+  try {
+    const userId = Number(req.params.userId);
+    const posts = await db('social_posts as p').leftJoin('users as u', 'u.id', 'p.user_id')
+      .select('p.*', 'u.full_name as author_name', 'u.profile_picture as author_avatar')
+      .where('p.user_id', userId).orderBy('p.created_at', 'desc');
+    for (const post of posts) {
+      post.photos = await db('social_post_photos').where({ post_id: post.id }).select('id', 'photo_url');
+      post.hashtags = post.hashtags ? JSON.parse(post.hashtags) : [];
+    }
+    res.json({ posts });
+  } catch (error) { next(error); }
+}
+
 export async function toggleLike(req, res, next) {
   try {
     const postId = Number(req.params.postId);

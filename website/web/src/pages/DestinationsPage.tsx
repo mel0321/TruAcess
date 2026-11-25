@@ -44,6 +44,7 @@ export function DestinationsPage() {
   const [accessibleOnly, setAccessibleOnly] = useState(false);
   const [cityFilter, setCityFilter] = useState('');
   const [accessibilityLevelFilter, setAccessibilityLevelFilter] = useState('');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -207,7 +208,10 @@ export function DestinationsPage() {
               </div>
             </div>
 
-            <div className="destination-extra-filters">
+            <button type="button" className="mobile-filter-trigger" onClick={() => setMobileFiltersOpen((open) => !open)} aria-expanded={mobileFiltersOpen}>
+              Filtros{(category || categoryDetail || cityFilter || accessibilityLevelFilter || minimumRating) ? ' • ativos' : ''}
+            </button>
+            <div className={`destination-extra-filters${mobileFiltersOpen ? ' is-mobile-open' : ''}`}>
               {category && (
                 <label>
                   Tipo de local
@@ -252,11 +256,11 @@ export function DestinationsPage() {
                       type="button"
                       key={rating}
                       className={`rating-filter-chip${minimumRating === rating ? ' is-active' : ''}`}
-                      aria-label={`Mostrar locais com média de pelo menos ${rating} de 5 estrelas. ${ratingCounts[rating]} locais correspondem`}
+                      aria-label={`Mostrar locais com média de pelo menos ${rating} de 5 pontos. ${ratingCounts[rating]} locais correspondem`}
                       aria-pressed={minimumRating === rating}
                       onClick={() => setMinimumRating(minimumRating === rating ? '' : rating)}
                     >
-                      <span aria-hidden="true">★</span> {rating}+ <span className="rating-filter-count">{ratingCounts[rating]}</span>
+                      {rating}+ pontos <span className="rating-filter-count">{ratingCounts[rating]}</span>
                     </button>
                   ))}
                 </div>
@@ -310,7 +314,7 @@ export function DestinationsPage() {
                         <div className="destination-card-meta">
                           <span>{getPlaceCategoryDetailLabel(place.category_detail) || getPlaceCategoryLabel(place.category)}</span>
                           {place.average_rating !== null && place.average_rating !== undefined
-                            ? <span className="destination-rating">★ {place.average_rating.toFixed(1)} ({place.total_reviews || 0})</span>
+                            ? <span className="destination-rating">{place.average_rating.toFixed(1)} / 5 ({place.total_reviews || 0})</span>
                             : <span className="destination-no-rating">Ainda sem avaliações</span>}
                           {place.accessibility_level && <span className={`destination-level level-${place.accessibility_level.toLowerCase()}`}>{place.accessibility_level === 'INITIAL' ? 'Inicial' : place.accessibility_level === 'INTERMEDIATE' ? 'Intermediário' : 'Avançado'}</span>}
                         </div>

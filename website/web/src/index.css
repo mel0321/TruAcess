@@ -1683,6 +1683,7 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
   .place-form-actions { align-items: stretch; flex-direction: column-reverse; }
   .place-form-actions > * { text-align: center; }
 }
+.mobile-filter-trigger { display: none; }
 .destination-extra-filters {
   display: flex;
   justify-content: space-between;
@@ -1847,7 +1848,9 @@ body { font-family: 'Poppins', sans-serif; background: #f8fafc; color: #0f172a; 
   .social-photo { height: 180px; }
   .social-photo div { padding: 22px 8px 8px; }
   .social-photo strong { font-size: 11px; }
-  .destination-extra-filters { justify-content: flex-start; align-items: stretch; }
+  .mobile-filter-trigger { display: block; width: 100%; min-height: 48px; margin: 16px 0 8px; border: 1px solid #b9c9d7; border-radius: 12px; background: white; color: #052659; font: inherit; font-weight: 800; }
+  .destination-extra-filters { display: none; justify-content: flex-start; align-items: stretch; }
+  .destination-extra-filters.is-mobile-open { display: grid; grid-template-columns: 1fr; }
   .destination-extra-filters label { flex: 1; min-width: 0; }
   .destination-extra-filters select { min-width: 0; width: 100%; }
   .destination-rating-filter { flex: 1 1 100%; }
@@ -1900,6 +1903,7 @@ html.a11y-enabled :is(.nav-link, .category-chip, .rating-filter-chip) { padding:
 html.a11y-enabled .container { max-width: none; width: 100%; }
 html.a11y-enabled .destination-card { border: 2px solid #052659; }
 html.a11y-enabled .destination-grid, html.a11y-enabled .destination-categories { gap: 16px; }
+html:focus-within :focus-visible { outline: 3px solid #ffbf00; outline-offset: 3px; }
 .a11y-float-button { position: fixed; right: 18px; bottom: 18px; z-index: 900; display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px 14px 8px 8px; border: 2px solid white; border-radius: 999px; background: #052659; color: white; box-shadow: 0 10px 30px rgba(5,38,89,.28); cursor: pointer; }
 .a11y-float-button span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #2ac2d2; font-weight: 900; }
 .a11y-panel { position: fixed; right: 18px; bottom: 78px; z-index: 901; width: min(360px, calc(100vw - 36px)); max-height: calc(100vh - 110px); overflow: auto; padding: 18px; border: 1px solid #b8ccd9; border-radius: 18px; background: white; box-shadow: 0 24px 60px rgba(5,38,89,.22); }
@@ -1907,6 +1911,7 @@ html.a11y-enabled .destination-grid, html.a11y-enabled .destination-categories {
 .a11y-master,.a11y-option { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid #e2e8f0 }.a11y-master span { display:grid }.a11y-master small { color:#64748b }.a11y-master input,.a11y-option input { width:20px;height:20px }
 .a11y-control { display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid #e2e8f0 }.a11y-control div { display:flex;align-items:center;gap:8px }.a11y-control button { width:40px;height:40px;border:1px solid #cbd5e1;border-radius:8px;background:white;color:#052659;font-weight:900 }
 html.a11y-panel-enabled { font-size: var(--a11y-font-scale,100%) }
+.a11y-master button[role="switch"] { width:52px; height:30px; padding:3px; border:0; border-radius:999px; background:#cbd5e1; cursor:pointer }.a11y-master button[role="switch"] span { display:block;width:24px;height:24px;border-radius:50%;background:white;box-shadow:0 2px 6px rgba(5,38,89,.18);transition:.2s }.a11y-master button[role="switch"].is-on { background:#087f8c }.a11y-master button[role="switch"].is-on span { transform:translateX(22px) }.a11y-options-grid { display:grid;gap:0 }.a11y-option { min-height:44px }
 html.a11y-high-contrast body { background:#000!important;color:#fff!important } html.a11y-high-contrast :is(.header,header,main,section,article,aside,.card,.destination-card,.social-profile,.social-account) { background:#000!important;color:#fff!important;border-color:#fff!important } html.a11y-high-contrast :is(a,button,input,select,textarea) { border:2px solid #fff!important;color:#fff!important;background:#000!important } html.a11y-high-contrast :is(h1,h2,h3,h4,strong,p,span,small,label) { color:#fff!important }
 html.a11y-expanded-spacing :is(main,section,article,form,.destination-card,.social-profile) { gap:20px!important;padding-block:20px!important } html.a11y-expanded-spacing :is(button,a,input,select,textarea) { min-height:48px!important;margin-block:4px!important }
 html.a11y-simple-layout .destinations-art,.a11y-simple-layout .destinations-hero-art { display:none!important } html.a11y-simple-layout :is(.destination-card,.social-photo,.place-details-page article) { border-radius:6px!important;box-shadow:none!important }

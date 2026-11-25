@@ -4,7 +4,7 @@ import api from '../services/api';
 import { Header } from '../components/Header';
 import { useFavorites } from '../context/FavoritesContext';
 import { useAuth } from '../context/AuthContext';
-import { IconRamp, IconBrain, IconLibras, IconBraille, IconMapPin, IconStar, IconHeart, IconMessageCircle, IconDog, IconX, IconPlus } from '../components/Icons';
+import { IconRamp, IconBrain, IconLibras, IconBraille, IconMapPin, IconHeart, IconMessageCircle, IconDog, IconX, IconPlus } from '../components/Icons';
 import { getPlaceCategoryLabel } from '../utils/placeCategories';
 import { reviewAccessibilityAnswerLabel, reviewAccessibilityAnswerOptions, reviewAccessibilityQuestions } from '../utils/reviewQuestionnaire';
 import type { Place, Review } from '../types';
@@ -46,8 +46,6 @@ export function PlaceDetailsPage() {
   const [reviewError, setReviewError] = useState('');
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReview, setNewReview] = useState({ experience_rating: 5, accessibility_rating: 5, comment_text: '', criteria_ratings: { atendimento: 5, limpeza: 5, estrutura: 5, custo_beneficio: 5, localizacao: 5, organizacao: 5, qualidade: 5 } as Record<string, number>, accessibility_details: {} as NonNullable<Review['accessibility_details']> });
-  const [hoveredExp, setHoveredExp] = useState(0);
-  const [hoveredAcc, setHoveredAcc] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {

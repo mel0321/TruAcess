@@ -49,7 +49,7 @@ export function HomePage() {
           <div className="home-hero-search" role="search">
             <IconMapPin width={22} height={22} />
             <Link to="/destinos">Pesquisar destino, cidade ou tipo de local</Link>
-            <Link to="/destinos" className="home-search-button">Explorar agora</Link>
+            
           </div>
           <div className="home-hero-benefits" aria-label="Benefícios da TruAcess">
             <span><IconRamp width={18} height={18} /> Recursos de acesso</span>
@@ -57,20 +57,6 @@ export function HomePage() {
             <span><IconShield width={18} height={18} /> Informações transparentes</span>
           </div>
         </div>
-        <aside className="home-hero-preview" aria-label="Prévia dos recursos de um destino">
-          <div className="home-preview-image">
-            <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=900&q=85" alt="Paisagem natural para inspirar a próxima viagem" />
-            <span>Seleção TruAcess</span>
-          </div>
-          <div className="home-preview-content">
-            <p><IconMapPin width={15} height={15} /> Informações antes de chegar</p>
-            <h2>Planeje com mais tranquilidade.</h2>
-            <div className="home-preview-resources">
-              <span>✓ Rota sem degraus</span><span>✓ Banheiro acessível</span><span>✓ Atendimento inclusivo</span>
-            </div>
-            <Link to="/destinos">Conhecer destinos <span aria-hidden="true">→</span></Link>
-          </div>
-        </aside>
       </section>
 
       <section className="home-trust-strip" aria-label="Como a TruAcess ajuda">
@@ -116,16 +102,14 @@ export function HomePage() {
                   </div>
                   {(place.has_sign_language_interpreter || place.has_braille_signage) && (
                     <div className="stars" aria-label="Recursos de acessibilidade visual ou auditiva">
-                      {[0, 1, 2, 3, 4].map((star) => (
-                        <IconStar key={star} width={14} height={14} fill="#F59E0B" stroke="#F59E0B" />
-                      ))}
+                      <span>Recursos de comunicação disponíveis</span>
                     </div>
                   )}
                   <div className="destination-title">{place.establishment_name}</div>
                   <p className="home-place-location"><IconMapPin width={15} height={15} /> {place.city}{place.state ? `, ${place.state}` : ''}</p>
                   <div className="home-place-footer">
                     <span>{getPlaceCategoryLabel(place.category)}</span>
-                    <span>{place.average_rating != null ? `★ ${place.average_rating.toFixed(1)}` : 'Conhecer local'}</span>
+                    <span>{place.average_rating != null ? `${place.average_rating.toFixed(1)} / 5` : 'Conhecer local'}</span>
                   </div>
                 </div>
               </Link>
