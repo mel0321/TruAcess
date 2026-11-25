@@ -306,7 +306,7 @@ export function PlaceDetailsPage() {
                 <h2 style={{ color: '#052659', marginBottom: 18 }}>Fotos do local</h2>
                 <div className="place-gallery-main">
                   <button type="button" aria-label="Foto anterior" onClick={() => setGalleryIndex((galleryIndex - 1 + displayedPlacePhotos.length) % displayedPlacePhotos.length)}>‹</button>
-                  <img src={displayedPlacePhotos[galleryIndex % displayedPlacePhotos.length].photo_url} alt={`Foto ${galleryIndex + 1} de ${place.establishment_name}`} />
+                  <img src={displayedPlacePhotos[galleryIndex % displayedPlacePhotos.length].photo_url} alt={`Foto ${galleryIndex + 1} de ${place.establishment_name}`} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = place.main_image || 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=900&q=80'; }} />
                   <button type="button" aria-label="Próxima foto" onClick={() => setGalleryIndex((galleryIndex + 1) % displayedPlacePhotos.length)}>›</button>
                 </div>
                 <div className="place-gallery-thumbs">
