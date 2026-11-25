@@ -145,7 +145,7 @@ export async function listPlaces(req, res, next) {
     }
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
+    const limitNum = Math.max(1, Math.min(500, parseInt(limit, 10) || 20));
     const offset = (pageNum - 1) * limitNum;
 
     const places = await query.limit(limitNum).offset(offset);

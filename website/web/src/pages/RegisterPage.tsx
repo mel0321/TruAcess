@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import type { UserType } from '../types';
+import type { DisabilityType, UserType } from '../types';
 import { IconUser, IconBuilding, IconMail, IconLock, IconUserCircle } from '../components/Icons';
 
 export function RegisterPage() {
-  const [form, setForm] = useState({ full_name: '', email: '', password: '', confirmPassword: '', user_type: 'TRAVELER' as UserType });
+  const [form, setForm] = useState({
+    full_name: '', email: '', password: '', confirmPassword: '', user_type: 'TRAVELER' as UserType,
+    disabilityDeclared: false,
+    disabilities: [] as DisabilityType[],
+    businessCategory: '', businessCity: '', businessPhone: ''
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
@@ -31,7 +36,10 @@ export function RegisterPage() {
       full_name: form.full_name,
       email: form.email,
       password: form.password,
-      user_type: form.user_type
+      user_type: form.user_type,
+      profile: form.user_type === 'TRAVELER'
+        ? { disabilityDeclared: form.disabilityDeclared, disabilities: form.disabilities }
+        : { businessCategory: form.businessCategory, businessCity: form.businessCity, businessPhone: form.businessPhone }
     });
     
     if (result.success) {
@@ -70,6 +78,45 @@ export function RegisterPage() {
               </button>
             </div>
           </div>
+
+          {form.user_type === 'TRAVELER' ? (
+            <fieldset style={{margin: '0 0 20px', padding: '16px', border: '1px solid #DDE8F0', borderRadius: '12px'}}>
+              <legend style={{padding: '0 8px', color: '#052659', fontWeight: 700, fontSize: '14px'}}>Você possui alguma deficiência ou necessidade de acessibilidade?</legend>
+              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px'}}>
+                {([
+                  ['PHYSICAL', 'Física / mobilidade'], ['VISUAL', 'Visual'], ['HEARING', 'Auditiva'],
+                  ['COGNITIVE', 'Cognitiva'], ['NEURODIVERGENT', 'Neurodivergente'], ['NONE', 'Não possuo']
+                ] as [DisabilityType, string][]).map(([value, label]) => (
+                  <label key={value} style={{display: 'flex', gap: '8px', alignItems: 'center', padding: '10px', borderRadius: '8px', background: form.disabilities.includes(value) ? '#E8F8FA' : '#F8FAFC', color: '#334155', fontSize: '13px'}}>
+                    <input type="checkbox" checked={form.disabilities.includes(value)} onChange={(event) => setForm(current => ({
+                      ...current,
+                      disabilityDeclared: true,
+                      disabilities: event.target.checked
+                        ? [...current.disabilities.filter(item => item !== 'NONE'), value === 'NONE' ? 'NONE' : value]
+                        : current.disabilities.filter(item => item !== value)
+                    }))} /> {label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ) : (
+            <fieldset style={{margin: '0 0 20px', padding: '16px', border: '1px solid #DDE8F0', borderRadius: '12px'}}>
+              <legend style={{padding: '0 8px', color: '#052659', fontWeight: 700, fontSize: '14px'}}>Informações do estabelecimento</legend>
+              <div style={{display: 'grid', gap: '10px'}}>
+                <label style={{display: 'grid', gap: '6px', color: '#334155', fontSize: '13px', fontWeight: 600}}>Categoria
+                  <select required value={form.businessCategory} onChange={e => setForm({...form, businessCategory: e.target.value})} style={{padding: '12px', border: '1px solid #CBD5E1', borderRadius: '8px'}}>
+                    <option value="">Selecione</option><option>Hospedagem</option><option>Gastronomia</option><option>Atração turística</option><option>Compras</option><option>Saúde e bem-estar</option><option>Transporte</option><option>Educação</option><option>Entretenimento</option><option>Esportes e lazer</option><option>Espaço religioso</option><option>Serviço público</option><option>Outro</option>
+                  </select>
+                </label>
+                <label style={{display: 'grid', gap: '6px', color: '#334155', fontSize: '13px', fontWeight: 600}}>Cidade
+                  <input required value={form.businessCity} onChange={e => setForm({...form, businessCity: e.target.value})} placeholder="Cidade do estabelecimento" style={{padding: '12px', border: '1px solid #CBD5E1', borderRadius: '8px'}} />
+                </label>
+                <label style={{display: 'grid', gap: '6px', color: '#334155', fontSize: '13px', fontWeight: 600}}>Telefone
+                  <input value={form.businessPhone} onChange={e => setForm({...form, businessPhone: e.target.value})} placeholder="(00) 00000-0000" style={{padding: '12px', border: '1px solid #CBD5E1', borderRadius: '8px'}} />
+                </label>
+              </div>
+            </fieldset>
+          )}
 
           <div style={{marginBottom: '16px'}}>
             <label style={{display: 'block', fontWeight: '600', marginBottom: '8px', fontSize: '14px', color: '#0F172A'}}>Nome completo</label>

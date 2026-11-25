@@ -42,6 +42,8 @@ export function DestinationsPage() {
   const [categoryDetail, setCategoryDetail] = useState('');
   const [minimumRating, setMinimumRating] = useState('');
   const [accessibleOnly, setAccessibleOnly] = useState(false);
+  const [cityFilter, setCityFilter] = useState('');
+  const [accessibilityLevelFilter, setAccessibilityLevelFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -51,7 +53,7 @@ export function DestinationsPage() {
 
     try {
       const response = await api.get<{ places: Place[] }>('/places', {
-        params: { limit: 100 },
+        params: { limit: 500 },
       });
       setPlaces(response.data.places);
     } catch (loadError) {
@@ -81,8 +83,10 @@ export function DestinationsPage() {
       place.has_adapted_bathroom || place.has_braille_signage ||
       place.has_sign_language_interpreter || place.allows_guide_dog
     );
+    const matchesCity = !cityFilter || place.city === cityFilter;
+    const matchesLevel = !accessibilityLevelFilter || place.accessibility_level === accessibilityLevelFilter;
 
-    return matchesSearch && matchesCategory && matchesCategoryDetail && matchesAccessibility;
+    return matchesSearch && matchesCategory && matchesCategoryDetail && matchesAccessibility && matchesCity && matchesLevel;
   });
   const activeAccessibilityNeeds = user?.user_type === 'TRAVELER' && Boolean(
     user.profile?.disabilities?.some((item) => item !== 'NONE' && item !== 'PREFER_NOT_SAY') ||
@@ -106,6 +110,7 @@ export function DestinationsPage() {
     )).length,
   ])) as Record<(typeof ratingOptions)[number], number>;
   const detailCategories = category ? placeCategoryDetails[category] || [] : [];
+  const cityOptions = [...new Set(places.map((place) => place.city).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
   return (
     <div className="destinations-page">
