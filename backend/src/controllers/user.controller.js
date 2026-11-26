@@ -107,6 +107,26 @@ export async function updateProfile(req, res, next) {
       if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
         throw new AppError('As informações do perfil são inválidas.', 400);
       }
+      if (profile.bio !== undefined && (typeof profile.bio !== 'string' || profile.bio.length > 500)) {
+        throw new AppError('A biografia deve ter até 500 caracteres.', 400);
+      }
+      if (profile.socialLinks !== undefined) {
+        if (!Array.isArray(profile.socialLinks) || profile.socialLinks.length > 10) {
+          throw new AppError('Informe até 10 links para o perfil.', 400);
+        }
+        profile.socialLinks = profile.socialLinks.map((value) => {
+          if (typeof value !== 'string' || value.length > 2048) {
+            throw new AppError('Um dos links do perfil é inválido.', 400);
+          }
+          try {
+            const url = new URL(value);
+            if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Protocolo inválido');
+            return url.toString();
+          } catch {
+            throw new AppError('Use links completos começando com http:// ou https://.', 400);
+          }
+        });
+      }
       updateData.profile_data = JSON.stringify(profile);
     }
 

@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { getPlaceCategoryDetailLabel, getPlaceCategoryLabel, placeCategories, placeCategoryDetails } from '../utils/placeCategories';
 import type { DisabilityType, Place, UserProfile } from '../types';
+import { getDistinctPlacePhotoUrls } from '../utils/placePhotos';
 
 const disabilityAssessmentKeys: Partial<Record<DisabilityType, string[]>> = {
   PHYSICAL: ['step_free_route', 'accessible_entrance', 'access_ramp', 'adapted_restroom'],
@@ -292,16 +293,13 @@ export function DestinationsPage() {
                 <div className="destinations-grid">
                   {filteredPlaces.map((place) => (
                     <Link to={`/local/${place.id}`} key={place.id} className="destination-card">
-                      <div className="destination-img">
-                        <img
-                          src={place.main_image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80'}
-                          alt={place.establishment_name}
-                          loading="lazy"
-                          onError={(event) => {
-                            event.currentTarget.onerror = null;
-                            event.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80';
-                          }}
-                        />
+                      <div className={`destination-img${getDistinctPlacePhotoUrls(place).length > 1 ? ' has-photo-mosaic' : ''}`}>
+                        {getDistinctPlacePhotoUrls(place).length ? (
+                          getDistinctPlacePhotoUrls(place).slice(0, 4).map((photoUrl, index) => (
+                            <img key={photoUrl} src={photoUrl} alt={index === 0 ? place.establishment_name : ''} loading="lazy" />
+                          ))
+                        ) : <span className="destination-no-photo">Foto ainda não cadastrada</span>}
+                        {getDistinctPlacePhotoUrls(place).length > 1 && <span className="destination-photo-count">{getDistinctPlacePhotoUrls(place).length} fotos</span>}
                         <div className="destination-pin" />
                       </div>
                       <div className="destination-content">

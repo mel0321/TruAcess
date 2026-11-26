@@ -5,6 +5,8 @@ export type TravelFrequency = 'RARELY' | 'SOMETIMES' | 'OFTEN' | 'ALWAYS';
 export type DisabilityType = 'PHYSICAL' | 'VISUAL' | 'HEARING' | 'COGNITIVE' | 'NEURODIVERGENT' | 'NONE' | 'OTHER' | 'PREFER_NOT_SAY';
 
 export interface UserProfile {
+  bio?: string;
+  socialLinks?: string[];
   gender?: Gender;
   ageRange?: AgeRange;
   travelFrequency?: TravelFrequency;

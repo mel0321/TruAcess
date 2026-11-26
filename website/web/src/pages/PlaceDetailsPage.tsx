@@ -8,6 +8,7 @@ import { IconRamp, IconBrain, IconLibras, IconBraille, IconMapPin, IconHeart, Ic
 import { getPlaceCategoryLabel } from '../utils/placeCategories';
 import { reviewAccessibilityAnswerLabel, reviewAccessibilityAnswerOptions, reviewAccessibilityQuestions } from '../utils/reviewQuestionnaire';
 import type { Place, Review } from '../types';
+import { getDistinctPlacePhotoUrls } from '../utils/placePhotos';
 
 interface PlaceResponse {
   place: Place;
@@ -148,18 +149,7 @@ export function PlaceDetailsPage() {
     { show: place.has_asd_friendly_space, label: 'Espaço TEA-friendly', icon: <IconBrain width={24} height={24} /> },
   ].filter(x => x.show);
   const accessibilityPhotos = (place.photos || []).filter((photo) => photo.photo_type === 'ACCESSIBILITY');
-  const placePhotos = (place.photos || []).filter((photo) => photo.photo_type === 'PLACE' && photo.photo_url.trim());
-  const displayedPlacePhotos = [...placePhotos];
-  if (place.main_image?.trim() && !placePhotos.some((photo) => photo.photo_url.trim() === place.main_image?.trim())) {
-    displayedPlacePhotos.unshift({
-      id: -1,
-      place_id: place.id,
-      photo_url: place.main_image,
-      photo_type: 'PLACE',
-      accessibility_category: null,
-      created_at: '',
-    });
-  }
+  const displayedPlacePhotos = getDistinctPlacePhotoUrls(place);
   const evidenceLabels: Record<string, string> = {
     ACCESS_ROUTE: 'Rota acessível',
     RAMP: 'Rampa',
@@ -219,8 +209,10 @@ export function PlaceDetailsPage() {
         </div>
       </div>
 
-      <div style={{position: 'relative', height: '450px', overflow: 'hidden'}}>
-        <img src={place.main_image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&q=80'} alt={place.establishment_name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+      <div className="place-details-hero" style={{position: 'relative', height: '450px', overflow: 'hidden'}}>
+        {place.main_image?.trim()
+          ? <img src={place.main_image} alt={place.establishment_name} style={{width: '100%', height: '100%', objectFit: 'cover'}} onError={(event) => event.currentTarget.remove()} />
+          : <div className="place-hero-no-image">Fotos deste local</div>}
         <div style={{position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(5, 38, 89, 0.85), rgba(5, 38, 89, 0.3))'}} />
         <div style={{position: 'absolute', bottom: '40px', left: '0', right: '0', color: 'white'}}>
           <div className="container">
@@ -312,13 +304,13 @@ export function PlaceDetailsPage() {
                 <h2 style={{ color: '#052659', marginBottom: 18 }}>Fotos do local</h2>
                 <div className="place-gallery-main">
                   <button type="button" aria-label="Foto anterior" onClick={() => setGalleryIndex((galleryIndex - 1 + displayedPlacePhotos.length) % displayedPlacePhotos.length)}>‹</button>
-                  <img src={displayedPlacePhotos[galleryIndex % displayedPlacePhotos.length].photo_url} alt={`Foto ${galleryIndex + 1} de ${place.establishment_name}`} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = place.main_image || 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=900&q=80'; }} />
+                  <img src={displayedPlacePhotos[galleryIndex % displayedPlacePhotos.length]} alt={`Foto ${galleryIndex + 1} de ${place.establishment_name}`} onError={(event) => { event.currentTarget.remove(); }} />
                   <button type="button" aria-label="Próxima foto" onClick={() => setGalleryIndex((galleryIndex + 1) % displayedPlacePhotos.length)}>›</button>
                 </div>
                 <div className="place-gallery-thumbs">
-                  {displayedPlacePhotos.map((photo, index) => (
-                    <button type="button" key={photo.id} className={galleryIndex === index ? 'is-active' : ''} onClick={() => setGalleryIndex(index)} aria-label={`Mostrar foto ${index + 1}`}>
-                      <img src={photo.photo_url} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = place.main_image || 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=900&q=80'; }} />
+                  {displayedPlacePhotos.map((photoUrl, index) => (
+                    <button type="button" key={photoUrl} className={galleryIndex === index ? 'is-active' : ''} onClick={() => setGalleryIndex(index)} aria-label={`Mostrar foto ${index + 1}`}>
+                      <img src={photoUrl} alt="" loading="lazy" onError={(event) => { event.currentTarget.parentElement?.remove(); }} />
                     </button>
                   ))}
                 </div>

@@ -13,6 +13,7 @@ import { DestinationsPage } from '../pages/DestinationsPage';
 import { AboutPage } from '../pages/AboutPage';
 import { PlaceManagementPage } from '../pages/PlaceManagementPage';
 import { SocialPage } from '../pages/SocialPage';
+import { SocialProfilePage } from '../pages/SocialProfilePage';
 import { AccessibilityPanel } from '../components/AccessibilityPanel';
 import type { ReactNode } from 'react';
 
@@ -55,6 +56,7 @@ export function AppRoutes() {
               <ProtectedRoute><ProfilePage /></ProtectedRoute>
             } />
             <Route path="/destinos" element={<DestinationsPage />} />
+            <Route path="/comunidade/perfil/:userId" element={<ProtectedRoute><SocialProfilePage /></ProtectedRoute>} />
             <Route path="/comunidade" element={<ProtectedRoute><SocialPage /></ProtectedRoute>} />
             <Route path="/sobre" element={<AboutPage />} />
           </Routes>

@@ -149,6 +149,19 @@ export async function listPlaces(req, res, next) {
     const offset = (pageNum - 1) * limitNum;
 
     const places = await query.limit(limitNum).offset(offset);
+    const placeIds = places.map((place) => place.id);
+    const photos = placeIds.length
+      ? await db('place_photos')
+        .whereIn('place_id', placeIds)
+        .select('id', 'place_id', 'photo_url', 'photo_type', 'accessibility_category', 'created_at')
+        .orderBy('created_at', 'asc')
+      : [];
+    const photosByPlaceId = new Map();
+    for (const photo of photos) {
+      const placePhotos = photosByPlaceId.get(photo.place_id) || [];
+      placePhotos.push(photo);
+      photosByPlaceId.set(photo.place_id, placePhotos);
+    }
 
     // Format boolean fields and numeric ratings
     const formattedPlaces = places.map((place) => {
@@ -159,6 +172,7 @@ export async function listPlaces(req, res, next) {
         accessibility_assessment: undefined,
         average_rating: place.average_rating ? parseFloat(place.average_rating) : null,
         total_reviews: totalReviews,
+        photos: photosByPlaceId.get(place.id) || [],
         ...accessibilitySummary(assessment, place.average_accessibility_rating, totalReviews),
         has_access_ramp: Boolean(place.has_access_ramp),
         has_adapted_bathroom: Boolean(place.has_adapted_bathroom),

@@ -314,7 +314,7 @@ export async function seed(knex) {
       state,
       description: `${kind} localizado em ${city}, preparado para receber visitantes com informações claras sobre localização e recursos de acessibilidade.`,
       price: (index % 12) * 2500,
-      main_image: `https://images.unsplash.com/photo-${1566073771259 + (index % 50)}?w=1080&q=80`,
+      main_image: `https://picsum.photos/seed/truacess-place-${13 + index}/1080/720`,
       has_access_ramp: ramp ? 1 : 0,
       has_adapted_bathroom: bathroom ? 1 : 0,
       allows_guide_dog: dog ? 1 : 0,
