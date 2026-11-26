@@ -48,12 +48,12 @@ export function HomePage() {
 
       <section className="home-hero">
         <div className="home-hero-copy">
-          <p className="home-hero-eyebrow"><span aria-hidden="true" /> VIAJAR COM MAIS AUTONOMIA</p>
-          <h1>Encontre lugares que acolhem <span>o seu jeito de viajar.</span></h1>
-          <p className="home-hero-description">Compare informações de acessibilidade, explore destinos e planeje cada passeio com mais confiança.</p>
+          <p className="home-hero-eyebrow"><span aria-hidden="true" /> SUA PRÓXIMA AVENTURA COMEÇA AQUI</p>
+          <h1>Viajar do seu jeito <span>começa aqui.</span></h1>
+          <p className="home-hero-description">Descubra lugares incríveis, confira informações de acessibilidade e escolha seu próximo passeio com mais confiança.</p>
           <div className="home-hero-actions">
-            <Link to="/destinos" className="home-primary-action">Explorar locais <span aria-hidden="true">→</span></Link>
-            <Link to="/comunidade" className="home-secondary-action">Ver experiências de viajantes</Link>
+            <Link to="/destinos" className="home-primary-action">Quero explorar</Link>
+            <Link to="/comunidade" className="home-secondary-action">Ver histórias da comunidade</Link>
           </div>
           <div className="home-hero-facts" aria-label="Informações sobre a TruAcess">
             <span><strong>{loading ? '—' : places.length}</strong><small>locais para explorar</small></span>
@@ -61,13 +61,7 @@ export function HomePage() {
           </div>
         </div>
         <div className="home-hero-visual">
-          <div className="home-brand-art" aria-label="Marca TruAcess">
-            <img src="/images/truacess-mark.png" alt="Símbolo TruAcess de acessibilidade e inclusão" />
-          </div>
-          <div className="home-visual-caption">
-            <span>TRUACESS</span>
-            <strong>Mais caminhos para todo mundo.</strong>
-          </div>
+          <div className="home-floating-note home-floating-note-top"><span aria-hidden="true">✦</span> Um lugar novo espera por você</div>
           {featuredPlace && (
             <Link to={`/local/${featuredPlace.id}`} className="home-hero-preview" aria-label={`Conheça ${featuredPlace.establishment_name}`}>
               <div className="home-preview-image">
@@ -75,14 +69,21 @@ export function HomePage() {
                   ? <img src={featuredPlacePhotos[0]} alt={featuredPlace.establishment_name} />
                   : <span className="home-preview-placeholder">{getPlaceCategoryLabel(featuredPlace.category)}</span>}
                 <span>DESTINO EM DESTAQUE</span>
+                <span className="home-brand-art" aria-label="Marca TruAcess">
+                  <img src="/images/truacess-mark.png" alt="" />
+                </span>
               </div>
               <div className="home-preview-content">
                 <p><IconMapPin width={16} height={16} /> {featuredPlace.city}{featuredPlace.state ? `, ${featuredPlace.state}` : ''}</p>
                 <h2>{featuredPlace.establishment_name}</h2>
-                <span className="home-preview-link">Ver informações do local →</span>
+                <span className="home-preview-link">Ver informações do local</span>
               </div>
             </Link>
           )}
+          <div className="home-floating-note home-floating-note-bottom">
+            <span className="home-floating-note-icon"><IconRamp width={21} height={21} /></span>
+            <span><strong>Viaje com mais autonomia</strong><small>no seu ritmo, do seu jeito</small></span>
+          </div>
         </div>
       </section>
 
@@ -110,7 +111,7 @@ export function HomePage() {
         <div className="container">
           <div className="home-section-heading">
             <div><p className="eyebrow">EXPLORE A TRUACESS</p><h2>Todos os locais para sua próxima viagem</h2><p className="home-results-description">Explore {places.length} opções e filtre por categoria para encontrar o lugar certo.</p></div>
-            <Link to="/destinos">Abrir filtros avançados <span aria-hidden="true">→</span></Link>
+            <Link to="/destinos">Abrir filtros avançados</Link>
           </div>
           {loadError && <p role="alert">{loadError}</p>}
           <div className="destinations-grid home-destinations-grid">
@@ -160,7 +161,7 @@ export function HomePage() {
             A TruAcess reúne informações de acessibilidade, locais para conhecer e experiências de viajantes para ajudar você a planejar passeios que façam sentido para suas necessidades.
           </p>
           <div className="home-about-actions">
-            <Link to="/sobre">Conheça nosso propósito <span aria-hidden="true">→</span></Link>
+            <Link to="/sobre">Conheça nosso propósito</Link>
           </div>
         </div>
       </section>

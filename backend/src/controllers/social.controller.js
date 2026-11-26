@@ -110,6 +110,9 @@ export async function listUsers(req, res, next) {
       const following = req.user
         ? Boolean(await db('social_follows').where({ follower_id: req.user.id, following_id: user.id }).first())
         : false;
+      const followRequested = req.user && !following
+        ? Boolean(await db('social_follow_requests').where({ requester_id: req.user.id, requested_id: user.id }).first())
+        : false;
       return {
         id: user.id,
         full_name: user.full_name,
@@ -119,6 +122,7 @@ export async function listUsers(req, res, next) {
         is_demo: profile.isDemo === true,
         follower_count: Number(followerCount.count),
         following,
+        follow_requested: followRequested,
       };
     }));
     res.json({ users: accounts });
@@ -142,7 +146,7 @@ export async function getUserProfile(req, res, next) {
 
     const profile = parseProfile(user.profile_data);
     const visiblePostCountQuery = visiblePostsQuery(db('social_posts as p').where('p.user_id', userId), req.user?.id);
-    const [followerCount, followingCount, postCount, following, followedBy] = await Promise.all([
+    const [followerCount, followingCount, postCount, following, followedBy, followRequest] = await Promise.all([
       db('social_follows').where({ following_id: userId }).count('* as count').first(),
       db('social_follows').where({ follower_id: userId }).count('* as count').first(),
       visiblePostCountQuery.count('* as count').first(),
@@ -151,6 +155,9 @@ export async function getUserProfile(req, res, next) {
         : null,
       req.user && req.user.id !== userId
         ? db('social_follows').where({ follower_id: userId, following_id: req.user.id }).first()
+        : null,
+      req.user && req.user.id !== userId
+        ? db('social_follow_requests').where({ requester_id: req.user.id, requested_id: userId }).first()
         : null,
     ]);
 
@@ -165,6 +172,7 @@ export async function getUserProfile(req, res, next) {
         social_links: Array.isArray(profile.socialLinks) ? profile.socialLinks : [],
         is_demo: profile.isDemo === true,
         is_following: Boolean(following),
+        is_follow_requested: Boolean(followRequest),
         is_followed_by: Boolean(followedBy),
         follower_count: Number(followerCount.count),
         following_count: Number(followingCount.count),
@@ -314,9 +322,83 @@ export async function toggleFollow(req, res, next) {
     if (!await db('users').where({ id: followingId }).first('id')) throw new AppError('Perfil não encontrado.', 404);
     if (await isBlockedEitherWay(req.user.id, followingId)) throw new AppError('Você não pode seguir este perfil.', 403);
     const existing = await db('social_follows').where({ follower_id: req.user.id, following_id: followingId }).first();
-    if (existing) await db('social_follows').where({ id: existing.id }).del();
-    else await db('social_follows').insert({ follower_id: req.user.id, following_id: followingId });
-    res.json({ following: !existing });
+    if (existing) {
+      await db('social_follows').where({ id: existing.id }).del();
+      res.json({ status: 'none', following: false, follow_requested: false });
+      return;
+    }
+
+    const request = await db('social_follow_requests')
+      .where({ requester_id: req.user.id, requested_id: followingId })
+      .first();
+    if (request) {
+      await db('social_follow_requests').where({ id: request.id }).del();
+      res.json({ status: 'none', following: false, follow_requested: false });
+      return;
+    }
+
+    await db('social_follow_requests').insert({ requester_id: req.user.id, requested_id: followingId });
+    res.json({ status: 'requested', following: false, follow_requested: true });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listFollowRequests(req, res, next) {
+  try {
+    const userId = Number(req.params.userId);
+    if (userId !== req.user.id) throw new AppError('Você só pode ver solicitações da sua própria conta.', 403);
+    const requests = await db('social_follow_requests as r')
+      .join('users as u', 'u.id', 'r.requester_id')
+      .select('r.id', 'r.requester_id as user_id', 'r.created_at', 'u.full_name', 'u.profile_picture')
+      .where('r.requested_id', userId)
+      .orderBy('r.created_at', 'desc');
+    const visibleRequests = [];
+    for (const request of requests) {
+      if (!await isBlockedEitherWay(userId, request.user_id)) visibleRequests.push(request);
+    }
+    res.json({ requests: visibleRequests });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function acceptFollowRequest(req, res, next) {
+  try {
+    const userId = Number(req.params.userId);
+    const requesterId = Number(req.params.requesterId);
+    if (userId !== req.user.id) throw new AppError('Você só pode aceitar solicitações da sua própria conta.', 403);
+    if (requesterId === userId || await isBlockedEitherWay(userId, requesterId)) {
+      throw new AppError('Esta solicitação não está disponível.', 404);
+    }
+    await db.transaction(async (transaction) => {
+      const request = await transaction('social_follow_requests')
+        .where({ requester_id: requesterId, requested_id: userId })
+        .first();
+      if (!request) throw new AppError('Esta solicitação não está mais disponível.', 404);
+      const existing = await transaction('social_follows')
+        .where({ follower_id: requesterId, following_id: userId })
+        .first();
+      await transaction('social_follow_requests').where({ id: request.id }).del();
+      if (!existing) {
+        await transaction('social_follows').insert({ follower_id: requesterId, following_id: userId });
+      }
+    });
+    res.json({ accepted: true });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function rejectFollowRequest(req, res, next) {
+  try {
+    const userId = Number(req.params.userId);
+    const requesterId = Number(req.params.requesterId);
+    if (userId !== req.user.id) throw new AppError('Você só pode recusar solicitações da sua própria conta.', 403);
+    await db('social_follow_requests')
+      .where({ requester_id: requesterId, requested_id: userId })
+      .del();
+    res.json({ rejected: true });
   } catch (error) {
     next(error);
   }
@@ -349,6 +431,10 @@ export async function toggleBlock(req, res, next) {
       await transaction('social_follows')
         .where({ follower_id: req.user.id, following_id: blockedId })
         .orWhere({ follower_id: blockedId, following_id: req.user.id })
+        .del();
+      await transaction('social_follow_requests')
+        .where({ requester_id: req.user.id, requested_id: blockedId })
+        .orWhere({ requester_id: blockedId, requested_id: req.user.id })
         .del();
       await transaction('social_blocks').insert({ blocker_id: req.user.id, blocked_id: blockedId });
     });

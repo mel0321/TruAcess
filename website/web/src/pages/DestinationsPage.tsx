@@ -44,6 +44,8 @@ export function DestinationsPage() {
   const [minimumRating, setMinimumRating] = useState('');
   const [accessibleOnly, setAccessibleOnly] = useState(false);
   const [cityFilter, setCityFilter] = useState('');
+  const [stateFilter, setStateFilter] = useState('');
+  const [countryFilter, setCountryFilter] = useState('');
   const [accessibilityLevelFilter, setAccessibilityLevelFilter] = useState('');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -86,14 +88,22 @@ export function DestinationsPage() {
       place.has_sign_language_interpreter || place.allows_guide_dog
     );
     const matchesCity = !cityFilter || place.city === cityFilter;
+    const matchesState = !stateFilter || place.state === stateFilter;
+    const matchesCountry = !countryFilter || place.country === countryFilter;
     const matchesLevel = !accessibilityLevelFilter || place.accessibility_level === accessibilityLevelFilter;
 
-    return matchesSearch && matchesCategory && matchesCategoryDetail && matchesAccessibility && matchesCity && matchesLevel;
+    return matchesSearch && matchesCategory && matchesCategoryDetail && matchesAccessibility && matchesCity && matchesState && matchesCountry && matchesLevel;
   });
-  const activeAccessibilityNeeds = user?.user_type === 'TRAVELER' && Boolean(
-    user.profile?.disabilities?.some((item) => item !== 'NONE' && item !== 'PREFER_NOT_SAY') ||
-    user.profile?.accessibilityPreferences?.length
+  const hasAccessibilityNeeds = Boolean(
+    user?.profile?.disabilities?.some((item) => item !== 'NONE' && item !== 'PREFER_NOT_SAY') ||
+    user?.profile?.accessibilityPreferences?.length
   );
+  const hasConfirmedAccessibilityProfile = Boolean(
+    user?.profile?.profileCompleted || user?.profile?.disabilityDeclared
+  );
+  const activeAccessibilityNeeds = user?.user_type === 'TRAVELER' &&
+    hasAccessibilityNeeds &&
+    hasConfirmedAccessibilityProfile;
   const filteredPlaces = placesMatchingOtherFilters
     .filter((place) => (
       !minimumRating ||
@@ -112,7 +122,15 @@ export function DestinationsPage() {
     )).length,
   ])) as Record<(typeof ratingOptions)[number], number>;
   const detailCategories = category ? placeCategoryDetails[category] || [] : [];
-  const cityOptions = [...new Set(places.map((place) => place.city).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const countryOptions = [...new Set(places.map((place) => place.country).filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const stateOptions = [...new Set(places
+    .filter((place) => !countryFilter || place.country === countryFilter)
+    .map((place) => place.state)
+    .filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const cityOptions = [...new Set(places
+    .filter((place) => (!countryFilter || place.country === countryFilter) && (!stateFilter || place.state === stateFilter))
+    .map((place) => place.city)
+    .filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
   return (
     <div className="destinations-page">
@@ -210,9 +228,23 @@ export function DestinationsPage() {
             </div>
 
             <button type="button" className="mobile-filter-trigger" onClick={() => setMobileFiltersOpen((open) => !open)} aria-expanded={mobileFiltersOpen}>
-              Filtros{(category || categoryDetail || cityFilter || accessibilityLevelFilter || minimumRating) ? ' • ativos' : ''}
+              Filtros{(category || categoryDetail || cityFilter || stateFilter || countryFilter || accessibilityLevelFilter || minimumRating) ? ' • ativos' : ''}
             </button>
             <div className={`destination-extra-filters${mobileFiltersOpen ? ' is-mobile-open' : ''}`}>
+              <label>
+                País
+                <select value={countryFilter} onChange={(event) => { setCountryFilter(event.target.value); setStateFilter(''); setCityFilter(''); }}>
+                  <option value="">Todos os países</option>
+                  {countryOptions.map((country) => <option key={country} value={country}>{country}</option>)}
+                </select>
+              </label>
+              <label>
+                Estado / região
+                <select value={stateFilter} onChange={(event) => { setStateFilter(event.target.value); setCityFilter(''); }}>
+                  <option value="">Todos os estados e regiões</option>
+                  {stateOptions.map((state) => <option key={state} value={state}>{state}</option>)}
+                </select>
+              </label>
               {category && (
                 <label>
                   Tipo de local

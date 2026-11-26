@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { accessibilityQuestions, type AccessibilityAnswer, type AccessibilityAssessment } from '../utils/accessibilityQuestionnaire';
 import { getPlaceCategoryDetailLabel, getPlaceCategoryLabel, placeCategories, placeCategoryDetails } from '../utils/placeCategories';
+import { brazilianRegionOptions, commonCityOptions, countryOptions } from '../utils/locationOptions';
 import type { Place, PlacePhoto } from '../types';
 
 type PhotoCategory = NonNullable<PlacePhoto['accessibility_category']>;
@@ -279,16 +280,19 @@ export function PlaceManagementPage() {
                 <input required value={form.full_address} onChange={(event) => updateForm('full_address', event.target.value)} />
               </label>
               <label className="place-form-field">Cidade
-                <input required value={form.city} onChange={(event) => updateForm('city', event.target.value)} />
+                <input required list="place-city-options" value={form.city} onChange={(event) => updateForm('city', event.target.value)} />
+                <datalist id="place-city-options">{commonCityOptions.map((city) => <option key={city} value={city} />)}</datalist>
               </label>
               <label className="place-form-field">Bairro / distrito
                 <input value={form.district} onChange={(event) => updateForm('district', event.target.value)} />
               </label>
               <label className="place-form-field">Estado / província / região
-                <input value={form.state} onChange={(event) => updateForm('state', event.target.value)} />
+                <input list="place-region-options" value={form.state} onChange={(event) => updateForm('state', event.target.value)} />
+                <datalist id="place-region-options">{brazilianRegionOptions.map((region) => <option key={region} value={region} />)}</datalist>
               </label>
               <label className="place-form-field">País
-                <input required value={form.country} onChange={(event) => updateForm('country', event.target.value)} />
+                <input required list="place-country-options" value={form.country} onChange={(event) => updateForm('country', event.target.value)} />
+                <datalist id="place-country-options">{countryOptions.map((country) => <option key={country} value={country} />)}</datalist>
               </label>
               <label className="place-form-field">Telefone
                 <input type="tel" value={form.phone} onChange={(event) => updateForm('phone', event.target.value)} />

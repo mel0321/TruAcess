@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Header } from '../components/Header';
+import { IconHeart, IconMessageCircle } from '../components/Icons';
 import { SocialPostViewer } from '../components/SocialPostViewer';
 import { isSocialVideo, type SocialMediaItem } from '../utils/socialMedia';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +15,15 @@ type SocialUser = {
   is_demo?: boolean;
   follower_count?: number;
   following?: boolean;
+  follow_requested?: boolean;
+};
+
+type FollowRequest = {
+  id: number;
+  user_id: number;
+  full_name: string;
+  profile_picture?: string | null;
+  created_at: string;
 };
 
 type SocialPost = {
@@ -48,12 +58,18 @@ function safeExternalUrl(value: string) {
   }
 }
 
+function normalizeHashtag(value: string) {
+  return value.trim().replace(/^#+/, '').toLocaleLowerCase();
+}
+
 export function SocialPage() {
   const { user, updateUserProfile } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [followers, setFollowers] = useState<SocialUser[]>([]);
   const [following, setFollowing] = useState<SocialUser[]>([]);
   const [suggestions, setSuggestions] = useState<SocialUser[]>([]);
+  const [followRequests, setFollowRequests] = useState<FollowRequest[]>([]);
   const [blockedUsers, setBlockedUsers] = useState<SocialUser[]>([]);
   const [myPostCount, setMyPostCount] = useState(0);
   const [caption, setCaption] = useState('');
@@ -75,6 +91,16 @@ export function SocialPage() {
   const [relationshipList, setRelationshipList] = useState<'followers' | 'following' | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const currentUserId = user?.id;
+  const selectedHashtag = normalizeHashtag(searchParams.get('hashtag') || '') || null;
+
+  const filterByHashtag = (hashtag: string | null) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (hashtag) next.set('hashtag', normalizeHashtag(hashtag));
+      else next.delete('hashtag');
+      return next;
+    });
+  };
 
   const loadPosts = useCallback(async () => {
     setLoading(true);
@@ -93,20 +119,33 @@ export function SocialPage() {
     const userId = currentUserId;
     if (!userId) return;
     try {
-      const [relationshipResponse, suggestionsResponse, blockedResponse, profileResponse] = await Promise.all([
+      const [relationshipResponse, suggestionsResponse, blockedResponse, profileResponse, requestsResponse] = await Promise.all([
         api.get<RelationshipResponse>(`/social/users/${userId}/relationships`),
         api.get<{ users: SocialUser[] }>('/social/users', { params: { limit: 8 } }),
         api.get<{ users: SocialUser[] }>(`/social/users/${userId}/blocked`),
         api.get<{ user: { post_count: number } }>(`/social/users/${userId}`),
+        api.get<{ requests: FollowRequest[] }>(`/social/users/${userId}/follow-requests`),
       ]);
       setFollowers(relationshipResponse.data.followers);
       setFollowing(relationshipResponse.data.following);
       setSuggestions(suggestionsResponse.data.users);
       setBlockedUsers(blockedResponse.data.users);
       setMyPostCount(profileResponse.data.user.post_count);
+      setFollowRequests(requestsResponse.data.requests);
     } catch (error) {
       console.error('Erro ao carregar dados da comunidade:', error);
       setMessage('Não foi possível carregar os dados de perfis e seguidores.');
+    }
+  }, [currentUserId]);
+
+  const loadFollowRequests = useCallback(async () => {
+    if (!currentUserId) return;
+    try {
+      const response = await api.get<{ requests: FollowRequest[] }>(`/social/users/${currentUserId}/follow-requests`);
+      setFollowRequests(response.data.requests);
+    } catch (error) {
+      console.error('Erro ao verificar solicitações para seguir:', error);
+      setMessage('Não foi possível atualizar suas notificações.');
     }
   }, [currentUserId]);
 
@@ -120,18 +159,28 @@ export function SocialPage() {
     return () => window.clearTimeout(timer);
   }, [loadCommunity]);
 
+  useEffect(() => {
+    if (!currentUserId) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void loadFollowRequests();
+    }, 20000);
+    return () => window.clearInterval(timer);
+  }, [currentUserId, loadFollowRequests]);
+
   useEffect(() => () => previews.forEach((preview) => URL.revokeObjectURL(preview)), [previews]);
 
   const chooseFiles = (files: FileList | null) => {
     previews.forEach((preview) => URL.revokeObjectURL(preview));
-    const next = Array.from(files || []).slice(0, 10);
+    const selected = Array.from(files || []);
+    const next = selected.slice(0, 10);
     setSelectedFiles(next);
     setPreviews(next.map((file) => URL.createObjectURL(file)));
+    setMessage(selected.length > 10 ? 'Você pode publicar até 10 fotos ou vídeos por vez.' : '');
   };
 
   const publish = async () => {
     if (!selectedFiles.length) {
-      setMessage('Escolha pelo menos uma fotografia.');
+      setMessage('Escolha pelo menos uma foto ou vídeo.');
       return;
     }
     setPublishing(true);
@@ -154,7 +203,7 @@ export function SocialPage() {
       await loadPosts();
     } catch (error) {
       console.error('Erro ao publicar:', error);
-      setMessage('Não foi possível publicar. Verifique as fotografias e tente novamente.');
+      setMessage('Não foi possível publicar. Verifique os arquivos (até 50 MB cada) e tente novamente.');
     } finally {
       setPublishing(false);
     }
@@ -176,14 +225,26 @@ export function SocialPage() {
 
   const toggleFollow = async (accountId: number) => {
     try {
-      const response = await api.post<{ following: boolean }>(`/social/users/${accountId}/follow`);
-      setSuggestions((current) => current.map((account) => account.id === accountId
-        ? { ...account, following: response.data.following, follower_count: Math.max(0, (account.follower_count || 0) + (response.data.following ? 1 : -1)) }
-        : account));
+      await api.post(`/social/users/${accountId}/follow`);
       await loadCommunity();
     } catch (error) {
       console.error('Erro ao seguir perfil:', error);
       setMessage('Não foi possível atualizar o perfil seguido.');
+    }
+  };
+
+  const respondToFollowRequest = async (request: FollowRequest, accept: boolean) => {
+    try {
+      if (accept) {
+        await api.post(`/social/users/${user?.id}/follow-requests/${request.user_id}/accept`);
+      } else {
+        await api.delete(`/social/users/${user?.id}/follow-requests/${request.user_id}`);
+      }
+      setFollowRequests((current) => current.filter((item) => item.id !== request.id));
+      await loadCommunity();
+    } catch (error) {
+      console.error('Erro ao responder à solicitação para seguir:', error);
+      setMessage('Não foi possível responder à solicitação. Tente novamente.');
     }
   };
 
@@ -230,7 +291,10 @@ export function SocialPage() {
   };
 
   const displayedFollowers = relationshipList === 'followers' ? followers : following;
-  const tripPhotos = Array.from(new Map(posts.flatMap((post) => (
+  const filteredPosts = selectedHashtag
+    ? posts.filter((post) => post.hashtags.some((tag) => normalizeHashtag(tag) === selectedHashtag))
+    : posts;
+  const tripPhotos = Array.from(new Map(filteredPosts.flatMap((post) => (
     [...new Map(post.photos.map((photo) => [photo.photo_url, photo])).values()]
       .map((photo) => [photo.photo_url, { post, photo }] as const)
   ))).values());
@@ -291,6 +355,30 @@ export function SocialPage() {
 
         <div className="social-layout">
           <div className="social-main-column">
+            {followRequests.length > 0 && (
+              <section className="social-follow-requests" aria-labelledby="social-follow-requests-title">
+                <header>
+                  <div><p>NOTIFICAÇÕES</p><h2 id="social-follow-requests-title">Solicitações para seguir</h2></div>
+                  <span>{followRequests.length}</span>
+                </header>
+                <div className="social-follow-request-list">
+                  {followRequests.map((request) => (
+                    <article className="social-follow-request" key={request.id}>
+                      <Link to={`/comunidade/perfil/${request.user_id}`} className="social-follow-request-person">
+                        {request.profile_picture
+                          ? <img src={request.profile_picture} alt="" />
+                          : <span>{initials(request.full_name)}</span>}
+                        <span><strong>{request.full_name}</strong><small>Quer seguir você</small></span>
+                      </Link>
+                      <div>
+                        <button type="button" className="social-follow-accept" onClick={() => void respondToFollowRequest(request, true)}>Aceitar</button>
+                        <button type="button" className="social-follow-decline" onClick={() => void respondToFollowRequest(request, false)}>Recusar</button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
             <section className="social-composer">
               <div className="social-composer-heading">
                 <div><p>COMPARTILHE</p><strong>Conte sua experiência</strong></div>
@@ -301,6 +389,7 @@ export function SocialPage() {
               {composerOpen && (
                 <>
                   <button type="button" className="social-add-photos" onClick={() => fileInput.current?.click()}>Adicionar fotos ou vídeos</button>
+                  <small className="social-upload-help">Até 10 arquivos por publicação. Limite de 50 MB por arquivo.</small>
                   <textarea value={caption} onChange={(event) => setCaption(event.target.value)} placeholder="Escreva uma legenda sobre o local..." rows={3} />
                   <div className="social-composer-fields">
                     <input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Localização" />
@@ -327,11 +416,17 @@ export function SocialPage() {
               <button type="button" role="tab" aria-selected={activeTab === 'posts'} className={activeTab === 'posts' ? 'is-active' : ''} onClick={() => setActiveTab('posts')}>Publicações</button>
               <button type="button" role="tab" aria-selected={activeTab === 'trips'} className={activeTab === 'trips' ? 'is-active' : ''} onClick={() => setActiveTab('trips')}>Viagens</button>
             </div>
+            {selectedHashtag && (
+              <div className="social-hashtag-filter" role="status">
+                <span>Fotos com <strong>#{selectedHashtag}</strong></span>
+                <button type="button" onClick={() => filterByHashtag(null)}>Mostrar tudo</button>
+              </div>
+            )}
 
             {activeTab === 'posts' ? (
               <section className="social-feed" role="tabpanel">
-                <div className="social-section-heading"><p>FEED</p><h2>Publicações da comunidade</h2></div>
-                {loading ? <p role="status">Carregando publicações...</p> : posts.length ? posts.map((post) => (
+                <div className="social-section-heading"><p>FEED</p><h2>{selectedHashtag ? `Fotos com #${selectedHashtag}` : 'Publicações da comunidade'}</h2></div>
+                {loading ? <p role="status">Carregando publicações...</p> : filteredPosts.length ? filteredPosts.map((post) => (
                 <article className="social-post" key={post.id}>
                   <header>
                     <Link to={`/comunidade/perfil/${post.user_id}`} className="social-post-identity">
@@ -361,13 +456,25 @@ export function SocialPage() {
                     ))}
                   </div>
                   {post.caption && <p className="social-post-caption">{post.caption}</p>}
-                  <p className="social-hashtags">{post.hashtags?.map((tag) => `#${tag}`).join(' ')}</p>
+                  {post.hashtags?.length > 0 && (
+                    <div className="social-hashtags">
+                      {post.hashtags.map((tag) => (
+                        <button type="button" key={tag} aria-pressed={selectedHashtag === normalizeHashtag(tag)} onClick={() => filterByHashtag(tag)}>#{tag}</button>
+                      ))}
+                    </div>
+                  )}
                   <div className="social-post-actions">
-                    <button type="button" aria-pressed={post.liked} onClick={() => void toggleLike(post.id)}>{post.liked ? '♥' : '♡'} {post.like_count}</button>
-                    <button type="button" onClick={() => setViewer({ post, mediaIndex: 0 })}>💬 {post.comment_count}</button>
+                    <button type="button" className={post.liked ? 'is-liked' : ''} aria-label={`${post.like_count} curtidas`} aria-pressed={post.liked} onClick={() => void toggleLike(post.id)}>
+                      <IconHeart aria-hidden="true" /> <span>{post.like_count}</span>
+                    </button>
+                    <button type="button" aria-label={`${post.comment_count} comentários`} onClick={() => setViewer({ post, mediaIndex: 0 })}>
+                      <IconMessageCircle aria-hidden="true" /> <span>{post.comment_count}</span>
+                    </button>
                   </div>
                 </article>
-                )) : <div className="social-empty"><strong>O feed está pronto para a primeira história</strong><p>Publique uma fotografia acima para começar.</p></div>}
+                )) : selectedHashtag
+                  ? <div className="social-empty"><strong>Nenhuma publicação com #{selectedHashtag}</strong><p>Escolha outra hashtag ou veja todas as publicações.</p><button type="button" onClick={() => filterByHashtag(null)}>Mostrar todas</button></div>
+                  : <div className="social-empty"><strong>O feed está pronto para a primeira história</strong><p>Publique uma fotografia acima para começar.</p></div>}
               </section>
             ) : (
               <section className="social-trips" role="tabpanel">
@@ -383,7 +490,9 @@ export function SocialPage() {
                       </button>
                     ))}
                   </div>
-                ) : <div className="social-empty"><strong>Ainda não há fotos de viagens</strong><p>As fotos publicadas pela comunidade aparecerão aqui.</p></div>}
+                ) : selectedHashtag
+                  ? <div className="social-empty"><strong>Nenhuma foto de viagem com #{selectedHashtag}</strong><p>Tente outra hashtag ou remova o filtro.</p><button type="button" onClick={() => filterByHashtag(null)}>Mostrar todas</button></div>
+                  : <div className="social-empty"><strong>Ainda não há fotos de viagens</strong><p>As fotos publicadas pela comunidade aparecerão aqui.</p></div>}
               </section>
             )}
           </div>
@@ -401,7 +510,7 @@ export function SocialPage() {
                       <span><strong>{account.full_name}</strong>{account.is_demo && <small className="social-demo-label">Perfil demonstrativo</small>}<small>{account.follower_count || 0} seguidores</small></span>
                     </Link>
                     <div className="social-account-actions">
-                      <button type="button" onClick={() => void toggleFollow(account.id)}>{account.following ? 'Seguindo' : 'Seguir'}</button>
+                      <button type="button" onClick={() => void toggleFollow(account.id)}>{account.following ? 'Seguindo' : account.follow_requested ? 'Cancelar solicitação' : 'Solicitar para seguir'}</button>
                       <button type="button" className="social-icon-button" onClick={() => void toggleBlock(account)}>Bloquear</button>
                     </div>
                   </article>
@@ -445,6 +554,7 @@ export function SocialPage() {
       )}
       {viewer && (
         <SocialPostViewer
+          key={viewer.post.id}
           postId={viewer.post.id}
           media={viewer.post.photos}
           initialMediaIndex={viewer.mediaIndex}
@@ -458,6 +568,7 @@ export function SocialPage() {
           liked={viewer.post.liked}
           onToggleLike={() => toggleLike(viewer.post.id)}
           onCommentAdded={updateViewerCommentCount}
+          onHashtagClick={(tag) => { filterByHashtag(tag); closeViewer(); }}
           onClose={closeViewer}
         />
       )}

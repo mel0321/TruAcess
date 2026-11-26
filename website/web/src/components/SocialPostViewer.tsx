@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import { IconHeart, IconMessageCircle } from './Icons';
 import { isSocialVideo, type SocialMediaItem } from '../utils/socialMedia';
 
 export type SocialPostComment = {
@@ -26,6 +27,7 @@ type SocialPostViewerProps = {
   liked: boolean;
   onToggleLike: () => Promise<boolean>;
   onCommentAdded: () => void;
+  onHashtagClick: (tag: string) => void;
   onClose: () => void;
 };
 
@@ -47,6 +49,7 @@ export function SocialPostViewer({
   liked,
   onToggleLike,
   onCommentAdded,
+  onHashtagClick,
   onClose,
 }: SocialPostViewerProps) {
   const [activeMediaIndex, setActiveMediaIndex] = useState(initialMediaIndex);
@@ -154,7 +157,11 @@ export function SocialPostViewer({
           </header>
           <div className="social-viewer-copy">
             {caption && <p>{caption}</p>}
-            {hashtags.length > 0 && <p className="social-viewer-hashtags">{hashtags.map((tag) => `#${tag}`).join(' ')}</p>}
+            {hashtags.length > 0 && (
+              <div className="social-viewer-hashtags">
+                {hashtags.map((tag) => <button type="button" key={tag} onClick={() => onHashtagClick(tag)}>#{tag}</button>)}
+              </div>
+            )}
           </div>
           <div className="social-viewer-comments" aria-live="polite">
             {commentsLoading ? <p className="social-viewer-status">Carregando comentários...</p> : comments.length ? comments.map((comment) => (
@@ -168,9 +175,9 @@ export function SocialPostViewer({
           </div>
           <div className="social-viewer-actions">
             <button type="button" className={likedValue ? 'is-liked' : ''} aria-pressed={likedValue} disabled={likeSubmitting} onClick={() => void toggleLike()}>
-              {likedValue ? '♥' : '♡'} <strong>{likeCountValue}</strong> curtidas
+              <IconHeart aria-hidden="true" /> <strong>{likeCountValue}</strong> curtidas
             </button>
-            <span>💬 <strong>{commentCount + (comments.length > commentCount ? comments.length - commentCount : 0)}</strong> comentários</span>
+            <span><IconMessageCircle aria-hidden="true" /> <strong>{commentCount + (comments.length > commentCount ? comments.length - commentCount : 0)}</strong> comentários</span>
           </div>
           <form className="social-viewer-form" onSubmit={(event) => { event.preventDefault(); void submitComment(); }}>
             <input value={commentText} onChange={(event) => setCommentText(event.target.value)} aria-label="Escreva um comentário" placeholder="Adicione um comentário..." maxLength={1000} />

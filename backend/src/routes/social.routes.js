@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateToken, optionalAuth } from '../middlewares/auth.middleware.js';
-import { listPosts, createPost, toggleLike, addComment, toggleFollow, deletePost, listPostComments, listRelationships, listUserPosts, listUsers, getUserProfile, toggleBlock, removeFollower, listBlockedUsers } from '../controllers/social.controller.js';
+import { listPosts, createPost, toggleLike, addComment, toggleFollow, deletePost, listPostComments, listRelationships, listUserPosts, listUsers, getUserProfile, toggleBlock, removeFollower, listBlockedUsers, listFollowRequests, acceptFollowRequest, rejectFollowRequest } from '../controllers/social.controller.js';
 import { socialPhotoUpload } from '../config/upload.js';
 
 const router = Router();
@@ -15,6 +15,9 @@ router.get('/users/:userId', optionalAuth, getUserProfile);
 router.get('/users/:userId/relationships', optionalAuth, listRelationships);
 router.get('/users/:userId/posts', optionalAuth, listUserPosts);
 router.post('/users/:userId/follow', authenticateToken, toggleFollow);
+router.get('/users/:userId/follow-requests', authenticateToken, listFollowRequests);
+router.post('/users/:userId/follow-requests/:requesterId/accept', authenticateToken, acceptFollowRequest);
+router.delete('/users/:userId/follow-requests/:requesterId', authenticateToken, rejectFollowRequest);
 router.delete('/users/:userId/followers/:followerId', authenticateToken, removeFollower);
 router.post('/users/:userId/block', authenticateToken, toggleBlock);
 router.get('/users/:userId/blocked', authenticateToken, listBlockedUsers);

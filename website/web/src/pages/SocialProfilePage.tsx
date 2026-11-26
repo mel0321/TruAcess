@@ -14,6 +14,7 @@ type PublicProfile = {
   social_links: string[];
   is_demo?: boolean;
   is_following: boolean;
+  is_follow_requested: boolean;
   is_followed_by: boolean;
   follower_count: number;
   following_count: number;
@@ -152,7 +153,7 @@ export function SocialProfilePage() {
     <div className="social-page">
       <Header />
       <main className="social-shell social-profile-page">
-        <Link to="/comunidade" className="social-back-link">← Voltar à comunidade</Link>
+        <Link to="/comunidade" className="social-back-link">Voltar à comunidade</Link>
         {loading ? <p role="status">Carregando perfil...</p> : error && !profile ? <p role="alert" className="social-error">{error}</p> : profile && (
           <>
             <section className="social-profile">
@@ -178,7 +179,7 @@ export function SocialProfilePage() {
                 {!isOwnProfile && (
                   <div className="social-profile-actions">
                     <button type="button" className="social-publish" disabled={savingAction} onClick={() => void toggleFollow()}>
-                      {profile.is_following ? 'Deixar de seguir' : 'Seguir'}
+                      {profile.is_following ? 'Deixar de seguir' : profile.is_follow_requested ? 'Cancelar solicitação' : 'Solicitar para seguir'}
                     </button>
                     <button type="button" className="social-secondary-button" disabled={savingAction} onClick={() => void toggleBlock()}>
                       Bloquear pessoa
@@ -223,6 +224,7 @@ export function SocialProfilePage() {
       )}
       {viewer && viewerPost && profile && (
         <SocialPostViewer
+          key={viewerPost.id}
           postId={viewerPost.id}
           media={viewerPost.photos}
           initialMediaIndex={viewer.mediaIndex}
@@ -236,6 +238,7 @@ export function SocialProfilePage() {
           liked={viewerPost.liked}
           onToggleLike={() => togglePostLike(viewerPost.id)}
           onCommentAdded={() => updatePostCommentCount(viewerPost.id)}
+          onHashtagClick={(tag) => navigate(`/comunidade?hashtag=${encodeURIComponent(tag.replace(/^#+/, ''))}`)}
           onClose={closeViewer}
         />
       )}

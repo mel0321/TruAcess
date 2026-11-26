@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import type { DisabilityType, UserType } from '../types';
 import { IconUser, IconBuilding, IconMail, IconLock, IconUserCircle } from '../components/Icons';
+import { commonCityOptions } from '../utils/locationOptions';
 
 export function RegisterPage() {
   const [form, setForm] = useState({
@@ -114,7 +115,8 @@ export function RegisterPage() {
                   </select>
                 </label>
                 <label style={{display: 'grid', gap: '6px', color: '#334155', fontSize: 'calc(13px * var(--a11y-font-scale, 1))', fontWeight: 600}}>Cidade
-                  <input required value={form.businessCity} onChange={e => setForm({...form, businessCity: e.target.value})} placeholder="Cidade do estabelecimento" style={{padding: '12px', border: '1px solid #CBD5E1', borderRadius: '8px'}} />
+                  <input required list="business-city-options" value={form.businessCity} onChange={e => setForm({...form, businessCity: e.target.value})} placeholder="Cidade do estabelecimento" style={{padding: '12px', border: '1px solid #CBD5E1', borderRadius: '8px'}} />
+                  <datalist id="business-city-options">{commonCityOptions.map((city) => <option key={city} value={city} />)}</datalist>
                 </label>
                 <label style={{display: 'grid', gap: '6px', color: '#334155', fontSize: 'calc(13px * var(--a11y-font-scale, 1))', fontWeight: 600}}>Telefone
                   <input value={form.businessPhone} onChange={e => setForm({...form, businessPhone: e.target.value})} placeholder="(00) 00000-0000" style={{padding: '12px', border: '1px solid #CBD5E1', borderRadius: '8px'}} />
