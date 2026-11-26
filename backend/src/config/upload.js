@@ -18,6 +18,7 @@ export const PLACES_FOLDER = path.resolve(UPLOADS_FOLDER, 'places');
 });
 
 const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/gif'];
+const socialMediaMimeTypes = [...allowedMimeTypes, 'video/mp4', 'video/webm', 'video/quicktime'];
 
 const fileFilter = (req, file, cb) => {
   if (allowedMimeTypes.includes(file.mimetype)) {
@@ -27,7 +28,16 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+const socialMediaFileFilter = (req, file, cb) => {
+  if (socialMediaMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Formato inválido. Use imagens JPEG, PNG, WEBP ou GIF, ou vídeos MP4, WEBM ou MOV.'), false);
+  }
+};
+
 const maxFileSize = (parseInt(process.env.MAX_FILE_SIZE_MB, 10) || 5) * 1024 * 1024;
+const maxSocialMediaFileSize = (parseInt(process.env.SOCIAL_MEDIA_MAX_FILE_SIZE_MB, 10) || 50) * 1024 * 1024;
 
 export const avatarUpload = multer({
   storage: multer.diskStorage({
@@ -54,8 +64,8 @@ export const socialPhotoUpload = multer({
       cb(null, `social-${uniqueSuffix}${path.extname(file.originalname).toLowerCase()}`);
     }
   }),
-  limits: { fileSize: maxFileSize },
-  fileFilter
+  limits: { fileSize: maxSocialMediaFileSize },
+  fileFilter: socialMediaFileFilter
 }).array('photos', 10);
 
 export const placeImageUpload = multer({

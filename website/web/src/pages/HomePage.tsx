@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { Header } from '../components/Header';
-import { IconShield, IconStar, IconMapPin, IconUsers, IconRamp, IconBrain, IconCulture, IconMuseum, IconRestaurant, IconHotel } from '../components/Icons';
+import { IconShield, IconMapPin, IconUsers, IconRamp, IconBrain, IconCulture, IconMuseum, IconRestaurant, IconHotel } from '../components/Icons';
 import type { Place } from '../types';
 import { getPlaceCategoryLabel } from '../utils/placeCategories';
 import { getDistinctPlacePhotoUrls } from '../utils/placePhotos';
@@ -11,6 +11,7 @@ export function HomePage() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('todos');
   const [loadError, setLoadError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api.get('/places', { params: { limit: 500 } })
@@ -18,7 +19,8 @@ export function HomePage() {
       .catch(err => {
         console.error('Erro ao carregar locais:', err);
         setLoadError('Não foi possível carregar os locais. Verifique se o servidor está funcionando.');
-      });
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const uniqueCategories = Array.from(new Set(places.map(p => p.category))).filter(Boolean);
@@ -37,42 +39,66 @@ export function HomePage() {
   };
 
   const filteredPlaces = places.filter(place => selectedCategory === 'todos' || place.category === selectedCategory);
+  const featuredPlace = places.find((place) => getDistinctPlacePhotoUrls(place).length > 0) || places[0];
+  const featuredPlacePhotos = featuredPlace ? getDistinctPlacePhotoUrls(featuredPlace) : [];
 
   return (
     <div>
       <Header />
 
-      <section className="hero home-hero">
-        <div className="hero-content">
-          <p className="home-hero-eyebrow"><span aria-hidden="true" /> TURISMO PARA TODAS AS FORMAS DE VIAJAR</p>
-          <h1>Seu próximo destino pode ser <span>para você.</span></h1>
-          <p className="home-hero-description">Descubra hotéis, restaurantes, atrações e serviços com informações de acessibilidade explicadas antes da sua visita.</p>
-          <div className="home-hero-search" role="search">
-            <IconMapPin width={22} height={22} />
-            <Link to="/destinos">Pesquisar destino, cidade ou tipo de local</Link>
-            
+      <section className="home-hero">
+        <div className="home-hero-copy">
+          <p className="home-hero-eyebrow"><span aria-hidden="true" /> VIAJAR COM MAIS AUTONOMIA</p>
+          <h1>Encontre lugares que acolhem <span>o seu jeito de viajar.</span></h1>
+          <p className="home-hero-description">Compare informações de acessibilidade, explore destinos e planeje cada passeio com mais confiança.</p>
+          <div className="home-hero-actions">
+            <Link to="/destinos" className="home-primary-action">Explorar locais <span aria-hidden="true">→</span></Link>
+            <Link to="/comunidade" className="home-secondary-action">Ver experiências de viajantes</Link>
           </div>
-          <div className="home-hero-benefits" aria-label="Benefícios da TruAcess">
-            <span><IconRamp width={18} height={18} /> Recursos de acesso</span>
-            <span><IconUsers width={18} height={18} /> Experiências de viajantes</span>
-            <span><IconShield width={18} height={18} /> Informações transparentes</span>
+          <div className="home-hero-facts" aria-label="Informações sobre a TruAcess">
+            <span><strong>{loading ? '—' : places.length}</strong><small>locais para explorar</small></span>
+            <span><strong>{loading ? '—' : uniqueCategories.length}</strong><small>categorias de lugares</small></span>
           </div>
+        </div>
+        <div className="home-hero-visual">
+          <div className="home-brand-art" aria-label="Marca TruAcess">
+            <img src="/images/truacess-mark.png" alt="Símbolo TruAcess de acessibilidade e inclusão" />
+          </div>
+          <div className="home-visual-caption">
+            <span>TRUACESS</span>
+            <strong>Mais caminhos para todo mundo.</strong>
+          </div>
+          {featuredPlace && (
+            <Link to={`/local/${featuredPlace.id}`} className="home-hero-preview" aria-label={`Conheça ${featuredPlace.establishment_name}`}>
+              <div className="home-preview-image">
+                {featuredPlacePhotos.length > 0
+                  ? <img src={featuredPlacePhotos[0]} alt={featuredPlace.establishment_name} />
+                  : <span className="home-preview-placeholder">{getPlaceCategoryLabel(featuredPlace.category)}</span>}
+                <span>DESTINO EM DESTAQUE</span>
+              </div>
+              <div className="home-preview-content">
+                <p><IconMapPin width={16} height={16} /> {featuredPlace.city}{featuredPlace.state ? `, ${featuredPlace.state}` : ''}</p>
+                <h2>{featuredPlace.establishment_name}</h2>
+                <span className="home-preview-link">Ver informações do local →</span>
+              </div>
+            </Link>
+          )}
         </div>
       </section>
 
-      <section className="home-trust-strip" aria-label="Como a TruAcess ajuda">
-        <div><strong>01</strong><span>Compare recursos de mobilidade, comunicação e conforto.</span></div>
-        <div><strong>02</strong><span>Consulte relatos e avaliações de outros viajantes.</span></div>
-        <div><strong>03</strong><span>Escolha o local que combina com sua forma de viajar.</span></div>
+      <section className="home-benefits" aria-label="Como a TruAcess ajuda">
+        <article><span><IconRamp width={21} height={21} /></span><div><strong>Acessibilidade em foco</strong><p>Veja os recursos informados por cada local.</p></div></article>
+        <article><span><IconShield width={21} height={21} /></span><div><strong>Planejamento com clareza</strong><p>Consulte detalhes antes de sair de casa.</p></div></article>
+        <article><span><IconUsers width={21} height={21} /></span><div><strong>Vivências compartilhadas</strong><p>Descubra relatos de quem já esteve lá.</p></div></article>
       </section>
 
       <section className="home-category-bar">
         <div className="container">
           <div className="home-category-title"><strong>O que você quer explorar?</strong><span>Escolha uma categoria</span></div>
           <div className="home-category-list" role="group" aria-label="Filtrar locais por categoria">
-            <button onClick={() => setSelectedCategory('todos')} style={{ padding: '8px 20px', borderRadius: '100px', border: 'none', cursor: 'pointer', background: selectedCategory === 'todos' ? '#052659' : '#F1F5F9', color: selectedCategory === 'todos' ? 'white' : '#64748B', fontWeight: 600, fontSize: 'calc(14px * var(--a11y-font-scale, 1))' }}>Todos</button>
+            <button className={`home-category-chip${selectedCategory === 'todos' ? ' is-selected' : ''}`} onClick={() => setSelectedCategory('todos')}>Todos</button>
             {uniqueCategories.map((cat, index) => (
-              <button key={index} onClick={() => setSelectedCategory(cat)} style={{ padding: '8px 20px', borderRadius: '100px', border: 'none', cursor: 'pointer', background: selectedCategory === cat ? '#052659' : '#F1F5F9', color: selectedCategory === cat ? 'white' : '#64748B', fontWeight: 600, fontSize: 'calc(14px * var(--a11y-font-scale, 1))', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button key={index} className={`home-category-chip${selectedCategory === cat ? ' is-selected' : ''}`} onClick={() => setSelectedCategory(cat)}>
                 {getCategoryIcon(cat)} {getPlaceCategoryLabel(cat)}
               </button>
             ))}
@@ -80,17 +106,19 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="destinations-section">
+      <section className="destinations-section home-destinations-section">
         <div className="container">
           <div className="home-section-heading">
-            <div><p className="eyebrow">LOCAIS PARA CONHECER</p><h2>Mais opções para sua próxima viagem</h2></div>
-            <Link to="/destinos">Ver todos os {places.length || ''} locais <span aria-hidden="true">→</span></Link>
+            <div><p className="eyebrow">EXPLORE A TRUACESS</p><h2>Todos os locais para sua próxima viagem</h2><p className="home-results-description">Explore {places.length} opções e filtre por categoria para encontrar o lugar certo.</p></div>
+            <Link to="/destinos">Abrir filtros avançados <span aria-hidden="true">→</span></Link>
           </div>
           {loadError && <p role="alert">{loadError}</p>}
           <div className="destinations-grid home-destinations-grid">
-            {!loadError && places.length === 0 ? (
-              <p className="home-loading" role="status">Carregando locais para explorar...</p>
-            ) : filteredPlaces.slice(0, 8).map((place) => (
+            {loading ? (
+              <p className="home-loading" role="status">Carregando todos os locais...</p>
+            ) : filteredPlaces.length === 0 && !loadError ? (
+              <p className="home-loading" role="status">Não encontramos locais nesta categoria.</p>
+            ) : filteredPlaces.map((place) => (
               <Link to={`/local/${place.id}`} key={place.id} className="destination-card">
                 <div className={`destination-img${getDistinctPlacePhotoUrls(place).length > 1 ? ' has-photo-mosaic' : ''}`}>
                   {getDistinctPlacePhotoUrls(place).length ? (
@@ -121,52 +149,18 @@ export function HomePage() {
               </Link>
             ))}
           </div>
-          <div className="home-destinations-action">
-            <Link to="/destinos" className="btn-explore">Ver destinos e filtros</Link>
-          </div>
         </div>
       </section>
 
       <section className="about-section">
         <div className="about-content">
-          <h2>Mais Que Uma Viagem,<br />Uma Experiência de Vida</h2>
+          <p className="eyebrow">SOBRE A TRUACESS</p>
+          <h2>Mais informação para escolher. Mais autonomia para viajar.</h2>
           <p className="about-description">
-            Conectamos pessoas a destinos incríveis com autonomia, segurança e suporte sensorial completo. 
-            Nossa missão é tornar o turismo acessível para todos, independentemente de suas necessidades.
+            A TruAcess reúne informações de acessibilidade, locais para conhecer e experiências de viajantes para ajudar você a planejar passeios que façam sentido para suas necessidades.
           </p>
-          
-          <div className="about-stats">
-            <div className="stat-item">
-              <div className="stat-number">+500</div>
-              <div className="stat-label">Locais Verificados</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-number">+10k</div>
-              <div className="stat-label">Viajantes Ativos</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-number">98%</div>
-              <div className="stat-label">Satisfação</div>
-            </div>
-          </div>
-
-          <div className="about-icons">
-            <div className="about-icon-item">
-              <div className="about-icon-circle"><IconUsers width={28} height={28} /></div>
-              <div className="about-icon-label">Comunidade</div>
-            </div>
-            <div className="about-icon-item">
-              <div className="about-icon-circle"><IconShield width={28} height={28} /></div>
-              <div className="about-icon-label">Confiança</div>
-            </div>
-            <div className="about-icon-item">
-              <div className="about-icon-circle"><IconStar width={28} height={28} /></div>
-              <div className="about-icon-label">Empoderamento</div>
-            </div>
-            <div className="about-icon-item">
-              <div className="about-icon-circle"><IconMapPin width={28} height={28} /></div>
-              <div className="about-icon-label">Jornada</div>
-            </div>
+          <div className="home-about-actions">
+            <Link to="/sobre">Conheça nosso propósito <span aria-hidden="true">→</span></Link>
           </div>
         </div>
       </section>

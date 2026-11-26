@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
+import { SocialPostViewer } from '../components/SocialPostViewer';
+import { isSocialVideo, type SocialMediaItem } from '../utils/socialMedia';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
@@ -9,6 +11,7 @@ type SocialUser = {
   full_name: string;
   profile_picture?: string | null;
   bio?: string;
+  is_demo?: boolean;
   follower_count?: number;
   following?: boolean;
 };
@@ -23,7 +26,8 @@ type SocialPost = {
   caption?: string;
   hashtags: string[];
   privacy: 'PUBLIC' | 'FOLLOWERS' | 'PRIVATE';
-  photos: Array<{ id: number; photo_url: string }>;
+  is_demo?: boolean;
+  photos: SocialMediaItem[];
   like_count: number;
   comment_count: number;
   liked: boolean;
@@ -62,9 +66,10 @@ export function SocialPage() {
   const [publishing, setPublishing] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [message, setMessage] = useState('');
-  const [commentPostId, setCommentPostId] = useState<number | null>(null);
-  const [commentText, setCommentText] = useState('');
+  const [viewer, setViewer] = useState<{ post: SocialPost; mediaIndex: number } | null>(null);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'posts' | 'trips'>('posts');
   const [bio, setBio] = useState(user?.profile?.bio || '');
   const [socialLinks, setSocialLinks] = useState((user?.profile?.socialLinks || []).join('\n'));
   const [relationshipList, setRelationshipList] = useState<'followers' | 'following' | null>(null);
@@ -155,28 +160,17 @@ export function SocialPage() {
     }
   };
 
-  const toggleLike = async (postId: number) => {
+  const toggleLike = async (postId: number): Promise<boolean> => {
     try {
       const response = await api.post<{ liked: boolean }>(`/social/posts/${postId}/like`);
       setPosts((current) => current.map((post) => post.id === postId
         ? { ...post, liked: response.data.liked, like_count: post.like_count + (response.data.liked ? 1 : -1) }
         : post));
+      return true;
     } catch (error) {
       console.error('Erro ao atualizar curtida:', error);
       setMessage('Não foi possível atualizar a curtida.');
-    }
-  };
-
-  const submitComment = async (postId: number) => {
-    if (!commentText.trim()) return;
-    try {
-      await api.post(`/social/posts/${postId}/comments`, { comment: commentText.trim() });
-      setCommentText('');
-      setCommentPostId(null);
-      setPosts((current) => current.map((post) => post.id === postId ? { ...post, comment_count: post.comment_count + 1 } : post));
-    } catch (error) {
-      console.error('Erro ao publicar comentário:', error);
-      setMessage('Não foi possível publicar o comentário.');
+      return false;
     }
   };
 
@@ -236,12 +230,25 @@ export function SocialPage() {
   };
 
   const displayedFollowers = relationshipList === 'followers' ? followers : following;
+  const tripPhotos = Array.from(new Map(posts.flatMap((post) => (
+    [...new Map(post.photos.map((photo) => [photo.photo_url, photo])).values()]
+      .map((photo) => [photo.photo_url, { post, photo }] as const)
+  ))).values());
+
+  const closeViewer = useCallback(() => setViewer(null), []);
+
+  const updateViewerCommentCount = () => {
+    if (!viewer) return;
+    setPosts((current) => current.map((post) => post.id === viewer.post.id
+      ? { ...post, comment_count: post.comment_count + 1 }
+      : post));
+  };
 
   return (
     <div className="social-page">
       <Header />
       <main className="social-shell social-full-width">
-        <section className="social-profile">
+        <section className="social-profile social-own-profile">
           {user?.profile_picture
             ? <img className="social-avatar social-avatar-image" src={user.profile_picture} alt="" />
             : <div className="social-avatar">{initials(user?.full_name || 'Sua comunidade')}</div>}
@@ -282,103 +289,142 @@ export function SocialPage() {
           </section>
         )}
 
-        <section className="social-composer">
-          <div className="social-composer-heading">
-            <div><p>NOVA PUBLICAÇÃO</p><strong>Compartilhe sua experiência</strong></div>
-            <button type="button" onClick={() => fileInput.current?.click()}>Adicionar fotos</button>
-          </div>
-          <textarea value={caption} onChange={(event) => setCaption(event.target.value)} placeholder="Escreva uma legenda sobre o local..." rows={3} />
-          <div className="social-composer-fields">
-            <input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Localização" />
-            <input value={hashtags} onChange={(event) => setHashtags(event.target.value)} placeholder="#turismo #acessibilidade" />
-            <label className="social-privacy">Quem pode ver?
-              <select value={privacy} onChange={(event) => setPrivacy(event.target.value as SocialPost['privacy'])}>
-                <option value="PUBLIC">Todos</option>
-                <option value="FOLLOWERS">Seguidores</option>
-                <option value="PRIVATE">Somente eu</option>
-              </select>
-            </label>
-          </div>
-          <input ref={fileInput} className="social-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple onChange={(event) => chooseFiles(event.target.files)} />
-          {previews.length > 0 && <div className="social-preview-grid">{previews.map((preview, index) => <div key={preview}><img src={preview} alt={`Prévia ${index + 1}`} /><button type="button" aria-label="Remover foto" onClick={() => { URL.revokeObjectURL(preview); setPreviews((current) => current.filter((_, item) => item !== index)); setSelectedFiles((current) => current.filter((_, item) => item !== index)); }}>×</button></div>)}</div>}
-          {message && <p role="status" className="social-message">{message}</p>}
-          <button type="button" className="social-publish" disabled={publishing || !selectedFiles.length} onClick={() => void publish()}>
-            {publishing ? 'Publicando...' : 'Publicar fotos'}
-          </button>
-        </section>
+        <div className="social-layout">
+          <div className="social-main-column">
+            <section className="social-composer">
+              <div className="social-composer-heading">
+                <div><p>COMPARTILHE</p><strong>Conte sua experiência</strong></div>
+                <button type="button" aria-expanded={composerOpen} onClick={() => setComposerOpen((open) => !open)}>
+                  {composerOpen ? 'Fechar' : 'Nova publicação'}
+                </button>
+              </div>
+              {composerOpen && (
+                <>
+                  <button type="button" className="social-add-photos" onClick={() => fileInput.current?.click()}>Adicionar fotos ou vídeos</button>
+                  <textarea value={caption} onChange={(event) => setCaption(event.target.value)} placeholder="Escreva uma legenda sobre o local..." rows={3} />
+                  <div className="social-composer-fields">
+                    <input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Localização" />
+                    <input value={hashtags} onChange={(event) => setHashtags(event.target.value)} placeholder="#turismo #acessibilidade" />
+                    <label className="social-privacy">Quem pode ver?
+                      <select value={privacy} onChange={(event) => setPrivacy(event.target.value as SocialPost['privacy'])}>
+                        <option value="PUBLIC">Todos</option>
+                        <option value="FOLLOWERS">Seguidores</option>
+                        <option value="PRIVATE">Somente eu</option>
+                      </select>
+                    </label>
+                  </div>
+                  <input ref={fileInput} className="social-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" multiple onChange={(event) => chooseFiles(event.target.files)} />
+                  {previews.length > 0 && <div className="social-preview-grid">{previews.map((preview, index) => <div key={preview}>{selectedFiles[index]?.type.startsWith('video/') ? <video src={preview} aria-label={`Prévia do vídeo ${index + 1}`} muted playsInline /> : <img src={preview} alt={`Prévia ${index + 1}`} />}<button type="button" aria-label="Remover arquivo" onClick={() => { URL.revokeObjectURL(preview); setPreviews((current) => current.filter((_, item) => item !== index)); setSelectedFiles((current) => current.filter((_, item) => item !== index)); }}>×</button></div>)}</div>}
+                  <button type="button" className="social-publish" disabled={publishing || !selectedFiles.length} onClick={() => void publish()}>
+                    {publishing ? 'Publicando...' : 'Publicar'}
+                  </button>
+                </>
+              )}
+              {message && <p role="status" className="social-message">{message}</p>}
+            </section>
 
-        <section className="social-featured">
-          <div className="social-section-heading"><p>DESCUBRA</p><h2>Perfis da comunidade</h2></div>
-          <div className="social-accounts">
-            {suggestions.map((account) => (
-              <article className="social-account" key={account.id}>
-                <Link to={`/comunidade/perfil/${account.id}`} className="social-account-identity">
-                  {account.profile_picture
-                    ? <img className="social-account-avatar" src={account.profile_picture} alt="" />
-                    : <span className="social-account-avatar">{initials(account.full_name)}</span>}
-                  <span><strong>{account.full_name}</strong><small>{account.follower_count || 0} seguidores</small></span>
-                </Link>
-                <div className="social-account-actions">
-                  <button type="button" onClick={() => void toggleFollow(account.id)}>{account.following ? 'Seguindo' : 'Seguir'}</button>
-                  <button type="button" className="social-icon-button" onClick={() => void toggleBlock(account)}>Bloquear</button>
-                </div>
-              </article>
-            ))}
-            {!suggestions.length && <p>Ainda não há outros perfis para sugerir.</p>}
-          </div>
-        </section>
-
-        {blockedUsers.length > 0 && (
-          <section className="social-featured">
-            <div className="social-section-heading"><p>PRIVACIDADE</p><h2>Perfis bloqueados</h2></div>
-            <div className="social-accounts">
-              {blockedUsers.map((account) => (
-                <article className="social-account" key={account.id}>
-                  <span className="social-account-identity"><span className="social-account-avatar">{initials(account.full_name)}</span><strong>{account.full_name}</strong></span>
-                  <button type="button" onClick={() => void toggleBlock(account)}>Desbloquear</button>
-                </article>
-              ))}
+            <div className="social-tabs" role="tablist" aria-label="Conteúdo da comunidade">
+              <button type="button" role="tab" aria-selected={activeTab === 'posts'} className={activeTab === 'posts' ? 'is-active' : ''} onClick={() => setActiveTab('posts')}>Publicações</button>
+              <button type="button" role="tab" aria-selected={activeTab === 'trips'} className={activeTab === 'trips' ? 'is-active' : ''} onClick={() => setActiveTab('trips')}>Viagens</button>
             </div>
-          </section>
-        )}
 
-        <section className="social-feed">
-          <div className="social-section-heading"><p>FEED</p><h2>Publicações da comunidade</h2></div>
-          {loading ? <p role="status">Carregando publicações...</p> : posts.length ? posts.map((post) => (
-            <article className="social-post" key={post.id}>
-              <header>
-                <Link to={`/comunidade/perfil/${post.user_id}`} className="social-post-identity">
-                  {post.author_avatar
-                    ? <img className="social-post-avatar" src={post.author_avatar} alt="" />
-                    : <span className="social-post-avatar">{initials(post.author_name || 'Pessoa')}</span>}
-                  <span><strong>{post.author_name}</strong>{post.location && <small>📍 {post.location}</small>}</span>
-                </Link>
-                {post.user_id === user?.id && <button type="button" onClick={async () => {
-                  if (!window.confirm('Excluir esta publicação?')) return;
-                  try {
-                    await api.delete(`/social/posts/${post.id}`);
-                    setPosts((current) => current.filter((item) => item.id !== post.id));
-                  } catch (error) {
-                    console.error('Erro ao excluir publicação:', error);
-                    setMessage('Não foi possível excluir esta publicação.');
-                  }
-                }} className="social-post-delete">Excluir</button>}
-              </header>
-              <div className={`social-post-images${post.photos.length === 1 ? ' is-single' : ''}`}>
-                {[...new Map(post.photos.map((photo) => [photo.photo_url, photo])).values()].map((photo) => (
-                  <img className="social-post-image" key={photo.photo_url} src={photo.photo_url} alt={post.caption || 'Publicação da comunidade'} loading="lazy" />
+            {activeTab === 'posts' ? (
+              <section className="social-feed" role="tabpanel">
+                <div className="social-section-heading"><p>FEED</p><h2>Publicações da comunidade</h2></div>
+                {loading ? <p role="status">Carregando publicações...</p> : posts.length ? posts.map((post) => (
+                <article className="social-post" key={post.id}>
+                  <header>
+                    <Link to={`/comunidade/perfil/${post.user_id}`} className="social-post-identity">
+                      {post.author_avatar
+                        ? <img className="social-post-avatar" src={post.author_avatar} alt="" />
+                        : <span className="social-post-avatar">{initials(post.author_name || 'Pessoa')}</span>}
+                      <span><strong>{post.author_name}</strong>{post.is_demo && <small className="social-demo-label">Perfil demonstrativo</small>}{post.location && <small>📍 {post.location}</small>}</span>
+                    </Link>
+                    {post.user_id === user?.id && <button type="button" onClick={async () => {
+                      if (!window.confirm('Excluir esta publicação?')) return;
+                      try {
+                        await api.delete(`/social/posts/${post.id}`);
+                        setPosts((current) => current.filter((item) => item.id !== post.id));
+                      } catch (error) {
+                        console.error('Erro ao excluir publicação:', error);
+                        setMessage('Não foi possível excluir esta publicação.');
+                      }
+                    }} className="social-post-delete">Excluir</button>}
+                  </header>
+                  <div className={`social-post-images${post.photos.length === 1 ? ' is-single' : ''}`}>
+                    {post.photos.map((photo, mediaIndex) => (
+                      <button type="button" className="social-post-media" key={photo.id} aria-label={isSocialVideo(photo) ? 'Expandir vídeo da publicação' : 'Expandir foto da publicação'} onClick={() => setViewer({ post, mediaIndex })}>
+                        {isSocialVideo(photo)
+                          ? <><video className="social-post-image" src={photo.photo_url} muted playsInline preload="metadata" /><span className="social-video-play" aria-hidden="true">▶</span></>
+                          : <img className="social-post-image" src={photo.photo_url} alt={post.caption || 'Publicação da comunidade'} loading="lazy" />}
+                      </button>
+                    ))}
+                  </div>
+                  {post.caption && <p className="social-post-caption">{post.caption}</p>}
+                  <p className="social-hashtags">{post.hashtags?.map((tag) => `#${tag}`).join(' ')}</p>
+                  <div className="social-post-actions">
+                    <button type="button" aria-pressed={post.liked} onClick={() => void toggleLike(post.id)}>{post.liked ? '♥' : '♡'} {post.like_count}</button>
+                    <button type="button" onClick={() => setViewer({ post, mediaIndex: 0 })}>💬 {post.comment_count}</button>
+                  </div>
+                </article>
+                )) : <div className="social-empty"><strong>O feed está pronto para a primeira história</strong><p>Publique uma fotografia acima para começar.</p></div>}
+              </section>
+            ) : (
+              <section className="social-trips" role="tabpanel">
+                <div className="social-section-heading"><p>INSPIRAÇÃO</p><h2>Viagens da comunidade</h2></div>
+                {loading ? <p role="status">Carregando viagens...</p> : tripPhotos.length ? (
+                  <div className="social-trip-grid">
+                    {tripPhotos.map(({ post, photo }) => (
+                      <button type="button" className="social-trip-photo" key={photo.photo_url} onClick={() => setViewer({ post, mediaIndex: post.photos.findIndex((item) => item.photo_url === photo.photo_url) })}>
+                        {isSocialVideo(photo)
+                          ? <><video src={photo.photo_url} muted playsInline preload="metadata" /><i aria-hidden="true">▶</i></>
+                          : <img src={photo.photo_url} alt={post.caption || `Viagem de ${post.author_name}`} loading="lazy" />}
+                        <span><strong>{post.author_name}</strong><small>{post.location || post.caption}</small></span>
+                      </button>
+                    ))}
+                  </div>
+                ) : <div className="social-empty"><strong>Ainda não há fotos de viagens</strong><p>As fotos publicadas pela comunidade aparecerão aqui.</p></div>}
+              </section>
+            )}
+          </div>
+
+          <aside className="social-sidebar">
+            <section className="social-featured">
+              <div className="social-section-heading"><p>DESCUBRA</p><h2>Perfis para seguir</h2></div>
+              <div className="social-accounts">
+                {suggestions.map((account) => (
+                  <article className="social-account" key={account.id}>
+                    <Link to={`/comunidade/perfil/${account.id}`} className="social-account-identity">
+                      {account.profile_picture
+                        ? <img className="social-account-avatar" src={account.profile_picture} alt="" />
+                        : <span className="social-account-avatar">{initials(account.full_name)}</span>}
+                      <span><strong>{account.full_name}</strong>{account.is_demo && <small className="social-demo-label">Perfil demonstrativo</small>}<small>{account.follower_count || 0} seguidores</small></span>
+                    </Link>
+                    <div className="social-account-actions">
+                      <button type="button" onClick={() => void toggleFollow(account.id)}>{account.following ? 'Seguindo' : 'Seguir'}</button>
+                      <button type="button" className="social-icon-button" onClick={() => void toggleBlock(account)}>Bloquear</button>
+                    </div>
+                  </article>
                 ))}
+                {!suggestions.length && <p>Ainda não há outros perfis para sugerir.</p>}
               </div>
-              {post.caption && <p className="social-post-caption">{post.caption}</p>}
-              <p className="social-hashtags">{post.hashtags?.map((tag) => `#${tag}`).join(' ')}</p>
-              <div className="social-post-actions">
-                <button type="button" aria-pressed={post.liked} onClick={() => void toggleLike(post.id)}>{post.liked ? '♥' : '♡'} {post.like_count}</button>
-                <button type="button" onClick={() => setCommentPostId(commentPostId === post.id ? null : post.id)}>💬 {post.comment_count}</button>
-              </div>
-              {commentPostId === post.id && <div className="social-comment-box"><input value={commentText} onChange={(event) => setCommentText(event.target.value)} placeholder="Escreva um comentário" /><button type="button" onClick={() => void submitComment(post.id)}>Enviar</button></div>}
-            </article>
-          )) : <div className="social-empty"><strong>O feed está pronto para a primeira história</strong><p>Publique uma fotografia acima para começar.</p></div>}
-        </section>
+            </section>
+
+            {blockedUsers.length > 0 && (
+              <section className="social-featured social-blocked">
+                <div className="social-section-heading"><p>PRIVACIDADE</p><h2>Perfis bloqueados</h2></div>
+                <div className="social-accounts">
+                  {blockedUsers.map((account) => (
+                    <article className="social-account" key={account.id}>
+                      <span className="social-account-identity"><span className="social-account-avatar">{initials(account.full_name)}</span><strong>{account.full_name}</strong></span>
+                      <button type="button" onClick={() => void toggleBlock(account)}>Desbloquear</button>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
+          </aside>
+        </div>
       </main>
 
       {relationshipList && (
@@ -396,6 +442,24 @@ export function SocialPage() {
             )) : <p>Nenhuma pessoa nesta lista ainda.</p>}
           </section>
         </div>
+      )}
+      {viewer && (
+        <SocialPostViewer
+          postId={viewer.post.id}
+          media={viewer.post.photos}
+          initialMediaIndex={viewer.mediaIndex}
+          authorName={viewer.post.author_name}
+          authorAvatar={viewer.post.author_avatar}
+          caption={viewer.post.caption}
+          location={viewer.post.location}
+          hashtags={viewer.post.hashtags}
+          likeCount={viewer.post.like_count}
+          commentCount={viewer.post.comment_count}
+          liked={viewer.post.liked}
+          onToggleLike={() => toggleLike(viewer.post.id)}
+          onCommentAdded={updateViewerCommentCount}
+          onClose={closeViewer}
+        />
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { getDemoPlacePhotoUrl } from '../demoPlacePhotos.js';
 
 /**
  * @param { import("knex").Knex } knex
@@ -153,6 +154,7 @@ export async function seed(knex) {
       description:
         'Local histórico ligado à fundação da cidade de São Paulo, com museu e espaços de visitação.',
       price: 0,
+      main_image: getDemoPlacePhotoUrl(6),
       has_access_ramp: 1,
       has_adapted_bathroom: 1,
       allows_guide_dog: 1,
@@ -314,7 +316,7 @@ export async function seed(knex) {
       state,
       description: `${kind} localizado em ${city}, preparado para receber visitantes com informações claras sobre localização e recursos de acessibilidade.`,
       price: (index % 12) * 2500,
-      main_image: `https://picsum.photos/seed/truacess-place-${13 + index}/1080/720`,
+      main_image: getDemoPlacePhotoUrl(13 + index),
       has_access_ramp: ramp ? 1 : 0,
       has_adapted_bathroom: bathroom ? 1 : 0,
       allows_guide_dog: dog ? 1 : 0,

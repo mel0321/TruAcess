@@ -40,9 +40,11 @@ async function canViewPost(post, viewerId) {
 
 async function hydratePosts(posts, viewerId) {
   for (const post of posts) {
+    post.is_demo = parseProfile(post.author_profile_data).isDemo === true;
+    delete post.author_profile_data;
     post.photos = await db('social_post_photos')
       .where({ post_id: post.id })
-      .select('id', 'photo_url');
+      .select('id', 'photo_url', 'media_type');
     post.like_count = await db('social_likes').where({ post_id: post.id }).count('* as count').first()
       .then((result) => Number(result.count));
     post.comment_count = await db('social_comments').where({ post_id: post.id }).count('* as count').first()
@@ -77,7 +79,7 @@ export async function listPosts(req, res, next) {
     let query = db('social_posts as p')
       .leftJoin('users as u', 'u.id', 'p.user_id')
       .leftJoin('places as pl', 'pl.id', 'p.place_id')
-      .select('p.*', 'u.full_name as author_name', 'u.profile_picture as author_avatar', 'pl.establishment_name as place_name');
+      .select('p.*', 'u.full_name as author_name', 'u.profile_picture as author_avatar', 'u.profile_data as author_profile_data', 'pl.establishment_name as place_name');
     query = visiblePostsQuery(query, req.user?.id);
     const blockedIds = await getBlockedUserIds(req.user?.id);
     if (blockedIds.length) query = query.whereNotIn('p.user_id', blockedIds);
@@ -114,6 +116,7 @@ export async function listUsers(req, res, next) {
         profile_picture: user.profile_picture,
         user_type: user.user_type,
         bio: profile.bio || '',
+        is_demo: profile.isDemo === true,
         follower_count: Number(followerCount.count),
         following,
       };
@@ -160,6 +163,7 @@ export async function getUserProfile(req, res, next) {
         created_at: user.created_at,
         bio: profile.bio || '',
         social_links: Array.isArray(profile.socialLinks) ? profile.socialLinks : [],
+        is_demo: profile.isDemo === true,
         is_following: Boolean(following),
         is_followed_by: Boolean(followedBy),
         follower_count: Number(followerCount.count),
@@ -175,9 +179,12 @@ export async function getUserProfile(req, res, next) {
 export async function createPost(req, res, next) {
   try {
     const { caption, place_id, location, hashtags, privacy } = req.body;
-    const photos = (req.files || []).map((file) => `${req.protocol}://${req.get('host')}/uploads/places/${file.filename}`);
-    if (!photos.length) throw new AppError('Adicione pelo menos uma fotografia.', 400);
-    if (photos.length > 10) throw new AppError('Você pode adicionar até 10 fotografias por publicação.', 400);
+    const media = (req.files || []).map((file) => ({
+      photo_url: `${req.protocol}://${req.get('host')}/uploads/places/${file.filename}`,
+      media_type: file.mimetype.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+    }));
+    if (!media.length) throw new AppError('Adicione pelo menos uma foto ou vídeo.', 400);
+    if (media.length > 10) throw new AppError('Você pode adicionar até 10 arquivos por publicação.', 400);
     const parsedHashtags = typeof hashtags === 'string'
       ? hashtags.split(/[\s,#]+/).map((tag) => tag.trim()).filter(Boolean)
       : (Array.isArray(hashtags) ? hashtags : []);
@@ -189,7 +196,7 @@ export async function createPost(req, res, next) {
       hashtags: JSON.stringify(parsedHashtags),
       privacy: ['PUBLIC', 'FOLLOWERS', 'PRIVATE'].includes(privacy) ? privacy : 'PUBLIC',
     });
-    await db('social_post_photos').insert(photos.map((photo_url) => ({ post_id: postId, photo_url })));
+    await db('social_post_photos').insert(media.map((item) => ({ post_id: postId, ...item })));
     res.status(201).json({ message: 'Publicação criada!', post_id: postId });
   } catch (error) {
     next(error);
@@ -202,7 +209,7 @@ export async function listPostComments(req, res, next) {
     if (!await canViewPost(post, req.user?.id)) throw new AppError('Publicação não encontrada.', 404);
     const comments = await db('social_comments as c')
       .leftJoin('users as u', 'u.id', 'c.user_id')
-      .select('c.id', 'c.comment', 'c.created_at', 'u.full_name as author_name', 'u.profile_picture as author_avatar')
+      .select('c.id', 'c.user_id', 'c.comment', 'c.created_at', 'u.full_name as author_name', 'u.profile_picture as author_avatar')
       .where('c.post_id', Number(req.params.postId))
       .orderBy('c.created_at', 'asc');
     res.json({ comments });
@@ -271,8 +278,17 @@ export async function addComment(req, res, next) {
     if (!comment) throw new AppError('Escreva um comentário.', 400);
     const post = await db('social_posts').where({ id: Number(req.params.postId) }).first();
     if (!await canViewPost(post, req.user.id)) throw new AppError('Publicação não encontrada.', 404);
-    await db('social_comments').insert({ post_id: Number(req.params.postId), user_id: req.user.id, comment });
-    res.status(201).json({ message: 'Comentário publicado!' });
+    const [commentId] = await db('social_comments').insert({
+      post_id: Number(req.params.postId),
+      user_id: req.user.id,
+      comment,
+    });
+    const createdComment = await db('social_comments as c')
+      .join('users as u', 'u.id', 'c.user_id')
+      .where('c.id', commentId)
+      .select('c.id', 'c.user_id', 'c.comment', 'c.created_at', 'u.full_name as author_name', 'u.profile_picture as author_avatar')
+      .first();
+    res.status(201).json({ message: 'Comentário publicado!', comment: createdComment });
   } catch (error) {
     next(error);
   }

@@ -16,7 +16,10 @@ export function Header() {
   return (
     <header className="header">
       <div className={`container header-inner${user ? ' header-inner-authenticated' : ''}`}>
-        <Link to="/" className="logo">
+        <Link to="/" className="logo" aria-label="TruAcess - página inicial">
+          <span className="logo-mark" aria-hidden="true">
+            <img src="/images/truacess-mark.png" alt="" />
+          </span>
           <span className="tru">Tru</span>
           <span className="access">Acess</span>
         </Link>

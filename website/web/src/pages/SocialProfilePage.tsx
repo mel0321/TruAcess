@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Header } from '../components/Header';
+import { SocialPostViewer } from '../components/SocialPostViewer';
+import { isSocialVideo, type SocialMediaItem } from '../utils/socialMedia';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
@@ -10,6 +12,7 @@ type PublicProfile = {
   profile_picture?: string | null;
   bio: string;
   social_links: string[];
+  is_demo?: boolean;
   is_following: boolean;
   is_followed_by: boolean;
   follower_count: number;
@@ -22,8 +25,10 @@ type SocialPost = {
   caption?: string;
   location?: string;
   hashtags: string[];
-  photos: Array<{ id: number; photo_url: string }>;
+  photos: SocialMediaItem[];
   like_count: number;
+  comment_count: number;
+  liked: boolean;
 };
 
 type Relationship = { id: number; full_name: string; profile_picture?: string | null };
@@ -53,7 +58,10 @@ export function SocialProfilePage() {
   const [loading, setLoading] = useState(true);
   const [savingAction, setSavingAction] = useState(false);
   const [error, setError] = useState('');
+  const [viewer, setViewer] = useState<{ postId: number; mediaIndex: number } | null>(null);
   const isOwnProfile = Number(userId) === user?.id;
+  const viewerPost = viewer ? posts.find((post) => post.id === viewer.postId) : undefined;
+  const closeViewer = useCallback(() => setViewer(null), []);
 
   const loadProfile = useCallback(async () => {
     if (!userId) return;
@@ -97,6 +105,26 @@ export function SocialProfilePage() {
     }
   };
 
+  const togglePostLike = async (postId: number): Promise<boolean> => {
+    try {
+      const response = await api.post<{ liked: boolean }>(`/social/posts/${postId}/like`);
+      setPosts((current) => current.map((post) => post.id === postId
+        ? { ...post, liked: response.data.liked, like_count: Math.max(0, post.like_count + (response.data.liked ? 1 : -1)) }
+        : post));
+      return true;
+    } catch (actionError) {
+      console.error('Erro ao atualizar curtida da publicação:', actionError);
+      setError('Não foi possível atualizar a curtida.');
+      return false;
+    }
+  };
+
+  const updatePostCommentCount = (postId: number) => {
+    setPosts((current) => current.map((post) => post.id === postId
+      ? { ...post, comment_count: post.comment_count + 1 }
+      : post));
+  };
+
   const toggleBlock = async () => {
     if (!profile) return;
     const confirmation = window.confirm('Bloquear esta pessoa? Ela não poderá ver seu perfil nem suas publicações.');
@@ -134,6 +162,7 @@ export function SocialProfilePage() {
               <div className="social-profile-copy">
                 <p className="social-eyebrow">PERFIL DA COMUNIDADE</p>
                 <h1>{profile.full_name}</h1>
+                {profile.is_demo && <span className="social-demo-label">Perfil demonstrativo</span>}
                 {profile.bio && <p className="social-profile-bio">{profile.bio}</p>}
                 <div className="social-profile-links">
                   {profile.social_links.map((link) => {
@@ -163,11 +192,13 @@ export function SocialProfilePage() {
               <div className="social-section-heading"><p>GALERIA</p><h2>Publicações de {profile.full_name}</h2></div>
               {posts.length ? (
                 <div className="social-photo-grid">
-                  {posts.flatMap((post) => [...new Map(post.photos.map((photo) => [photo.photo_url, photo])).values()].map((photo) => (
-                    <figure className="social-profile-photo" key={`${post.id}-${photo.photo_url}`}>
-                      <img src={photo.photo_url} alt={post.caption || `Foto de ${profile.full_name}`} loading="lazy" />
-                      {post.caption && <figcaption>{post.caption}</figcaption>}
-                    </figure>
+                  {posts.flatMap((post) => post.photos.map((photo, mediaIndex) => (
+                    <button type="button" className="social-profile-photo" key={`${post.id}-${photo.id}`} aria-label={isSocialVideo(photo) ? 'Expandir vídeo da publicação' : 'Expandir foto da publicação'} onClick={() => setViewer({ postId: post.id, mediaIndex })}>
+                      {isSocialVideo(photo)
+                        ? <><video src={photo.photo_url} muted playsInline preload="metadata" /><i aria-hidden="true">▶</i></>
+                        : <img src={photo.photo_url} alt={post.caption || `Foto de ${profile.full_name}`} loading="lazy" />}
+                      {post.caption && <span>{post.caption}</span>}
+                    </button>
                   )))}
                 </div>
               ) : <p className="social-empty">Este perfil ainda não tem publicações visíveis.</p>}
@@ -189,6 +220,24 @@ export function SocialProfilePage() {
             )) : <p>Nenhuma pessoa nesta lista ainda.</p>}
           </section>
         </div>
+      )}
+      {viewer && viewerPost && profile && (
+        <SocialPostViewer
+          postId={viewerPost.id}
+          media={viewerPost.photos}
+          initialMediaIndex={viewer.mediaIndex}
+          authorName={profile.full_name}
+          authorAvatar={profile.profile_picture}
+          caption={viewerPost.caption}
+          location={viewerPost.location}
+          hashtags={viewerPost.hashtags}
+          likeCount={viewerPost.like_count}
+          commentCount={viewerPost.comment_count}
+          liked={viewerPost.liked}
+          onToggleLike={() => togglePostLike(viewerPost.id)}
+          onCommentAdded={() => updatePostCommentCount(viewerPost.id)}
+          onClose={closeViewer}
+        />
       )}
     </div>
   );
