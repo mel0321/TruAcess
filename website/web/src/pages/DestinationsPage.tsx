@@ -296,6 +296,11 @@ export function DestinationsPage() {
                         <img
                           src={place.main_image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80'}
                           alt={place.establishment_name}
+                          loading="lazy"
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80';
+                          }}
                         />
                         <div className="destination-pin" />
                       </div>

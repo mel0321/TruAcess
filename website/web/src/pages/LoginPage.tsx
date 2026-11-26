@@ -31,26 +31,26 @@ export function LoginPage() {
     <div style={{minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%)', padding: '24px'}}>
       <div style={{background: 'white', padding: '48px', borderRadius: '20px', boxShadow: '0 20px 60px rgba(5, 38, 89, 0.1)', maxWidth: '440px', width: '100%'}}>
         <div style={{textAlign: 'center', marginBottom: '32px'}}>
-          <Link to="/" style={{fontSize: '36px', fontWeight: '800', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px'}}>
+          <Link to="/" style={{fontSize: 'calc(36px * var(--a11y-font-scale, 1))', fontWeight: '800', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px'}}>
             <span style={{color: '#052659'}}>Tru</span><span style={{color: '#2AC2D2'}}>Acess</span>
           </Link>
-          <p style={{color: '#64748B', marginTop: '12px', fontSize: '15px'}}>Bem-vindo(a) de volta!</p>
+          <p style={{color: '#64748B', marginTop: '12px', fontSize: 'calc(15px * var(--a11y-font-scale, 1))'}}>Bem-vindo(a) de volta!</p>
         </div>
 
         {error && (
-          <div style={{background: '#FEE2E2', color: '#991B1B', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px', textAlign: 'center', border: '1px solid #FECACA'}}>
+          <div style={{background: '#FEE2E2', color: '#991B1B', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: 'calc(14px * var(--a11y-font-scale, 1))', textAlign: 'center', border: '1px solid #FECACA'}}>
             {error}
           </div>
         )}
 
         <form onSubmit={handleLogin}>
           <div style={{marginBottom: '16px'}}>
-            <label style={{display: 'block', fontWeight: '600', marginBottom: '8px', fontSize: '14px', color: '#0F172A'}}>E-mail</label>
+            <label style={{display: 'block', fontWeight: '600', marginBottom: '8px', fontSize: 'calc(14px * var(--a11y-font-scale, 1))', color: '#0F172A'}}>E-mail</label>
             <div style={{position: 'relative'}}>
               <IconMail width={18} height={18} style={{position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8'}} />
               <input 
                 type="email" 
-                style={{width: '100%', padding: '14px 16px 14px 42px', border: '2px solid #E2E8F0', borderRadius: '10px', fontSize: '15px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', transition: 'border-color 0.2s'}} 
+                style={{width: '100%', padding: '14px 16px 14px 42px', border: '2px solid #E2E8F0', borderRadius: '10px', fontSize: 'calc(15px * var(--a11y-font-scale, 1))', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', transition: 'border-color 0.2s'}}
                 value={email} 
                 onChange={e => setEmail(e.target.value)} 
                 required 
@@ -62,12 +62,12 @@ export function LoginPage() {
           </div>
 
           <div style={{marginBottom: '24px'}}>
-            <label style={{display: 'block', fontWeight: '600', marginBottom: '8px', fontSize: '14px', color: '#0F172A'}}>Senha</label>
+            <label style={{display: 'block', fontWeight: '600', marginBottom: '8px', fontSize: 'calc(14px * var(--a11y-font-scale, 1))', color: '#0F172A'}}>Senha</label>
             <div style={{position: 'relative'}}>
               <IconLock width={18} height={18} style={{position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8'}} />
               <input 
                 type="password" 
-                style={{width: '100%', padding: '14px 16px 14px 42px', border: '2px solid #E2E8F0', borderRadius: '10px', fontSize: '15px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', transition: 'border-color 0.2s'}} 
+                style={{width: '100%', padding: '14px 16px 14px 42px', border: '2px solid #E2E8F0', borderRadius: '10px', fontSize: 'calc(15px * var(--a11y-font-scale, 1))', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', transition: 'border-color 0.2s'}}
                 value={password} 
                 onChange={e => setPassword(e.target.value)} 
                 required 
@@ -78,12 +78,12 @@ export function LoginPage() {
             </div>
           </div>
 
-          <button type="submit" disabled={loading} style={{width: '100%', padding: '16px', background: 'linear-gradient(135deg, #052659 0%, #0a3d7a 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '16px', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 15px rgba(5, 38, 89, 0.2)', transition: 'all 0.3s', opacity: loading ? 0.7 : 1}}>
+          <button type="submit" disabled={loading} style={{width: '100%', padding: '16px', background: 'linear-gradient(135deg, #052659 0%, #0a3d7a 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: 'calc(16px * var(--a11y-font-scale, 1))', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 15px rgba(5, 38, 89, 0.2)', transition: 'all 0.3s', opacity: loading ? 0.7 : 1}}>
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
 
-        <div style={{textAlign: 'center', marginTop: '24px', fontSize: '14px', display: 'flex', flexDirection: 'column', gap: '12px'}}>
+        <div style={{textAlign: 'center', marginTop: '24px', fontSize: 'calc(14px * var(--a11y-font-scale, 1))', display: 'flex', flexDirection: 'column', gap: '12px'}}>
           <Link to="/recover-password" style={{color: '#052659', textDecoration: 'none', fontWeight: '600'}}>Esqueci minha senha</Link>
           <div style={{color: '#64748B', paddingTop: '12px', borderTop: '1px solid #E2E8F0'}}>
             Não tem conta? <Link to="/register" style={{color: '#2AC2D2', textDecoration: 'none', fontWeight: '700'}}>Criar agora</Link>

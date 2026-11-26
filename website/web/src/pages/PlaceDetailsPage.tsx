@@ -148,12 +148,18 @@ export function PlaceDetailsPage() {
     { show: place.has_asd_friendly_space, label: 'Espaço TEA-friendly', icon: <IconBrain width={24} height={24} /> },
   ].filter(x => x.show);
   const accessibilityPhotos = (place.photos || []).filter((photo) => photo.photo_type === 'ACCESSIBILITY');
-  const placePhotos = (place.photos || []).filter((photo) => photo.photo_type === 'PLACE');
-  const displayedPlacePhotos = placePhotos.length
-    ? placePhotos
-    : place.main_image
-      ? [{ id: -1, place_id: place.id, photo_url: place.main_image, photo_type: 'PLACE' as const, accessibility_category: null, created_at: '' }]
-      : [];
+  const placePhotos = (place.photos || []).filter((photo) => photo.photo_type === 'PLACE' && photo.photo_url.trim());
+  const displayedPlacePhotos = [...placePhotos];
+  if (place.main_image?.trim() && !placePhotos.some((photo) => photo.photo_url.trim() === place.main_image?.trim())) {
+    displayedPlacePhotos.unshift({
+      id: -1,
+      place_id: place.id,
+      photo_url: place.main_image,
+      photo_type: 'PLACE',
+      accessibility_category: null,
+      created_at: '',
+    });
+  }
   const evidenceLabels: Record<string, string> = {
     ACCESS_ROUTE: 'Rota acessível',
     RAMP: 'Rampa',
@@ -198,12 +204,12 @@ export function PlaceDetailsPage() {
 
       <div style={{background: 'white', padding: '16px 0', borderBottom: '1px solid #E2E8F0'}}>
         <div className="container" style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
-          <button onClick={() => navigate(-1)} style={{background: '#F1F5F9', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontSize: '14px', color: '#052659'}}
+          <button onClick={() => navigate(-1)} style={{background: '#F1F5F9', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, fontSize: 'calc(14px * var(--a11y-font-scale, 1))', color: '#052659'}}
             onMouseOver={e => (e.currentTarget.style.background = '#E2E8F0')}
             onMouseOut={e => (e.currentTarget.style.background = '#F1F5F9')}>
             Voltar
           </button>
-          <div style={{color: '#64748B', fontSize: '14px'}}>
+          <div style={{color: '#64748B', fontSize: 'calc(14px * var(--a11y-font-scale, 1))'}}>
             <Link to="/" style={{color: '#64748B', textDecoration: 'none'}}>Início</Link>
             <span style={{margin: '0 8px'}}>/</span>
             <Link to="/destinos" style={{color: '#64748B', textDecoration: 'none'}}>Destinos</Link>
@@ -220,23 +226,23 @@ export function PlaceDetailsPage() {
           <div className="container">
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px'}}>
               <div>
-                <div style={{display: 'inline-block', background: '#2AC2D2', color: 'white', padding: '4px 12px', borderRadius: '100px', fontSize: '12px', fontWeight: 700, marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>{getPlaceCategoryLabel(place.category)}</div>
-                <h1 style={{fontSize: '48px', fontWeight: 800, marginBottom: '12px', lineHeight: 1.1}}>{place.establishment_name}</h1>
-                <p style={{fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.9}}>
+                <div style={{display: 'inline-block', background: '#2AC2D2', color: 'white', padding: '4px 12px', borderRadius: '100px', fontSize: 'calc(12px * var(--a11y-font-scale, 1))', fontWeight: 700, marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>{getPlaceCategoryLabel(place.category)}</div>
+                <h1 style={{fontSize: 'calc(48px * var(--a11y-font-scale, 1))', fontWeight: 800, marginBottom: '12px', lineHeight: 1.1}}>{place.establishment_name}</h1>
+                <p style={{fontSize: 'calc(16px * var(--a11y-font-scale, 1))', display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.9}}>
                   <IconMapPin width={18} height={18} /> {place.full_address || [place.district, place.city, place.state, place.country].filter(Boolean).join(', ')}
                 </p>
               </div>
               <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
                 <button 
                   onClick={handleFavoriteToggle}
-                  style={{background: isFavorite(place.id) ? '#EF4444' : 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', padding: '12px 20px', borderRadius: '100px', color: 'white', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px'}}
+                  style={{background: isFavorite(place.id) ? '#EF4444' : 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', padding: '12px 20px', borderRadius: '100px', color: 'white', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'calc(14px * var(--a11y-font-scale, 1))'}}
                 >
                   <IconHeart width={18} height={18} fill={isFavorite(place.id) ? 'white' : 'none'} />
                   {isFavorite(place.id) ? 'Salvo' : 'Salvar'}
                 </button>
                 <div style={{background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', padding: '12px 20px', borderRadius: '100px'}}>
-                  <span style={{fontWeight: 700, fontSize: '18px', display: 'inline-flex', alignItems: 'center', gap: 6}}><IconRamp width={20} height={20} /> {avgAccessibility}</span>
-                  <span style={{marginLeft: '8px', fontSize: '13px', opacity: 0.9}}>{accessibilityLevelLabel} · {place.stats?.total_reviews || 0} avaliações</span>
+                  <span style={{fontWeight: 700, fontSize: 'calc(18px * var(--a11y-font-scale, 1))', display: 'inline-flex', alignItems: 'center', gap: 6}}><IconRamp width={20} height={20} /> {avgAccessibility}</span>
+                  <span style={{marginLeft: '8px', fontSize: 'calc(13px * var(--a11y-font-scale, 1))', opacity: 0.9}}>{accessibilityLevelLabel} · {place.stats?.total_reviews || 0} avaliações</span>
                 </div>
               </div>
             </div>
@@ -248,11 +254,11 @@ export function PlaceDetailsPage() {
         <div className="place-details-layout">
           <div>
             <div style={{background: 'white', padding: '32px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)', marginBottom: '24px'}}>
-              <h2 style={{fontFamily: 'Poppins', fontSize: '28px', fontWeight: 800, color: '#052659', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px'}}>
+              <h2 style={{fontFamily: 'Poppins', fontSize: 'calc(28px * var(--a11y-font-scale, 1))', fontWeight: 800, color: '#052659', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px'}}>
                 <span style={{width: '4px', height: '28px', background: '#2AC2D2', borderRadius: '2px', display: 'inline-block'}}></span>
                 Sobre o Local
               </h2>
-              <p style={{lineHeight: '1.8', color: '#64748B', fontSize: '16px', marginBottom: '24px'}}>{place.description || 'Descrição não disponível.'}</p>
+              <p style={{lineHeight: '1.8', color: '#64748B', fontSize: 'calc(16px * var(--a11y-font-scale, 1))', marginBottom: '24px'}}>{place.description || 'Descrição não disponível.'}</p>
               <div className="place-contact-grid">
                 {place.category_detail && <span><strong>Tipo:</strong> {place.category_detail.replaceAll('_', ' ')}</span>}
                 {place.phone && <span><strong>Telefone:</strong> {place.phone}</span>}
@@ -260,15 +266,15 @@ export function PlaceDetailsPage() {
                 {place.opening_hours && <span><strong>Funcionamento:</strong> {place.opening_hours}</span>}
               </div>
               <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '8px'}}>
-                <span style={{fontSize: '36px', fontWeight: 800, color: '#052659'}}>
+                <span style={{fontSize: 'calc(36px * var(--a11y-font-scale, 1))', fontWeight: 800, color: '#052659'}}>
                   {formatPrice(place.price)}
                 </span>
-                {place.price !== null && place.price > 0 && <span style={{fontSize: '14px', color: '#64748B'}}>/ pessoa</span>}
+                {place.price !== null && place.price > 0 && <span style={{fontSize: 'calc(14px * var(--a11y-font-scale, 1))', color: '#64748B'}}>/ pessoa</span>}
               </div>
             </div>
 
               <div style={{background: 'white', padding: '32px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)', marginBottom: '24px'}}>
-                <h2 style={{fontFamily: 'Poppins', fontSize: '28px', fontWeight: 800, color: '#052659', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px'}}>
+                <h2 style={{fontFamily: 'Poppins', fontSize: 'calc(28px * var(--a11y-font-scale, 1))', fontWeight: 800, color: '#052659', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px'}}>
                   <span style={{width: '4px', height: '28px', background: '#2AC2D2', borderRadius: '2px', display: 'inline-block'}}></span>
                   Recursos de Acessibilidade
                 </h2>
@@ -283,18 +289,18 @@ export function PlaceDetailsPage() {
                       <div style={{width: '44px', height: '44px', background: '#2AC2D2', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0}}>
                         {item.icon}
                       </div>
-                      <div style={{fontWeight: 600, color: '#052659', fontSize: '14px'}}>{item.label}</div>
+                      <div style={{fontWeight: 600, color: '#052659', fontSize: 'calc(14px * var(--a11y-font-scale, 1))'}}>{item.label}</div>
                     </div>
                   ))}
                 </div>
                   <div style={{ marginTop: 24 }}>
-                    <h3 style={{ color: '#052659', marginBottom: 14 }}>Fotos de acessibilidade <span style={{ fontSize: 13, fontWeight: 500, color: '#64748B' }}>— evidências enviadas pelo estabelecimento</span></h3>
+                    <h3 style={{ color: '#052659', marginBottom: 14 }}>Fotos de acessibilidade <span style={{ fontSize: 'calc(13px * var(--a11y-font-scale, 1))', fontWeight: 500, color: '#64748B' }}>— evidências enviadas pelo estabelecimento</span></h3>
                     {accessibilityPhotos.length === 0 && <p>Este estabelecimento ainda não enviou fotos de acessibilidade.</p>}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }}>
                       {accessibilityPhotos.map((photo) => (
                         <figure key={photo.id} style={{ margin: 0, border: '1px solid #E2E8F0', borderRadius: 12, overflow: 'hidden' }}>
                           <img src={photo.photo_url} alt={`Evidência de ${evidenceLabels[photo.accessibility_category || ''] || 'acessibilidade'}`} style={{ width: '100%', height: 150, objectFit: 'cover' }} />
-                          <figcaption style={{ padding: 10, fontSize: 13, fontWeight: 600, color: '#052659' }}>{evidenceLabels[photo.accessibility_category || ''] || 'Acessibilidade'}</figcaption>
+                          <figcaption style={{ padding: 10, fontSize: 'calc(13px * var(--a11y-font-scale, 1))', fontWeight: 600, color: '#052659' }}>{evidenceLabels[photo.accessibility_category || ''] || 'Acessibilidade'}</figcaption>
                         </figure>
                       ))}
                     </div>
@@ -312,7 +318,7 @@ export function PlaceDetailsPage() {
                 <div className="place-gallery-thumbs">
                   {displayedPlacePhotos.map((photo, index) => (
                     <button type="button" key={photo.id} className={galleryIndex === index ? 'is-active' : ''} onClick={() => setGalleryIndex(index)} aria-label={`Mostrar foto ${index + 1}`}>
-                      <img src={photo.photo_url} alt="" />
+                      <img src={photo.photo_url} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = place.main_image || 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=900&q=80'; }} />
                     </button>
                   ))}
                 </div>
@@ -321,12 +327,12 @@ export function PlaceDetailsPage() {
 
             <div style={{background: 'white', padding: '32px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)'}}>
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px'}}>
-                <h2 style={{fontFamily: 'Poppins', fontSize: '28px', fontWeight: 800, color: '#052659', display: 'flex', alignItems: 'center', gap: '12px', margin: 0}}>
+                <h2 style={{fontFamily: 'Poppins', fontSize: 'calc(28px * var(--a11y-font-scale, 1))', fontWeight: 800, color: '#052659', display: 'flex', alignItems: 'center', gap: '12px', margin: 0}}>
                   <span style={{width: '4px', height: '28px', background: '#2AC2D2', borderRadius: '2px', display: 'inline-block'}}></span>
                   <IconMessageCircle width={28} height={28} style={{color: '#2AC2D2'}} />
                   Avaliações ({reviews.length})
                 </h2>
-                <button onClick={handleReviewClick} style={{background: showReviewForm ? '#E2E8F0' : '#052659', color: showReviewForm ? '#052659' : 'white', border: 'none', padding: '12px 24px', borderRadius: '100px', fontWeight: 600, cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <button onClick={handleReviewClick} style={{background: showReviewForm ? '#E2E8F0' : '#052659', color: showReviewForm ? '#052659' : 'white', border: 'none', padding: '12px 24px', borderRadius: '100px', fontWeight: 600, cursor: 'pointer', fontSize: 'calc(14px * var(--a11y-font-scale, 1))', display: 'flex', alignItems: 'center', gap: '8px'}}>
                   {showReviewForm ? <><IconX width={16} height={16} /> Cancelar</> : <><IconPlus width={16} height={16} /> {user ? 'Avaliar este local' : 'Entre para avaliar'}</>}
                 </button>
               </div>
@@ -335,10 +341,10 @@ export function PlaceDetailsPage() {
 
               {showReviewForm && (
                 <form onSubmit={handleSubmitReview} style={{background: 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)', padding: '28px', borderRadius: '16px', marginBottom: '32px', border: '1px solid #E2E8F0'}}>
-                  <h3 style={{fontFamily:'Poppins',fontSize:'20px',fontWeight:700,color:'#052659',marginBottom:'24px'}}>Sua avaliação por critérios</h3>
+                  <h3 style={{fontFamily:'Poppins',fontSize:'calc(20px * var(--a11y-font-scale, 1))',fontWeight:700,color:'#052659',marginBottom:'24px'}}>Sua avaliação por critérios</h3>
                   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:'12px',marginBottom:'24px'}}>
                     {Object.entries(newReview.criteria_ratings).map(([criterion, value]) => (
-                      <label key={criterion} style={{display:'grid',gap:'7px',padding:'12px',border:'1px solid #dbe5ed',borderRadius:'10px',background:'white',color:'#334155',fontSize:'13px',fontWeight:700,textTransform:'capitalize'}}>
+                      <label key={criterion} style={{display:'grid',gap:'7px',padding:'12px',border:'1px solid #dbe5ed',borderRadius:'10px',background:'white',color:'#334155',fontSize:'calc(13px * var(--a11y-font-scale, 1))',fontWeight:700,textTransform:'capitalize'}}>
                         {criterion.replaceAll('_',' ')} <span style={{color:'#087f8c'}}>{value}/5</span>
                         <input type="range" min="1" max="5" step="1" value={value} onChange={(event) => setNewReview((current) => ({...current, criteria_ratings:{...current.criteria_ratings,[criterion]:Number(event.target.value)}}))} />
                       </label>
@@ -350,14 +356,14 @@ export function PlaceDetailsPage() {
                   </div>
 
                   <div style={{marginBottom: '20px'}}>
-                    <label style={{display: 'block', marginBottom: '6px', fontWeight: 600, color: '#0F172A', fontSize: '14px'}}>Acessibilidade na prática</label>
-                    <p style={{margin: '0 0 12px', color: '#64748B', fontSize: '13px', lineHeight: 1.5}}>Este questionário é diferente da autodeclaração do estabelecimento: avalie somente o que você vivenciou nesta visita. Se não souber ou não se aplicar, deixe sem resposta.</p>
+                    <label style={{display: 'block', marginBottom: '6px', fontWeight: 600, color: '#0F172A', fontSize: 'calc(14px * var(--a11y-font-scale, 1))'}}>Acessibilidade na prática</label>
+                    <p style={{margin: '0 0 12px', color: '#64748B', fontSize: 'calc(13px * var(--a11y-font-scale, 1))', lineHeight: 1.5}}>Este questionário é diferente da autodeclaração do estabelecimento: avalie somente o que você vivenciou nesta visita. Se não souber ou não se aplicar, deixe sem resposta.</p>
                     {reviewAccessibilityQuestions.map((question) => (
                       <fieldset key={question.key} style={{border: '1px solid #E2E8F0', borderRadius: 10, padding: 14, margin: '0 0 10px'}}>
-                        <legend style={{padding: '0 5px', color: '#334155', fontSize: 13, fontWeight: 600}}>{question.label}</legend>
+                        <legend style={{padding: '0 5px', color: '#334155', fontSize: 'calc(13px * var(--a11y-font-scale, 1))', fontWeight: 600}}>{question.label}</legend>
                         <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
                           {reviewAccessibilityAnswerOptions.map((option) => (
-                            <label key={option.value} style={{display: 'inline-flex', alignItems: 'center', gap: 6, color: '#475569', fontSize: 13}}>
+                            <label key={option.value} style={{display: 'inline-flex', alignItems: 'center', gap: 6, color: '#475569', fontSize: 'calc(13px * var(--a11y-font-scale, 1))'}}>
                               <input
                                 type="radio"
                                 name={`review-${question.key}`}
@@ -376,18 +382,18 @@ export function PlaceDetailsPage() {
                   </div>
 
                   <div style={{marginBottom: '20px'}}>
-                    <label style={{display: 'block', marginBottom: '10px', fontWeight: 600, color: '#0F172A', fontSize: '14px'}}>Seu Comentário</label>
-                    <textarea value={newReview.comment_text} onChange={e => setNewReview({...newReview, comment_text: e.target.value})} placeholder="Conte sobre sua experiência neste local..." required style={{width: '100%', padding: '14px', border: '2px solid #E2E8F0', borderRadius: '10px', minHeight: '110px', fontFamily: 'inherit', resize: 'vertical', fontSize: '14px', outline: 'none', boxSizing: 'border-box'}} />
+                    <label style={{display: 'block', marginBottom: '10px', fontWeight: 600, color: '#0F172A', fontSize: 'calc(14px * var(--a11y-font-scale, 1))'}}>Seu Comentário</label>
+                    <textarea value={newReview.comment_text} onChange={e => setNewReview({...newReview, comment_text: e.target.value})} placeholder="Conte sobre sua experiência neste local..." required style={{width: '100%', padding: '14px', border: '2px solid #E2E8F0', borderRadius: '10px', minHeight: '110px', fontFamily: 'inherit', resize: 'vertical', fontSize: 'calc(14px * var(--a11y-font-scale, 1))', outline: 'none', boxSizing: 'border-box'}} />
                   </div>
 
-                  <button type="submit" disabled={submitting} style={{background: 'linear-gradient(135deg, #052659 0%, #0a3d7a 100%)', color: 'white', border: 'none', padding: '14px 32px', borderRadius: '100px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', boxShadow: '0 4px 15px rgba(5, 38, 89, 0.2)', opacity: submitting ? 0.7 : 1}}>
+                  <button type="submit" disabled={submitting} style={{background: 'linear-gradient(135deg, #052659 0%, #0a3d7a 100%)', color: 'white', border: 'none', padding: '14px 32px', borderRadius: '100px', fontWeight: 700, cursor: 'pointer', fontSize: 'calc(15px * var(--a11y-font-scale, 1))', boxShadow: '0 4px 15px rgba(5, 38, 89, 0.2)', opacity: submitting ? 0.7 : 1}}>
                     {submitting ? 'Publicando...' : 'Publicar Avaliação'}
                   </button>
                 </form>
               )}
 
               {reviewsLoading ? (
-                <p role="status" style={{ margin: 0, padding: '24px 12px', textAlign: 'center', color: '#64748B', fontSize: 14 }}>
+                <p role="status" style={{ margin: 0, padding: '24px 12px', textAlign: 'center', color: '#64748B', fontSize: 'calc(14px * var(--a11y-font-scale, 1))' }}>
                   Carregando avaliações...
                 </p>
               ) : reviews.length === 0 && !reviewError ? (
@@ -396,10 +402,10 @@ export function PlaceDetailsPage() {
                     <IconMessageCircle width={25} height={25} />
                   </span>
                   <div>
-                    <h3 style={{ margin: '0 0 6px', color: '#052659', fontSize: 18, fontWeight: 700 }}>
+                    <h3 style={{ margin: '0 0 6px', color: '#052659', fontSize: 'calc(18px * var(--a11y-font-scale, 1))', fontWeight: 700 }}>
                       Este local ainda não tem avaliações
                     </h3>
-                    <p style={{ maxWidth: 420, margin: 0, color: '#64748B', fontSize: 14, lineHeight: 1.6 }}>
+                    <p style={{ maxWidth: 420, margin: 0, color: '#64748B', fontSize: 'calc(14px * var(--a11y-font-scale, 1))', lineHeight: 1.6 }}>
                       Sua experiência pode ajudar outras pessoas a planejar uma visita mais acessível.
                     </p>
                   </div>
@@ -414,27 +420,27 @@ export function PlaceDetailsPage() {
                     <div style={{display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '16px', alignItems: 'center'}}>
                       <img src={review.traveler_avatar || 'https://i.pravatar.cc/150?img=12'} alt={review.traveler_name} style={{width: '52px', height: '52px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #2AC2D2'}} />
                       <div style={{flex: 1}}>
-                        <div style={{fontWeight: 700, color: '#0F172A', fontSize: '16px'}}>{review.traveler_name}</div>
-                        <div style={{fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                        <div style={{fontWeight: 700, color: '#0F172A', fontSize: 'calc(16px * var(--a11y-font-scale, 1))'}}>{review.traveler_name}</div>
+                        <div style={{fontSize: 'calc(13px * var(--a11y-font-scale, 1))', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px'}}>
                           <span style={{width: '4px', height: '4px', background: '#64748B', borderRadius: '50%', display: 'inline-block'}}></span>
                           {review.created_at}
                         </div>
                       </div>
                       <div style={{display:'grid',gap:'6px',minWidth:'180px'}}>
-                        <strong style={{color:'#052659',fontSize:'14px'}}>Experiência: {review.experience_rating}/5</strong>
+                        <strong style={{color:'#052659',fontSize:'calc(14px * var(--a11y-font-scale, 1))'}}>Experiência: {review.experience_rating}/5</strong>
                         <progress max="5" value={review.experience_rating} aria-label="Nota de experiência" />
-                        <strong style={{color:'#087f8c',fontSize:'14px'}}>Acessibilidade: {review.accessibility_rating}/5</strong>
+                        <strong style={{color:'#087f8c',fontSize:'calc(14px * var(--a11y-font-scale, 1))'}}>Acessibilidade: {review.accessibility_rating}/5</strong>
                         <progress max="5" value={review.accessibility_rating} aria-label="Nota de acessibilidade" />
                       </div>
                     </div>
-                    {review.comment_text && <p style={{color: '#334155', lineHeight: '1.7', fontSize: '15px', margin: 0, paddingLeft: '68px'}}>{review.comment_text}</p>}
+                    {review.comment_text && <p style={{color: '#334155', lineHeight: '1.7', fontSize: 'calc(15px * var(--a11y-font-scale, 1))', margin: 0, paddingLeft: '68px'}}>{review.comment_text}</p>}
                     {review.accessibility_details && reviewAccessibilityQuestions.some((question) => review.accessibility_details?.[question.key]) && (
                       <div style={{marginTop: 16, padding: 16, borderRadius: 10, background: '#F0F9FA'}}>
-                        <strong style={{display: 'block', color: '#052659', marginBottom: 8, fontSize: 14}}>Acessibilidade na prática</strong>
+                        <strong style={{display: 'block', color: '#052659', marginBottom: 8, fontSize: 'calc(14px * var(--a11y-font-scale, 1))'}}>Acessibilidade na prática</strong>
                         {reviewAccessibilityQuestions.map((question) => {
                           const answer = review.accessibility_details?.[question.key];
                           if (!answer) return null;
-                          return <p key={question.key} style={{margin: '6px 0', color: '#475569', fontSize: 13, lineHeight: 1.5}}>{question.label} — {reviewAccessibilityAnswerLabel(answer)}</p>;
+                          return <p key={question.key} style={{margin: '6px 0', color: '#475569', fontSize: 'calc(13px * var(--a11y-font-scale, 1))', lineHeight: 1.5}}>{question.label} — {reviewAccessibilityAnswerLabel(answer)}</p>;
                         })}
                       </div>
                     )}
@@ -447,10 +453,10 @@ export function PlaceDetailsPage() {
 
           <div>
             <div style={{background: 'white', padding: '28px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)', marginBottom: '24px', position: 'sticky', top: '100px'}}>
-              <h3 style={{fontFamily: 'Poppins', fontSize: '20px', fontWeight: 700, color: '#052659', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px'}}>
+              <h3 style={{fontFamily: 'Poppins', fontSize: 'calc(20px * var(--a11y-font-scale, 1))', fontWeight: 700, color: '#052659', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px'}}>
                 <IconMapPin width={22} height={22} style={{color: '#2AC2D2'}} /> Localização
               </h3>
-              <p style={{color: '#64748B', marginBottom: '16px', fontSize: '14px', lineHeight: '1.6'}}>{place.full_address || `${place.city}, ${place.state}`}</p>
+              <p style={{color: '#64748B', marginBottom: '16px', fontSize: 'calc(14px * var(--a11y-font-scale, 1))', lineHeight: '1.6'}}>{place.full_address || `${place.city}, ${place.state}`}</p>
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.full_address || `${place.city}, ${place.state}`)}`}
                 target="_blank"
@@ -460,29 +466,29 @@ export function PlaceDetailsPage() {
               >
                 <div style={{textAlign: 'center'}}>
                   <IconMapPin width={32} height={32} style={{color: '#2AC2D2', marginBottom: '8px'}} />
-                  <p style={{fontSize: '13px', margin: 0, fontWeight: 600}}>Abrir no Google Maps</p>
+                  <p style={{fontSize: 'calc(13px * var(--a11y-font-scale, 1))', margin: 0, fontWeight: 600}}>Abrir no Google Maps</p>
                 </div>
               </a>
             </div>
 
             <div style={{background: 'white', padding: '28px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)'}}>
-              <h3 style={{fontFamily: 'Poppins', fontSize: '20px', fontWeight: 700, color: '#052659', marginBottom: '16px'}}>Resumo</h3>
+              <h3 style={{fontFamily: 'Poppins', fontSize: 'calc(20px * var(--a11y-font-scale, 1))', fontWeight: 700, color: '#052659', marginBottom: '16px'}}>Resumo</h3>
               <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
                 <div style={{display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F1F5F9'}}>
-                  <span style={{color: '#64748B', fontSize: '14px'}}>Categoria</span>
-                  <span style={{fontWeight: 600, color: '#052659', fontSize: '14px'}}>{getPlaceCategoryLabel(place.category)}</span>
+                  <span style={{color: '#64748B', fontSize: 'calc(14px * var(--a11y-font-scale, 1))'}}>Categoria</span>
+                  <span style={{fontWeight: 600, color: '#052659', fontSize: 'calc(14px * var(--a11y-font-scale, 1))'}}>{getPlaceCategoryLabel(place.category)}</span>
                 </div>
                 <div style={{display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F1F5F9'}}>
-                  <span style={{color: '#64748B', fontSize: '14px'}}>Preço</span>
-                  <span style={{fontWeight: 700, color: '#052659', fontSize: '14px'}}>{formatPrice(place.price)}</span>
+                  <span style={{color: '#64748B', fontSize: 'calc(14px * var(--a11y-font-scale, 1))'}}>Preço</span>
+                  <span style={{fontWeight: 700, color: '#052659', fontSize: 'calc(14px * var(--a11y-font-scale, 1))'}}>{formatPrice(place.price)}</span>
                 </div>
                 <div style={{display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F1F5F9'}}>
-                  <span style={{color: '#64748B', fontSize: '14px'}}>Avaliações</span>
-                  <span style={{fontWeight: 600, color: '#052659', fontSize: '14px'}}>{reviews.length}</span>
+                  <span style={{color: '#64748B', fontSize: 'calc(14px * var(--a11y-font-scale, 1))'}}>Avaliações</span>
+                  <span style={{fontWeight: 600, color: '#052659', fontSize: 'calc(14px * var(--a11y-font-scale, 1))'}}>{reviews.length}</span>
                 </div>
                 <div style={{display: 'flex', justifyContent: 'space-between', padding: '12px 0'}}>
-                  <span style={{color: '#64748B', fontSize: '14px'}}>Acessibilidade</span>
-                  <span style={{fontWeight: 700, color: '#2AC2D2', fontSize: '14px', display: 'inline-flex', alignItems: 'center', gap: 4}}><IconRamp width={16} height={16} /> {avgAccessibility}</span>
+                  <span style={{color: '#64748B', fontSize: 'calc(14px * var(--a11y-font-scale, 1))'}}>Acessibilidade</span>
+                  <span style={{fontWeight: 700, color: '#2AC2D2', fontSize: 'calc(14px * var(--a11y-font-scale, 1))', display: 'inline-flex', alignItems: 'center', gap: 4}}><IconRamp width={16} height={16} /> {avgAccessibility}</span>
                 </div>
               </div>
             </div>

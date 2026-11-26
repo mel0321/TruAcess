@@ -212,18 +212,18 @@ export function OnboardingPage() {
       <div style={{background: 'white', borderRadius: '24px', padding: '48px', maxWidth: '600px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', position: 'relative', zIndex: 1}}>
         <div style={{marginBottom: '32px'}}>
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
-            <span style={{fontSize: '14px', color: '#64748B', fontWeight: 600}}>Passo {currentStep + 1} de {STEPS.length}</span>
-            <button onClick={handleSkip} style={{background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', fontSize: '13px', fontWeight: 600}}>Pular</button>
+            <span style={{fontSize: 'calc(14px * var(--a11y-font-scale, 1))', color: '#64748B', fontWeight: 600}}>Passo {currentStep + 1} de {STEPS.length}</span>
+            <button onClick={handleSkip} style={{background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', fontSize: 'calc(13px * var(--a11y-font-scale, 1))', fontWeight: 600}}>Pular</button>
           </div>
           <div style={{height: '6px', background: '#E2E8F0', borderRadius: '100px', overflow: 'hidden'}}>
             <div style={{height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg, #2AC2D2 0%, #0EA5E9 100%)', borderRadius: '100px', transition: 'width 0.5s ease'}} />
           </div>
         </div>
 
-        <h1 style={{fontSize: '28px', fontWeight: 800, color: '#052659', marginBottom: '8px', transition: 'all 0.3s', opacity: animating ? 0 : 1, transform: animating ? 'translateX(20px)' : 'translateX(0)'}}>
+        <h1 style={{fontSize: 'calc(28px * var(--a11y-font-scale, 1))', fontWeight: 800, color: '#052659', marginBottom: '8px', transition: 'all 0.3s', opacity: animating ? 0 : 1, transform: animating ? 'translateX(20px)' : 'translateX(0)'}}>
           {step?.title}
         </h1>
-        <p style={{color: '#64748B', marginBottom: '32px', fontSize: '15px'}}>
+        <p style={{color: '#64748B', marginBottom: '32px', fontSize: 'calc(15px * var(--a11y-font-scale, 1))'}}>
           {currentStep === 0 && 'Resposta opcional. Você pode escolher “Prefiro não dizer”.'}
           {currentStep === 1 && 'Resposta opcional. Use “Prefiro não informar” se não quiser responder.'}
           {currentStep === 2 && 'Assim podemos sugerir lugares com base nos seus hábitos.'}
@@ -232,7 +232,7 @@ export function OnboardingPage() {
           {currentStep === 5 && 'Escolha os temas que mais te interessam.'}
           {currentStep === 6 && 'Selecione recursos importantes para planejar suas visitas. Você pode alterar essas respostas depois.'}
         </p>
-        <p style={{color: '#64748B', marginTop: '-20px', marginBottom: '24px', fontSize: '13px', lineHeight: 1.5}}>
+        <p style={{color: '#64748B', marginTop: '-20px', marginBottom: '24px', fontSize: 'calc(13px * var(--a11y-font-scale, 1))', lineHeight: 1.5}}>
           Suas respostas personalizam recomendações no seu perfil e podem ser alteradas depois.
         </p>
         {saveError && <p role="alert" style={{ color: '#991B1B', marginBottom: 16 }}>{saveError}</p>}
@@ -242,10 +242,10 @@ export function OnboardingPage() {
             const Icon = opt.icon;
             const selected = answers.gender === opt.value;
             return (
-              <button key={opt.value} onClick={() => setAnswers({...answers, gender: opt.value})} style={{padding: '18px 20px', border: `2px solid ${selected ? '#052659' : '#E2E8F0'}`, borderRadius: '12px', background: selected ? '#F0F9FF' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s', fontSize: '15px', fontWeight: 600, color: '#0F172A', textAlign: 'left'}}>
+              <button key={opt.value} onClick={() => setAnswers({...answers, gender: opt.value})} style={{padding: '18px 20px', border: `2px solid ${selected ? '#052659' : '#E2E8F0'}`, borderRadius: '12px', background: selected ? '#F0F9FF' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s', fontSize: 'calc(15px * var(--a11y-font-scale, 1))', fontWeight: 600, color: '#0F172A', textAlign: 'left'}}>
                 <IconBox active={selected}><Icon /></IconBox>
                 {opt.label}
-                {selected && <span style={{marginLeft: 'auto', color: '#052659', fontSize: '20px', fontWeight: 800}}>✓</span>}
+                {selected && <span style={{marginLeft: 'auto', color: '#052659', fontSize: 'calc(20px * var(--a11y-font-scale, 1))', fontWeight: 800}}>✓</span>}
               </button>
             );
           })}
@@ -253,9 +253,9 @@ export function OnboardingPage() {
           {currentStep === 1 && AGE_OPTIONS.map(opt => {
             const selected = answers.ageRange === opt.value;
             return (
-              <button key={opt.value} onClick={() => setAnswers({...answers, ageRange: opt.value})} style={{padding: '18px 20px', border: `2px solid ${selected ? '#052659' : '#E2E8F0'}`, borderRadius: '12px', background: selected ? '#F0F9FF' : 'white', cursor: 'pointer', fontSize: '15px', fontWeight: 600, color: '#0F172A', textAlign: 'left', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+              <button key={opt.value} onClick={() => setAnswers({...answers, ageRange: opt.value})} style={{padding: '18px 20px', border: `2px solid ${selected ? '#052659' : '#E2E8F0'}`, borderRadius: '12px', background: selected ? '#F0F9FF' : 'white', cursor: 'pointer', fontSize: 'calc(15px * var(--a11y-font-scale, 1))', fontWeight: 600, color: '#0F172A', textAlign: 'left', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
                 {opt.label}
-                {selected && <span style={{color: '#052659', fontSize: '20px', fontWeight: 800}}>✓</span>}
+                {selected && <span style={{color: '#052659', fontSize: 'calc(20px * var(--a11y-font-scale, 1))', fontWeight: 800}}>✓</span>}
               </button>
             );
           })}
@@ -264,10 +264,10 @@ export function OnboardingPage() {
             const Icon = opt.icon;
             const selected = answers.travelFrequency === opt.value;
             return (
-              <button key={opt.value} onClick={() => setAnswers({...answers, travelFrequency: opt.value})} style={{padding: '18px 20px', border: `2px solid ${selected ? '#052659' : '#E2E8F0'}`, borderRadius: '12px', background: selected ? '#F0F9FF' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s', fontSize: '15px', fontWeight: 600, color: '#0F172A', textAlign: 'left'}}>
+              <button key={opt.value} onClick={() => setAnswers({...answers, travelFrequency: opt.value})} style={{padding: '18px 20px', border: `2px solid ${selected ? '#052659' : '#E2E8F0'}`, borderRadius: '12px', background: selected ? '#F0F9FF' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s', fontSize: 'calc(15px * var(--a11y-font-scale, 1))', fontWeight: 600, color: '#0F172A', textAlign: 'left'}}>
                 <IconBox active={selected}><Icon /></IconBox>
                 {opt.label}
-                {selected && <span style={{marginLeft: 'auto', color: '#052659', fontSize: '20px', fontWeight: 800}}>✓</span>}
+                {selected && <span style={{marginLeft: 'auto', color: '#052659', fontSize: 'calc(20px * var(--a11y-font-scale, 1))', fontWeight: 800}}>✓</span>}
               </button>
             );
           })}
@@ -276,10 +276,10 @@ export function OnboardingPage() {
             const Icon = opt.icon;
             const selected = answers.companionType === opt.value;
             return (
-              <button key={opt.value} onClick={() => setAnswers({...answers, companionType: opt.value})} style={{padding: '18px 20px', border: `2px solid ${selected ? '#052659' : '#E2E8F0'}`, borderRadius: '12px', background: selected ? '#F0F9FF' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s', fontSize: '15px', fontWeight: 600, color: '#0F172A', textAlign: 'left'}}>
+              <button key={opt.value} onClick={() => setAnswers({...answers, companionType: opt.value})} style={{padding: '18px 20px', border: `2px solid ${selected ? '#052659' : '#E2E8F0'}`, borderRadius: '12px', background: selected ? '#F0F9FF' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s', fontSize: 'calc(15px * var(--a11y-font-scale, 1))', fontWeight: 600, color: '#0F172A', textAlign: 'left'}}>
                 <IconBox active={selected}><Icon /></IconBox>
                 {opt.label}
-                {selected && <span style={{marginLeft: 'auto', color: '#052659', fontSize: '20px', fontWeight: 800}}>✓</span>}
+                {selected && <span style={{marginLeft: 'auto', color: '#052659', fontSize: 'calc(20px * var(--a11y-font-scale, 1))', fontWeight: 800}}>✓</span>}
               </button>
             );
           })}
@@ -299,7 +299,7 @@ export function OnboardingPage() {
                           ? [opt.value]
                           : [...current.filter((v: DisabilityType) => v !== 'NONE' && v !== 'PREFER_NOT_SAY'), opt.value];
                       setAnswers({...answers, disabilities: updated});
-                  }} style={{padding: '16px', border: `2px solid ${selected ? '#052659' : '#E2E8F0'}`, borderRadius: '12px', background: selected ? '#F0F9FF' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s', fontSize: '14px', fontWeight: 600, color: '#0F172A', textAlign: 'left'}}>
+                  }} style={{padding: '16px', border: `2px solid ${selected ? '#052659' : '#E2E8F0'}`, borderRadius: '12px', background: selected ? '#F0F9FF' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s', fontSize: 'calc(14px * var(--a11y-font-scale, 1))', fontWeight: 600, color: '#0F172A', textAlign: 'left'}}>
                     <div style={{width: '36px', height: '36px', borderRadius: '8px', background: selected ? '#052659' : '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: selected ? 'white' : '#64748B', flexShrink: 0}}>
                       <Icon />
                     </div>
@@ -320,7 +320,7 @@ export function OnboardingPage() {
                     const current = answers.interests || [];
                     const updated = selected ? current.filter((v: string) => v !== opt.value) : [...current, opt.value];
                     setAnswers({...answers, interests: updated});
-                  }} style={{padding: '16px', border: `2px solid ${selected ? '#052659' : '#E2E8F0'}`, borderRadius: '12px', background: selected ? '#F0F9FF' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s', fontSize: '14px', fontWeight: 600, color: '#0F172A', textAlign: 'left'}}>
+                  }} style={{padding: '16px', border: `2px solid ${selected ? '#052659' : '#E2E8F0'}`, borderRadius: '12px', background: selected ? '#F0F9FF' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s', fontSize: 'calc(14px * var(--a11y-font-scale, 1))', fontWeight: 600, color: '#0F172A', textAlign: 'left'}}>
                     <div style={{width: '36px', height: '36px', borderRadius: '8px', background: selected ? '#052659' : '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: selected ? 'white' : '#64748B', flexShrink: 0}}>
                       <Icon />
                     </div>
@@ -347,7 +347,7 @@ export function OnboardingPage() {
                         : [...current, opt.value];
                       setAnswers({ ...answers, accessibilityPreferences: updated });
                     }}
-                    style={{padding: '16px', border: `2px solid ${selected ? '#052659' : '#E2E8F0'}`, borderRadius: '12px', background: selected ? '#F0F9FF' : 'white', cursor: 'pointer', fontSize: '14px', fontWeight: 600, color: '#0F172A', textAlign: 'left'}}
+                    style={{padding: '16px', border: `2px solid ${selected ? '#052659' : '#E2E8F0'}`, borderRadius: '12px', background: selected ? '#F0F9FF' : 'white', cursor: 'pointer', fontSize: 'calc(14px * var(--a11y-font-scale, 1))', fontWeight: 600, color: '#0F172A', textAlign: 'left'}}
                   >
                     {opt.label}
                     {selected && <span style={{float: 'right', color: '#052659', fontWeight: 800}}>✓</span>}
@@ -360,11 +360,11 @@ export function OnboardingPage() {
 
         <div style={{display: 'flex', gap: '12px'}}>
           {currentStep > 0 && (
-            <button onClick={handleBack} style={{flex: 1, padding: '16px', background: '#F1F5F9', color: '#052659', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit'}}>
+            <button onClick={handleBack} style={{flex: 1, padding: '16px', background: '#F1F5F9', color: '#052659', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: 'calc(15px * var(--a11y-font-scale, 1))', fontFamily: 'inherit'}}>
               Voltar
             </button>
           )}
-          <button onClick={handleNext} disabled={saving || (!answers[step?.key] && step?.key !== 'disabilities' && step?.key !== 'interests' && step?.key !== 'accessibilityPreferences')} style={{flex: 1, padding: '16px', background: 'linear-gradient(135deg, #052659 0%, #0a3d7a 100%)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', fontFamily: 'inherit', boxShadow: '0 4px 15px rgba(5, 38, 89, 0.2)', opacity: (saving || (!answers[step?.key] && step?.key !== 'disabilities' && step?.key !== 'interests' && step?.key !== 'accessibilityPreferences')) ? 0.5 : 1, transition: 'all 0.3s'}}>
+          <button onClick={handleNext} disabled={saving || (!answers[step?.key] && step?.key !== 'disabilities' && step?.key !== 'interests' && step?.key !== 'accessibilityPreferences')} style={{flex: 1, padding: '16px', background: 'linear-gradient(135deg, #052659 0%, #0a3d7a 100%)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: 'calc(15px * var(--a11y-font-scale, 1))', fontFamily: 'inherit', boxShadow: '0 4px 15px rgba(5, 38, 89, 0.2)', opacity: (saving || (!answers[step?.key] && step?.key !== 'disabilities' && step?.key !== 'interests' && step?.key !== 'accessibilityPreferences')) ? 0.5 : 1, transition: 'all 0.3s'}}>
             {saving ? 'Salvando...' : currentStep === STEPS.length - 1 ? 'Finalizar e Explorar' : 'Continuar'}
           </button>
         </div>

@@ -106,7 +106,7 @@ export function LinkedAccountPanel({ manage = true }: { manage?: boolean }) {
   return (
     <section style={{ marginTop: 24, padding: 22, border: '1px solid #DCE5EF', borderRadius: 14, background: '#F8FAFC' }}>
       <h3 style={{ margin: '0 0 8px', color: '#052659' }}>Perfis conectados</h3>
-      <p style={{ margin: '0 0 16px', color: '#64748B', fontSize: 14 }}>
+      <p style={{ margin: '0 0 16px', color: '#64748B', fontSize: 'calc(14px * var(--a11y-font-scale, 1))' }}>
         A conta de {otherRoleLabel} usa e-mail e senha próprios. Os dados pessoais dos perfis permanecem separados.
       </p>
       {error && <p role="alert" style={{ color: '#991B1B', margin: '0 0 12px' }}>{error}</p>}
@@ -129,16 +129,16 @@ export function LinkedAccountPanel({ manage = true }: { manage?: boolean }) {
         mode ? (
           <form onSubmit={(event) => void submitLink(event)} style={{ display: 'grid', gap: 12, maxWidth: 480 }}>
             {mode === 'create' && (
-              <label style={{ display: 'grid', gap: 6, color: '#334155', fontSize: 14 }}>
+              <label style={{ display: 'grid', gap: 6, color: '#334155', fontSize: 'calc(14px * var(--a11y-font-scale, 1))' }}>
                 Nome
                 <input required value={fullName} onChange={(event) => setFullName(event.target.value)} />
               </label>
             )}
-            <label style={{ display: 'grid', gap: 6, color: '#334155', fontSize: 14 }}>
+            <label style={{ display: 'grid', gap: 6, color: '#334155', fontSize: 'calc(14px * var(--a11y-font-scale, 1))' }}>
               {mode === 'connect' ? 'E-mail da conta existente' : 'Novo e-mail'}
               <input required type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} />
             </label>
-            <label style={{ display: 'grid', gap: 6, color: '#334155', fontSize: 14 }}>
+            <label style={{ display: 'grid', gap: 6, color: '#334155', fontSize: 'calc(14px * var(--a11y-font-scale, 1))' }}>
               {mode === 'connect' ? 'Senha da conta existente' : 'Senha (mínimo 6 caracteres)'}
               <input required type="password" minLength={6} autoComplete={mode === 'connect' ? 'current-password' : 'new-password'} value={password} onChange={(event) => setPassword(event.target.value)} />
             </label>
@@ -154,7 +154,7 @@ export function LinkedAccountPanel({ manage = true }: { manage?: boolean }) {
           </div>
         )
       ) : (
-        <p style={{ margin: 0, color: '#64748B', fontSize: 14 }}>Nenhum perfil de {otherRoleLabel} conectado.</p>
+        <p style={{ margin: 0, color: '#64748B', fontSize: 'calc(14px * var(--a11y-font-scale, 1))' }}>Nenhum perfil de {otherRoleLabel} conectado.</p>
       )}
     </section>
   );

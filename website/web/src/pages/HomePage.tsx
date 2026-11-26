@@ -69,9 +69,9 @@ export function HomePage() {
         <div className="container">
           <div className="home-category-title"><strong>O que você quer explorar?</strong><span>Escolha uma categoria</span></div>
           <div className="home-category-list" role="group" aria-label="Filtrar locais por categoria">
-            <button onClick={() => setSelectedCategory('todos')} style={{ padding: '8px 20px', borderRadius: '100px', border: 'none', cursor: 'pointer', background: selectedCategory === 'todos' ? '#052659' : '#F1F5F9', color: selectedCategory === 'todos' ? 'white' : '#64748B', fontWeight: 600, fontSize: '14px' }}>Todos</button>
+            <button onClick={() => setSelectedCategory('todos')} style={{ padding: '8px 20px', borderRadius: '100px', border: 'none', cursor: 'pointer', background: selectedCategory === 'todos' ? '#052659' : '#F1F5F9', color: selectedCategory === 'todos' ? 'white' : '#64748B', fontWeight: 600, fontSize: 'calc(14px * var(--a11y-font-scale, 1))' }}>Todos</button>
             {uniqueCategories.map((cat, index) => (
-              <button key={index} onClick={() => setSelectedCategory(cat)} style={{ padding: '8px 20px', borderRadius: '100px', border: 'none', cursor: 'pointer', background: selectedCategory === cat ? '#052659' : '#F1F5F9', color: selectedCategory === cat ? 'white' : '#64748B', fontWeight: 600, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button key={index} onClick={() => setSelectedCategory(cat)} style={{ padding: '8px 20px', borderRadius: '100px', border: 'none', cursor: 'pointer', background: selectedCategory === cat ? '#052659' : '#F1F5F9', color: selectedCategory === cat ? 'white' : '#64748B', fontWeight: 600, fontSize: 'calc(14px * var(--a11y-font-scale, 1))', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {getCategoryIcon(cat)} {getPlaceCategoryLabel(cat)}
               </button>
             ))}
@@ -92,7 +92,15 @@ export function HomePage() {
             ) : filteredPlaces.slice(0, 8).map((place) => (
               <Link to={`/local/${place.id}`} key={place.id} className="destination-card">
                 <div className="destination-img">
-                  <img src={place.main_image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80'} alt={place.establishment_name} />
+                  <img
+                    src={place.main_image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80'}
+                    alt={place.establishment_name}
+                    loading="lazy"
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80';
+                    }}
+                  />
                   <div className="destination-pin"></div>
                 </div>
                 <div className="destination-content">

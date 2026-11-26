@@ -29,7 +29,7 @@ interface DashboardStats {
 }
 
 const cardStyle = { background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(5, 38, 89, 0.05)' };
-const headingStyle = { color: '#64748B', fontSize: '14px', margin: 0 };
+const headingStyle = { color: '#64748B', fontSize: 'calc(14px * var(--a11y-font-scale, 1))', margin: 0 };
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -103,8 +103,8 @@ export function DashboardPage() {
       <main className="container business-dashboard" style={{ paddingBlock: 40 }}>
         <div className="business-dashboard-heading">
           <div>
-            <p style={{ color: '#0B8794', fontWeight: 700, letterSpacing: '.12em', fontSize: 12 }}>ÁREA DO ESTABELECIMENTO</p>
-            <h1 style={{ fontFamily: 'Poppins', fontSize: '32px', fontWeight: 800, color: '#052659', margin: 0 }}>Olá, {user.full_name.split(' ')[0]}</h1>
+            <p style={{ color: '#0B8794', fontWeight: 700, letterSpacing: '.12em', fontSize: 'calc(12px * var(--a11y-font-scale, 1))' }}>ÁREA DO ESTABELECIMENTO</p>
+            <h1 style={{ fontFamily: 'Poppins', fontSize: 'calc(32px * var(--a11y-font-scale, 1))', fontWeight: 800, color: '#052659', margin: 0 }}>Olá, {user.full_name.split(' ')[0]}</h1>
           </div>
           <Link to="/register-place" className="btn-plan" style={{ background: '#087F8C', padding: '13px 22px', borderRadius: '10px', textDecoration: 'none', color: 'white', fontWeight: 700 }}>+ Novo estabelecimento</Link>
         </div>
@@ -115,13 +115,13 @@ export function DashboardPage() {
 
         {places.length === 0 ? (
           <section style={{ ...cardStyle, marginBottom: 24, border: '1px solid #FDE68A', background: '#FFFBEB' }}>
-            <h2 style={{ margin: '0 0 8px', color: '#92400E', fontSize: 18 }}>Perfil do estabelecimento incompleto</h2>
+            <h2 style={{ margin: '0 0 8px', color: '#92400E', fontSize: 'calc(18px * var(--a11y-font-scale, 1))' }}>Perfil do estabelecimento incompleto</h2>
             <p style={{ margin: '0 0 16px', color: '#78350F' }}>Cadastre seu primeiro estabelecimento para adicionar as informações comerciais e de acessibilidade.</p>
             <Link to="/register-place" className="btn-plan" style={{ display: 'inline-block', background: '#087F8C' }}>Completar perfil do estabelecimento</Link>
           </section>
         ) : places.some((place) => placeMissingFields(place).length > 0) ? (
           <section style={{ ...cardStyle, marginBottom: 24, border: '1px solid #FDE68A', background: '#FFFBEB' }}>
-            <h2 style={{ margin: '0 0 12px', color: '#92400E', fontSize: 18 }}>Há informações incompletas</h2>
+            <h2 style={{ margin: '0 0 12px', color: '#92400E', fontSize: 'calc(18px * var(--a11y-font-scale, 1))' }}>Há informações incompletas</h2>
             {places.filter((place) => placeMissingFields(place).length > 0).map((place) => (
               <div key={place.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 0', borderTop: '1px solid #FDE68A', flexWrap: 'wrap' }}>
                 <p style={{ margin: 0, color: '#78350F' }}><strong>{place.establishment_name || 'Estabelecimento'}</strong>: faltam {placeMissingFields(place).join(', ')}.</p>
@@ -134,19 +134,19 @@ export function DashboardPage() {
         <div className="business-dashboard-stats">
           <div style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}><IconMapPin width={24} height={24} color="#052659" /><p style={headingStyle}>Meus locais</p></div>
-            <p style={{ fontSize: 36, fontWeight: 800, color: '#052659', margin: 0 }}>{stats?.total_places ?? places.length}</p>
+            <p style={{ fontSize: 'calc(36px * var(--a11y-font-scale, 1))', fontWeight: 800, color: '#052659', margin: 0 }}>{stats?.total_places ?? places.length}</p>
           </div>
           <div style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}><IconStar width={24} height={24} color="#F59E0B" /><p style={headingStyle}>Nota de experiência</p></div>
-            <p style={{ fontSize: 36, fontWeight: 800, color: '#052659', margin: 0 }}>{stats?.average_rating?.toFixed(1) ?? '—'}<small style={{ fontSize: 16 }}> / 5</small></p>
+            <p style={{ fontSize: 'calc(36px * var(--a11y-font-scale, 1))', fontWeight: 800, color: '#052659', margin: 0 }}>{stats?.average_rating?.toFixed(1) ?? '—'}<small style={{ fontSize: 'calc(16px * var(--a11y-font-scale, 1))' }}> / 5</small></p>
           </div>
           <div style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}><IconUsers width={24} height={24} color="#087F8C" /><p style={headingStyle}>Avaliações</p></div>
-            <p style={{ fontSize: 36, fontWeight: 800, color: '#052659', margin: 0 }}>{stats?.total_reviews ?? 0}</p>
+            <p style={{ fontSize: 'calc(36px * var(--a11y-font-scale, 1))', fontWeight: 800, color: '#052659', margin: 0 }}>{stats?.total_reviews ?? 0}</p>
           </div>
           <div style={{ ...cardStyle, background: '#FEF3C7' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}><IconBell width={24} height={24} color="#D97706" /><p style={{ ...headingStyle, color: '#92400E' }}>Sem resposta</p></div>
-            <p style={{ fontSize: 36, fontWeight: 800, color: '#92400E', margin: 0 }}>{stats?.pending_replies_count ?? 0}</p>
+            <p style={{ fontSize: 'calc(36px * var(--a11y-font-scale, 1))', fontWeight: 800, color: '#92400E', margin: 0 }}>{stats?.pending_replies_count ?? 0}</p>
           </div>
         </div>
 
@@ -206,7 +206,7 @@ export function DashboardPage() {
                       {reviewAccessibilityQuestions.map((question) => {
                         const answer = review.accessibility_details?.[question.key];
                         if (!answer) return null;
-                        return <p key={question.key} style={{margin: '6px 0', color: '#475569', fontSize: 13, lineHeight: 1.5}}>{question.label} — {reviewAccessibilityAnswerLabel(answer)}</p>;
+                        return <p key={question.key} style={{margin: '6px 0', color: '#475569', fontSize: 'calc(13px * var(--a11y-font-scale, 1))', lineHeight: 1.5}}>{question.label} — {reviewAccessibilityAnswerLabel(answer)}</p>;
                       })}
                     </div>
                   )}

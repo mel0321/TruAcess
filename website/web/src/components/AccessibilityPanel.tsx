@@ -20,7 +20,8 @@ export function AccessibilityPanel() {
     root.classList.toggle('a11y-simple-layout', settings.simple);
     root.classList.toggle('a11y-reading-mode', settings.reading);
     root.classList.toggle('a11y-reduced-motion', settings.reduceMotion);
-    root.style.setProperty('--a11y-font-scale', `${settings.fontScale}%`);
+    root.classList.toggle('a11y-text-scaled', settings.fontScale !== 100);
+    root.style.setProperty('--a11y-font-scale', String(settings.fontScale / 100));
   }, [settings]);
 
   const save = (next: typeof settings) => {
